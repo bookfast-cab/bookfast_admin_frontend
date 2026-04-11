@@ -1040,7 +1040,6 @@ const [isEnableMode, setIsEnableMode] = useState(false);
                   <Button
                     onClick={confirmDisableDriver}
                     variant="contained"
-                    // Validation sirf disable mode mein
                     disabled={!isEnableMode && (!blockBy || !blockRemarks)}
                     sx={{
                       backgroundColor: isEnableMode ? BRAND_COLORS.success : BRAND_COLORS.error,
