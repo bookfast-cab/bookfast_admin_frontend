@@ -142,9 +142,10 @@ const [isEnableMode, setIsEnableMode] = useState(false);
       setToastMessage("Please fill in all fields!");
       setToastSeverity("error");
       setToastOpen(true);
+
       return;
     }
-    // API call to disable driver
+    
     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/disableDriver`, {
       method: 'PUT',
       headers: {
