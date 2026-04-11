@@ -25,7 +25,7 @@ import {
   ListItemText,
   ListItemIcon,
   Switch,
-  FormControlLabel
+  TextField
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -101,14 +101,16 @@ const TabPanel = ({ children, value, index, ...other }) => (
   </div>
 );
 
-const DriverDrawer = ({ open, onClose, data = {} }) => {
+const DriverDrawer = ({onDriverUpdate, open, onClose, data = {} }) => {
   const [tabValue, setTabValue] = useState(0);
   const [membershipDialogOpen, setMembershipDialogOpen] = useState(false);
   const [disableDialogOpen, setDisableDialogOpen] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastSeverity, setToastSeverity] = useState('success');
-
+  const [blockBy, setBlockBy] = useState('');
+  const [blockRemarks, setBlockRemarks] = useState('');
+const [isEnableMode, setIsEnableMode] = useState(false);
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
   const handleTabChange = (event, newValue) => {
@@ -118,6 +120,11 @@ const DriverDrawer = ({ open, onClose, data = {} }) => {
 
 
   const handleDisableDriver = () => {
+    if(data?.isBlocked == 1){
+      setIsEnableMode(true);
+    }else{
+      setIsEnableMode(false);
+    }
     setDisableDialogOpen(true);
   };
 
@@ -131,6 +138,12 @@ const DriverDrawer = ({ open, onClose, data = {} }) => {
   };
 
   const confirmDisableDriver = () => {
+    if (!isEnableMode && (!blockBy || !blockRemarks)) {
+      setToastMessage("Please fill in all fields!");
+      setToastSeverity("error");
+      setToastOpen(true);
+      return;
+    }
     // API call to disable driver
     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/disableDriver`, {
       method: 'PUT',
@@ -139,18 +152,32 @@ const DriverDrawer = ({ open, onClose, data = {} }) => {
         'Authorization': `${token}`
       },
       body: JSON.stringify({
-        driverId: data.id
+        driverId: data.id,
+        isBlocked: data?.isBlocked == 1 ? 0 : 1,        
+        block_by: isEnableMode ? "" : blockBy,      
+        block_remark: isEnableMode ? "" : blockRemarks
       }),
     })
       .then((response) => response.json())
       .then((result) => {
-        if (result.success) {
-          setToastMessage("Driver disabled successfully!");
+       if (result.success) {
+          if(data?.isBlocked == 0){ 
+            setToastMessage("Driver disabled successfully!");
+          }else{
+            setToastMessage("Driver enabled successfully!");
+          }
+          
+          if(result?.data) {
+            onDriverUpdate({...result?.data,id:data?.id})
+          }
+
           setToastSeverity("success");
           setToastOpen(true);
-          onClose(true);
+          setBlockBy(''); // Clear fields
+          setBlockRemarks('');
+          onClose(true); // Close drawer and refresh
         } else {
-          setToastMessage("Failed to disable driver!");
+          setToastMessage(result.message || "Failed to disable driver!");
           setToastSeverity("error");
           setToastOpen(true);
         }
@@ -303,7 +330,7 @@ const DriverDrawer = ({ open, onClose, data = {} }) => {
                 <Button
                   variant="outlined"
                   size="medium"
-                  startIcon={<PersonOffIcon />}
+                  startIcon={data?.isBlocked == 1 ? <PersonAddIcon /> : <PersonOffIcon />}
                   onClick={handleDisableDriver}
                   sx={{
                     borderColor: BRAND_COLORS.error,
@@ -314,11 +341,86 @@ const DriverDrawer = ({ open, onClose, data = {} }) => {
                     },
                   }}
                 >
-                  Disable Driver
+                 {data?.isBlocked == 1 ? "Enable Driver" : "Disable Driver"}
                 </Button>
               </Box>
 
               {/* Tabs */}
+              {data.isBlocked == 1 && (
+                <Box sx={{ mb: 3 }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2.5,
+                      backgroundColor: '#fef2f2', // Soft red background
+                      border: `1px solid #fee2e2`,
+                      borderRadius: 2,
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {/* Side decoration line */}
+                    <Box sx={{ 
+                      position: 'absolute', left: 0, top: 0, bottom: 0, 
+                      width: 4, backgroundColor: BRAND_COLORS.error 
+                    }} />
+
+                    <Stack direction="row" spacing={2} alignItems="flex-start">
+                      <Box 
+                        sx={{ 
+                          backgroundColor: '#fee2e2', 
+                          p: 1, borderRadius: 1.5, 
+                          display: 'flex', alignItems: 'center' 
+                        }}
+                      >
+                        <PersonOffIcon sx={{ color: BRAND_COLORS.error }} />
+                      </Box>
+
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle2" fontWeight={700} color={BRAND_COLORS.error} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          Driver Disabled
+                        </Typography>
+
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="caption" color="textSecondary" display="block">
+                              Blocked By :-
+                            </Typography>
+                            <Typography variant="body2" fontWeight={600} color={BRAND_COLORS.textPrimary}>
+                              {data.block_by || 'System Admin'}
+                            </Typography>
+                          </Grid>
+
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="caption" color="textSecondary" display="block">
+                              Date & Time :-
+                            </Typography>
+                            <Typography variant="body2" fontWeight={600} color={BRAND_COLORS.textPrimary}>
+                              {data.block_date ? new Date(data.block_date).toLocaleString('en-IN', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }) : 'N/A'}
+                            </Typography>
+                          </Grid>
+
+                          <Grid item xs={12}>
+                            <Divider sx={{ my: 1, borderStyle: 'dashed' }} />
+                            <Typography variant="caption" color="textSecondary" display="block">
+                              Remarks :-
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontStyle: 'italic', mt: 0.5 }} color={BRAND_COLORS.textPrimary}>
+                              "{data.block_remark || 'No remarks provided'}"
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </Box>
+                    </Stack>
+                  </Paper>
+                </Box>
+              )}
               <Paper
                 elevation={0}
                 sx={{
@@ -880,34 +982,73 @@ const DriverDrawer = ({ open, onClose, data = {} }) => {
                 onClose={() => setDisableDialogOpen(false)}
                 PaperProps={{
                   sx: {
-                    width: '400px',
+                    width: '450px',
                     borderRadius: 2,
                   }
                 }}
               >
-                <DialogTitle sx={{ color: BRAND_COLORS.textPrimary }}>
-                  Disable Driver
+                <DialogTitle sx={{ color: BRAND_COLORS.textPrimary, fontWeight: 600 }}>
+                  {isEnableMode ? "Enable Driver Profile" : "Disable Driver Profile"}
                 </DialogTitle>
                 <DialogContent>
-                  <Typography variant="body2" color={BRAND_COLORS.textSecondary}>
-                    Are you sure you want to disable this driver? This action will prevent them from receiving new trip requests.
-                  </Typography>
+                  <Typography variant="body2" color={BRAND_COLORS.textSecondary} sx={{ mb: 3 }}>
+                    {isEnableMode 
+                        ? "Are you sure you want to enable this driver? They will be able to receive bookings again." 
+                        : "Please provide the following details to restrict this driver's access."}
+                    </Typography>
+                  
+                  {!isEnableMode && (
+                    <Stack spacing={3}>
+                      <TextField
+                        label="Blocked By (Admin Name)"
+                        variant="outlined"
+                        fullWidth
+                        required
+                        value={blockBy}
+                        onChange={(e) => setBlockBy(e.target.value)}
+                        placeholder="Enter your name"
+                        size="small"
+                      />
+                      <TextField
+                        label="Block Remarks / Reason"
+                        variant="outlined"
+                        fullWidth
+                        required
+                        multiline
+                        rows={3}
+                        value={blockRemarks}
+                        onChange={(e) => setBlockRemarks(e.target.value)}
+                        placeholder="Reason for blocking..."
+                        size="small"
+                      />
+                    </Stack>
+                  )}
                 </DialogContent>
-                <DialogActions>
-                  <Button onClick={() => setDisableDialogOpen(false)} color="inherit">
+                <DialogActions sx={{ px: 3, pb: 3 }}>
+                  <Button 
+                    onClick={() => {
+                      setDisableDialogOpen(false);
+                      setBlockBy('');
+                      setBlockRemarks('');
+                    }} 
+                    color="inherit"
+                  >
                     Cancel
                   </Button>
                   <Button
                     onClick={confirmDisableDriver}
                     variant="contained"
+                    // Validation sirf disable mode mein
+                    disabled={!isEnableMode && (!blockBy || !blockRemarks)}
                     sx={{
-                      backgroundColor: BRAND_COLORS.error,
+                      backgroundColor: isEnableMode ? BRAND_COLORS.success : BRAND_COLORS.error,
+                      px: 3,
                       '&:hover': {
-                        backgroundColor: '#dc2626',
+                        backgroundColor: isEnableMode ? '#059669' : '#dc2626',
                       },
                     }}
                   >
-                    Disable Driver
+                    {isEnableMode ? "Confirm Enable" : "Confirm Disable"}
                   </Button>
                 </DialogActions>
               </Dialog>

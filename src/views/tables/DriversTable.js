@@ -15,8 +15,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Typography,
-  Switch
+  Typography
 } from '@mui/material';
 import MuiAlert from '@mui/material/Alert'
 
@@ -204,42 +203,6 @@ const DriversTable = ({
     }
   };
 
-  const handleBlockToggle = (driver) => {
-    const newStatus = driver.isBlocked == 1 ? 0 : 1;
-
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/updateDriverIsBlocked`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `${token}`
-      },
-      body: JSON.stringify({ 
-        driverId: driver.id, 
-        isBlocked: newStatus 
-      }),
-    })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success || data.status === 200) {
-          // UI update without reload
-          setRows((prevRows) =>
-            prevRows.map((row) =>
-              row.id === driver.id
-                ? { ...row, isBlocked: newStatus }
-                : row
-            )
-          );
-          setSuccessMessage(newStatus == 1 ? 'Driver Blocked' : 'Driver Unblocked');
-        } else {
-          setErrorMessage(data.message || "Failed to update status");
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        setErrorMessage("Something went wrong");
-      });
-  };
-
   const columns = [
     {
       field: 'profile',
@@ -330,19 +293,6 @@ const DriversTable = ({
             <Refresh fontSize="small" />
           </IconButton>
         </div>
-      )
-    },
-    {
-      field: "block",
-      headerName: "Block",
-      width: 120,
-      renderCell: (params) => (
-        <Switch
-          size="small"
-          checked={(params.row.isBlocked == 1)}
-          color="error" // Blocked hone par red color
-          onChange={(e) => handleBlockToggle(params.row)}
-        />
       )
     },
 
