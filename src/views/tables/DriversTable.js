@@ -384,6 +384,7 @@ const DriversTable = ({
         <DataGrid
           rows={rows}
           columns={columns}
+          
           pageSize={rowsPerPage}
           rowCount={totalRecords} // Ensure total count is provided for server pagination
           paginationMode="server"
