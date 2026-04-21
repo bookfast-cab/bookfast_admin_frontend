@@ -104,6 +104,7 @@ const TripLogsDetailsTable = ({ items = [], totalPages, currentPage, onPageChang
               <TableCell>Driver Id</TableCell>
               <TableCell>Driver Name</TableCell>
               <TableCell>Driver Phone</TableCell>
+              <TableCell>Status</TableCell>
               <TableCell>Sent Date</TableCell>
             </TableRow>
           </TableHead>
@@ -116,6 +117,7 @@ const TripLogsDetailsTable = ({ items = [], totalPages, currentPage, onPageChang
                 <TableCell>{item.driver_id || 'N/A'}</TableCell>
                 <TableCell>{item.driver?.driverName || 'N/A'}</TableCell>
                 <TableCell>{item?.driver?.phone_number || 'N/A'}</TableCell>
+                <TableCell>{item?.status || 'N/A'}</TableCell>
                 <TableCell>{formatTime(item.sent_at) || 'N/A'}</TableCell>
               </TableRow>
             ))}
