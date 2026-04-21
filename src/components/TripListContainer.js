@@ -15,6 +15,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { formatDate } from 'src/utils/utils';
 import TripDrawer from '../pages/trips/TripDrawer'; // Adjusted import path
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import { Info } from '@mui/icons-material';
 
 const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
 
@@ -357,10 +358,19 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 120,
+            width: 200,
             sortable: false,
             renderCell: (params) => (
                 <>
+
+                    <IconButton
+                        aria-label="view"
+                        color="info"
+                        onClick={() => router.push(`/logs/trip-details?trip_id=${params.row.id}`)}
+                    >
+                        <Info />
+                    </IconButton>
+
                     <IconButton
                         aria-label="edit"
                         color="primary"
