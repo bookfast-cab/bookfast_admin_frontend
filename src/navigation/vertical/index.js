@@ -140,6 +140,12 @@ const Navigation = () => {
     { privilege: ['add-blog'], title: 'Add Blog', icon: FilePlus, path: '/blogs/addBlog', roles: ['staff', 'seo'] },
     { privilege: ['view-blogs'], title: 'View Blogs', icon: FormatListBulleted, path: '/blogs', roles: ['staff', 'seo'] },
 
+
+
+    { privilege: ['add-video', 'view-videos'], sectionTitle: 'Tutorial Videos', icon: Web, roles: ['admin', 'staff', 'seo',] },
+    { privilege: ['add-video'], title: 'Add video', icon: FilePlus, path: '/tutorial/addvideo', roles: ['staff', 'seo'] },
+    { privilege: ['view-videos'], title: 'View videos', icon: FormatListBulleted, path: '/tutorial', roles: ['staff', 'seo'] },
+
   ];
 
 

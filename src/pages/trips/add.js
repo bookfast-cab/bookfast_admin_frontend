@@ -301,7 +301,7 @@ const AddMenualTrip = () => {
 
       if (result.success) {
         setSuccessMessage("Trip Created & Assigned Successfully!");
-        setTimeout(() => router.push("/admin-trips"), 1000);
+        // setTimeout(() => router.push("/admin-trips"), 1000);
       } else {
         setErrorMessage(result.message);
       }

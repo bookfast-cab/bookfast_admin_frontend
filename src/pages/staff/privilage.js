@@ -222,6 +222,11 @@ const StaffTable = () => {
   { type: 'header', title: 'Blogs' },
   { id: 'add-blog', type: 'item', title: 'Add Blog' },
   { id: 'view-blogs', type: 'item', title: 'View Blogs' },
+
+
+  { type: 'header', title: 'Tutorial Videos' },
+  { id: 'add-video', type: 'item', title: 'Add Video' },
+  { id: 'view-videos', type: 'item', title: 'View Videos' },
 ];
 
 
