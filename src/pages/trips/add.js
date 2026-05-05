@@ -211,8 +211,7 @@ const AddMenualTrip = () => {
   };
 
   // Reusable fare fetch function
-  const fetchFare = async () => {
-    // Only fetch if all required fields are present
+  const fetchFare = useCallback(async () => {
     if (
       !formData.customerId ||
       !formData.vehicle_type ||
@@ -240,38 +239,22 @@ const AddMenualTrip = () => {
 
       if (res.success) {
         setData(res.data);
-
-        // calculated silently, no snackbar needed on every auto-calc
-
       } else {
-        // Optional: setErrorMessage(res.message); 
-        // Avoiding aggressive error popups while typing/changing selections
         setData(null);
       }
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [formData, token]);
 
   // Auto-fetch effect
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchFare();
-    }, 500); // Debounce slightly to avoid too many calls
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [
-    formData.customerId,
-    formData.vehicle_type,
-    formData.pickupLat,
-    formData.pickupLng,
-    formData.dropLat,
-    formData.dropLng,
-    formData.autoCalc,
-    formData.couponCode,
-    formData.tripType,
-    formData.trip_sub_type
-  ]);
+  }, [fetchFare]);
 
   // Handle manual submit if needed (removed button, but keeping logic safe or removing completely)
   const handleSubmit = async e => {
