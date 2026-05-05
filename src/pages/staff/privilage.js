@@ -225,7 +225,6 @@ const StaffTable = () => {
 
 
   { type: 'header', title: 'Tutorial Videos' },
-  { id: 'add-video', type: 'item', title: 'Add Video' },
   { id: 'view-videos', type: 'item', title: 'View Videos' },
 ];
 
