@@ -64,6 +64,7 @@ const AddVideo = () => {
     e.preventDefault();
     if (!formData.title || !formData.videoUrl) {
       alert("Please fill all fields");
+      
       return;
     }
 
