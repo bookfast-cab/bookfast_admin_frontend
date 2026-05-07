@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef,useEffect, useState } from 'react';
 
 // ** MUI Imports
 import Box from '@mui/material/Box';
@@ -12,14 +12,23 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
+import FormControl from '@mui/material/FormControl';
+
 import { useRouter } from 'next/router';
 import { Autocomplete, LoadScript } from '@react-google-maps/api';
+import InputLabel from '@mui/material/InputLabel';
+
 
 const AddAdvanceBooking = () => {
     const router = useRouter();
     const [successMessage, setSuccessMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
+    const [vehicleCategories, setVehicleCategories] = useState([]);
+
+    useEffect(() => {
+        fetchVehicleCategories();
+    }, []);
     
 
     const [formData, setFormData] = useState({
@@ -81,6 +90,22 @@ const AddAdvanceBooking = () => {
 
 
  
+    const fetchVehicleCategories = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/get-vehicle-categories`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setVehicleCategories(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching vehicle categories:', error);
+    }
+  }
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -406,13 +431,25 @@ const AddAdvanceBooking = () => {
                         <Box sx={{ mt: 2 }}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12} md={6}>
-                                    <TextField
-                                        label="Cab Category"
-                                        name="cabCategory"
-                                        value={formData.cabCategory}
-                                        onChange={handleChange}
+                                    <FormControl
                                         fullWidth
-                                    />
+                                        sx={{ mb: 2 }}
+                                        >
+                                        <InputLabel>Vehicle Type</InputLabel>
+                                        <Select
+                                            name="cabCategory"
+                                            value={formData.cabCategory}
+                                            label="Vehicle Type"
+                                            onChange={handleChange}
+                                        >
+                                            {vehicleCategories.map(v => (
+                                            (v.vehicle_type != 'Bike' && v.vehicle_type != 'AUTO' && v.vehicle_type != 'HatchBack' ) &&
+                                            <MenuItem key={v.id} value={v.id}>
+                                                {v.vehicle_type}
+                                            </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
                                 </Grid>
 
                                 <Grid item xs={12} md={6}>

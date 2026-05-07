@@ -625,9 +625,10 @@ const AdvanceBookingDrawer = ({ open, onClose, data = {} }) => {
                     <InfoRow label="Estimated Time" value={data.estimated_time} />
                   </Grid>
                   <Grid item xs={6}>
+                    {console.log(data?.vehicleDetails)}
                     <InfoRow 
                       label="Vehicle Type" 
-                      value={data.vehicle_type}
+                      value={data?.vehicleDetails?.vehicle_type}
                       highlight={true}
                     />
                   </Grid>
