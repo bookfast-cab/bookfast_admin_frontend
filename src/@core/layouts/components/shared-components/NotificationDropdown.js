@@ -12,12 +12,14 @@ import MuiMenu from '@mui/material/Menu'
 import MuiAvatar from '@mui/material/Avatar'
 import MuiMenuItem from '@mui/material/MenuItem'
 import Typography from '@mui/material/Typography'
+import { useRouter } from 'next/router'
 
 // ** Icons Imports
 import BellOutline from 'mdi-material-ui/BellOutline'
 
 // ** Third Party Components
 import PerfectScrollbarComponent from 'react-perfect-scrollbar'
+import { WhatsApp } from '@mui/icons-material'
 
 // ** Styled Menu component
 const Menu = styled(MuiMenu)(({ theme }) => ({
@@ -79,16 +81,75 @@ const MenuItemSubtitle = styled(Typography)({
   textOverflow: 'ellipsis'
 })
 
+
+
+const shakeAnimation = `
+  @keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px) rotate(-5deg); }
+    50% { transform: translateX(5px) rotate(5deg); }
+    75% { transform: translateX(-5px) rotate(-5deg); }
+    100% { transform: translateX(0); }
+  }
+`;
+
+// 2. Styled IconButton banayein jo shake karega
+const ShakeIconButton = styled(IconButton)(({ theme, shouldshake }) => ({
+  animation: shouldshake === 'true' ? 'shake 0.5s infinite' : 'none',
+  ...(shouldshake === 'true' && {
+    '& svg': {
+      color: 'red !important', // Connection lost hone par red
+    }
+  }),
+  '@keyframes shake': {
+    '0%': { transform: 'translateX(0)' },
+    '25%': { transform: 'translateX(-4px) rotate(-4deg)' },
+    '50%': { transform: 'translateX(4px) rotate(4deg)' },
+    '75%': { transform: 'translateX(-4px) rotate(-4deg)' },
+    '100%': { transform: 'translateX(0)' },
+  }
+}));
+
+
 const NotificationDropdown = () => {
   // ** States
   const [anchorEl, setAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [whatsappConnected, setWhatsappConnected] = useState(false);
 
   let token;
   if (typeof window !== 'undefined') {
     token = localStorage.getItem('access_token');
   }
 
+
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/whatsCon/whatsapp/qr`);
+        const data = await res.json();
+        if(data.status !== "authenticated" || data.status !== "ready"){
+          const audio = new Audio('/notification.wav');
+          audio.play().catch(e => console.error("Playback failed:", e));
+          if(whatsappConnected){
+            setWhatsappConnected(false)
+          }
+        } else {
+          setWhatsappConnected(true)
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    };
+    setInterval(() => {
+      checkStatus();
+    }, 1000 * 60 * 2);
+  }, []);
+
+
+  const router = useRouter()
+  
   const getNotifications = async (page_num) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/common/my-notifications`, {
@@ -166,6 +227,15 @@ const NotificationDropdown = () => {
 
   return (
     <Fragment>
+      {!whatsappConnected && (
+        <ShakeIconButton 
+          color='inherit' 
+          onClick={()=>{router.push('/whatsapp-con/')}}
+          shouldshake={'true'}
+        >
+          <WhatsApp style={{ color: whatsappConnected ? 'green' : 'red' }} />
+        </ShakeIconButton>
+      )}
       <IconButton color='inherit' aria-haspopup='true' onClick={handleDropdownOpen} aria-controls='customized-menu'>
         <BellOutline />
       </IconButton>
