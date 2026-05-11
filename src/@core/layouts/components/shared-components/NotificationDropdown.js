@@ -142,9 +142,13 @@ const NotificationDropdown = () => {
         console.log(error)
       }
     };
-    setInterval(() => {
-      checkStatus();
-    }, 1000 * 60 * 2);
+
+    checkStatus();
+
+    const intervalId = setInterval(checkStatus, 1000 * 60 * 2);
+
+    return () => clearInterval(intervalId);
+
   }, []);
 
 
