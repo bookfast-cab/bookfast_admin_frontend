@@ -129,7 +129,7 @@ const NotificationDropdown = () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/whatsCon/whatsapp/qr`);
         const data = await res.json();
-        if(data.status !== "authenticated" || data.status !== "ready"){
+        if(data.status !== "authenticated" && data.status !== "ready"){
           const audio = new Audio('/notification.wav');
           audio.play().catch(e => console.error("Playback failed:", e));
           if(whatsappConnected){
