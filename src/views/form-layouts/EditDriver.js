@@ -356,6 +356,7 @@ const EditDriverDetails = () => {
     
             const data = await response.json();
             if (data.success) {
+                console.log(data);
                 setSuccessMessage(`${imageName} uploaded successfully`);
                 setOpenSnackbar(true);
                 fetchDriverDetails();
