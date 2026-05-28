@@ -142,6 +142,7 @@ const submitVehicleAction = async (id, status, reason) => {
       setToastMessage("Please provide rejection reason");
       setToastSeverity("error");
       setToastOpen(true);
+      
       return;
     }
 
@@ -170,6 +171,7 @@ const submitVehicleAction = async (id, status, reason) => {
             rejection_reason: reason 
           };
         }
+        
         return vehicle;
       });
 
