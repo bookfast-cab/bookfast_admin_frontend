@@ -31,6 +31,7 @@ const MUITable = () => {
   const [perPage, setPerPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(0);
   const [searchText, setSearchText] = useState("");
+  const [searchFilter, setsearchFilter] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [loadingExport, setLoadingExport] = useState(false);
@@ -39,6 +40,15 @@ const MUITable = () => {
   const [sort, setSort] = useState("DESC");
   const [loadingDocsCount, setLoadingDocsCount] = useState(false);
 
+
+  
+  const [stats, setStats] = useState([
+    { label: 'Total Drivers', count: 0, color: '#684cafff' },
+    { label: 'Approved', count: 0, color: '#4caf50' },
+    { label: 'Unapproved', count: 0, color: '#3f51b5' },
+    { label: 'Documents Pending', count: 0, color: '#f44336' },
+    { label: 'Add Vehicles', count: 0, color: '#ff9800' },
+  ]);
 
   let token
   if (typeof window !== 'undefined') {
@@ -159,6 +169,7 @@ const MUITable = () => {
       perPage: perPage_val,
       type,
       search: searchText,
+      filter:searchFilter,
       sort,
       sortColumn
     }).toString();
@@ -184,6 +195,14 @@ const MUITable = () => {
       setPerPage(data.perPage);
       setRowsPerPage(data.perPage);
 
+      setStats([
+        { label: 'Total Drivers', count: data.allDrivers, color: '#684cafff' },
+        { label: 'Approved', count: data.approved, color: '#4caf50' },
+        { label: 'Unapproved', count: data.unapproved, color: '#3f51b5' },
+        { label: 'Documents Pending', count: data.docsPending, color: '#f44336' },
+        { label: 'Add Vehicles', count: data.vehiclePending, color: '#ff9800' },
+      ]);
+      
     } catch (err) {
       if (axios.isCancel(err)) {
         console.log('Request canceled:', err.message);
@@ -257,6 +276,10 @@ const MUITable = () => {
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
+
+  useEffect(() => {
+    getDrivers(1, perPage);
+  }, [searchFilter]);
 
   const handleClose = (type) => {
     setAnchorEl(null);
@@ -369,6 +392,61 @@ const MUITable = () => {
           >
             {loadingDocsCount ? 'Updating...' : 'Update Docs Count'}
           </Button>
+        </Box>
+      </Grid>
+
+      <Grid item xs={12}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          flexWrap: 'wrap',
+          mb: 2 
+        }}>
+          {stats.map((stat, index) => (
+            <Box
+              key={index}
+              sx={{
+                flex: '1 1 150px',
+                padding: 2,
+                borderRadius: 1,
+                borderLeft: `5px solid ${stat.color}`,
+                bgcolor: 'white',
+                boxShadow: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onClick={()=>{
+                let label = '';
+                
+                switch (stat.label) {
+                  case 'Approved':
+                    label = 'approved';
+                    break;
+                  case 'Unapproved':
+                    label = 'unapproved';
+                    break;
+                  case 'Documents Pending':
+                    label = 'docsPending';
+                    break;
+                  case 'Add Vehicles':
+                    label = 'vehiclePending';
+                    break;
+                  default:
+                    break;
+                }
+                setsearchFilter(label);
+              }}
+            >
+              <Typography variant="subtitle2" color="textSecondary">
+                {stat.label}
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 'bold', color: stat.color }}>
+                {stat.count}
+              </Typography>
+            </Box>
+          ))}
         </Box>
       </Grid>
 

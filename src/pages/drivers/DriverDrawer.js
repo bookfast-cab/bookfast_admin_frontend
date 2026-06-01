@@ -1,5 +1,5 @@
 // components/DriverDrawer.js
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Drawer,
   Box,
@@ -36,6 +36,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import CheckCircleOutline from '@mui/icons-material/CheckCircleOutline';
+import HighlightOff from '@mui/icons-material/HighlightOff';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import VerifiedIcon from '@mui/icons-material/Verified';
@@ -112,12 +114,79 @@ const DriverDrawer = ({onDriverUpdate, open, onClose, data = {} }) => {
   const [blockRemarks, setBlockRemarks] = useState('');
 const [isEnableMode, setIsEnableMode] = useState(false);
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const [vehicleData,setVehicleData] = useState([]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
 
+useEffect(()=>{
+  setVehicleData(data?.driverVehicle ?? []);
+},[data])
 
+const [actionDialog, setActionDialog] = useState({ open: false, vehicleId: null, status: '' });
+const [rejectionReason, setRejectionReason] = useState('');
+
+const handleVehicleAction = (vehicleId, status) => {
+  if (status === 'rejected') {
+    setActionDialog({ open: true, vehicleId, status });
+  } else {
+    // Approve ke liye direct API call
+    submitVehicleAction(vehicleId, 'approved', '');
+  }
+};
+
+const submitVehicleAction = async (id, status, reason) => {
+  try {
+    if(status == 'rejected' && reason ==''){
+      setToastMessage("Please provide rejection reason");
+      setToastSeverity("error");
+      setToastOpen(true);
+      
+      return;
+    }
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/changeStatusDriverVehicle`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${token}`
+      },
+      body: JSON.stringify({ id,status, rejection_reason: reason })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      setToastMessage(`Vehicle ${status} successfully`);
+      setToastSeverity("success");
+      setToastOpen(true);
+      setActionDialog({ open: false, vehicleId: null, status: '' });
+      setRejectionReason('');
+
+      const updatedVehicles = vehicleData?.map(vehicle => {
+        if (vehicle.id === id) {
+          return { 
+            ...vehicle, 
+            status: status,
+            rejection_reason: reason 
+          };
+        }
+        
+        return vehicle;
+      });
+
+      onDriverUpdate({
+        ...data,
+        driverVehicle: updatedVehicles
+      });
+      setVehicleData(updatedVehicles);
+    }
+  } catch (err) {
+    setToastMessage("Error updating status");
+    setToastSeverity("error");
+    setToastOpen(true);
+  }
+};
 
   const handleDisableDriver = () => {
     if(data?.isBlocked == 1){
@@ -466,6 +535,13 @@ const [isEnableMode, setIsEnableMode] = useState(false);
                   <Tab
                     label="Wallet"
                     icon={<AccountBalanceWalletIcon />}
+                    iconPosition="start"
+                    sx={{ color: BRAND_COLORS.textSecondary }}
+                  />
+
+                  <Tab
+                    label="Driver Vehicles"
+                    icon={<DirectionsCarIcon />}
                     iconPosition="start"
                     sx={{ color: BRAND_COLORS.textSecondary }}
                   />
@@ -968,6 +1044,132 @@ const [isEnableMode, setIsEnableMode] = useState(false);
     </CardContent>
   </Card>
 </TabPanel>
+
+<TabPanel value={tabValue} index={4}>
+  <Stack spacing={2}>
+    {vehicleData?.map((vehicle) => (
+      <Card variant="outlined" key={vehicle.id} sx={{ borderRadius: 2 }}>
+        <CardContent sx={{ pb: '16px !important' }}>
+          <Box display="flex" alignItems="flex-start" gap={2}>
+            {/* Left side: Vehicle Details */}
+            <Box flexGrow={1}>
+              <Typography variant="subtitle1" fontWeight={600}>
+                {vehicle.vehicleName}
+                <Chip 
+                  label={vehicle.status?.toUpperCase()} 
+                  color={vehicle.status === 'approved' ? 'success' : vehicle.status === 'rejected' ? 'error' : 'warning'} 
+                  size="small" 
+                  sx={{ fontSize: '0.65rem', height: 20, ml:2 }}
+                />
+
+              </Typography>
+               <Typography variant="body2" color="text.secondary">
+                Type: {vehicle?.vehicleCategory?.vehicle_type}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Number: {vehicle.vehicleNumber}
+              </Typography>
+            </Box>
+
+            {/* Right side: Status and Actions (Compact) */}
+          <Box display="flex" alignItems="center" gap={1}>
+            {vehicle.status !== 'approved' && (
+              <Button 
+                variant="outlined" 
+                color="success" 
+                size="small" 
+                startIcon={<CheckCircleOutline fontSize="small" />}
+                onClick={() => handleVehicleAction(vehicle.id, 'approved')}
+                sx={{ textTransform: 'none', borderRadius: 2 }}
+              >
+                Approve
+              </Button>
+            )}
+            {vehicle.status !== 'rejected' && (
+              <Button 
+                variant="outlined" 
+                color="error" 
+                size="small" 
+                startIcon={<HighlightOff fontSize="small" />}
+                onClick={() => handleVehicleAction(vehicle.id, 'rejected')}
+                sx={{ textTransform: 'none', borderRadius: 2 }}
+              >
+                Reject
+              </Button>
+            )}
+          </Box>
+          </Box>
+
+          {/* Image Row */}
+          <Box display="flex" gap={1} mt={2} overflow="auto">
+            {[
+              { label: 'RC Front', url: vehicle.rcFrontImage },
+              { label: 'RC Back', url: vehicle.rcBackImage },
+              { label: 'Vehicle', url: vehicle.vehicleFrontImage },
+              { label: 'Insurance', url: vehicle.insuranceImage },
+              { label: 'Affidavit', url: vehicle.faDebitImage },
+            ].map((img, idx) => (img.url) && (
+             <Box 
+                key={idx} 
+                display="flex" 
+                flexDirection="column" 
+                alignItems="center" 
+                sx={{ flexShrink: 0, width: 70 }} // Fixed width for alignment
+              >
+                <Box 
+                  component="img" 
+                  src={img.url} 
+                  onClick={() => {
+                      const newTab = window.open(img.url, '_blank');
+                      if (newTab) {
+                          newTab.document.write(`
+                              <html>
+                                  <head><title>BookFast ${img.label}</title></head>
+                                  <body>
+                                      <h1>${img.label}</h1>
+                                      <img src="${img.url}" style="max-width: 100%;" />
+                                  </body>
+                              </html>
+                          `);
+                          newTab.document.close();
+                      }
+                  }}
+                  sx={{ 
+                    width: 65, 
+                    height: 50, 
+                    objectFit: 'cover', 
+                    borderRadius: 1, 
+                    border: '1px solid #ddd', 
+                    cursor: 'pointer',
+                    transition: '0.2s',
+                    '&:hover': { borderColor: 'primary.main', transform: 'scale(1.05)' } 
+                  }}
+                />
+
+                <Typography variant="body2" color="text.secondary">
+                  {img.label}
+                </Typography>
+               
+              </Box>
+            ))}
+            </Box>
+            <Box>
+            {vehicle.status === 'rejected' && vehicle.rejection_reason && (
+              <Box mt={2} p={1.5} bgcolor="#fff5f5" borderRadius={1} border="1px solid #ffcdd2">
+              <Typography variant="caption" sx={{ color: '#d32f2f', fontWeight: 600, display: 'block', mb: 0.2 }}>
+                REJECTION REASON:
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#b71c1c' }}>
+                {vehicle.rejection_reason}
+              </Typography>
+              </Box>
+            )}
+          </Box>
+        </CardContent>
+      </Card>
+    ))}
+  </Stack>
+</TabPanel>
                 </Box>
               </Paper>
 
@@ -1062,6 +1264,31 @@ const [isEnableMode, setIsEnableMode] = useState(false);
             </Box>
           )}
         </Box>
+        <Dialog open={actionDialog.open} onClose={() => setActionDialog({ open: false, vehicleId: null, status: '' })}>
+          <DialogTitle>Reject Vehicle Documents Reason</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Rejection Reason"
+              fullWidth
+              multiline
+              rows={3}
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setActionDialog({ open: false, vehicleId: null, status: '' })}>Cancel</Button>
+            <Button 
+              onClick={() => submitVehicleAction(actionDialog.vehicleId, 'rejected', rejectionReason)}
+              variant="contained" 
+              color="error"
+            >
+              Confirm Reject
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Drawer>
 
       <ToastMessage

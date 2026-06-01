@@ -768,10 +768,18 @@ const AdvanceBookingDrawer = ({ open, onClose, data = {} }) => {
 
                     <Grid container spacing={2}>
                       <Grid item xs={6}>
-                        <InfoRow label="Driver ID" value={data.driver_id} />
+                        <InfoRow label="Driver ID" value={data?.driver_id} />
                       </Grid>
                       <Grid item xs={6}>
-                        <InfoRow label="Vehicle RC No" value={data.driver.vehicleRcNo} />
+                        <InfoRow label="Vehicle Name" value={data?.acpt_vehicle_name} />
+                      </Grid>
+                    </Grid>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <InfoRow label="Vehicle Type" value={data?.acpt_vehicle_type} />
+                      </Grid>
+                      <Grid item xs={6}>
+                        <InfoRow label="RC Number" value={data?.acpt_vehicle_rc} />
                       </Grid>
                     </Grid>
                   </Box>
