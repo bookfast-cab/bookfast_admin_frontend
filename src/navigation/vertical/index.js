@@ -112,6 +112,7 @@ const Navigation = () => {
     { privilege: ['force-app-update'], title: 'Force App Update', icon: AccountCog, path: '/app-versions', roles: ['admin', 'staff'] },
     { privilege: ['helpline-numbers'], title: 'Helpline Numbers', icon: PhoneAndroid, path: '/help-line-number', roles: ['admin', 'staff'] },
     { privilege: ['support-numbers'], title: 'Support Numbers', icon: PhoneAndroid, path: '/support-numbers', roles: ['admin', 'staff'] },
+    { privilege: ['promotional-banners'], title: 'Promotional Banners', icon: Bell, path: '/promotional-banners', roles: ['admin', 'staff'] },
     { privilege: ['whatsapp-keywords'], title: 'WhatsApp Keywords', icon: PhoneAndroid, path: '/whatsapp-keywords', roles: ['admin', 'staff'] },
 
     { privilege: ['outstation-package', 'outstation-fare', 'daily-fare-management', 'package'], sectionTitle: 'Fare Management', icon: Table, roles: ['admin', 'staff'] },
