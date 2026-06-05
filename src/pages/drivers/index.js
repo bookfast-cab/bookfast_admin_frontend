@@ -15,7 +15,7 @@ import DownloadIcon from '@mui/icons-material/Download'; // or any icon you pref
 import RefreshIcon from '@mui/icons-material/Refresh';
 import axios from 'axios';
 import { Box } from '@mui/material';
-
+import { FormControlLabel,Radio,RadioGroup, FormControl } from '@mui/material'; // Add these imports
 
 import * as XLSX from 'xlsx';
 
@@ -31,6 +31,7 @@ const MUITable = () => {
   const [perPage, setPerPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(0);
   const [searchText, setSearchText] = useState("");
+  const [searchType, setSearchType] = useState("driver_number"); 
   const [searchFilter, setsearchFilter] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -168,6 +169,7 @@ const MUITable = () => {
       page: page_num,
       perPage: perPage_val,
       type,
+      searchType:searchType,
       search: searchText,
       filter:searchFilter,
       sort,
@@ -310,27 +312,53 @@ const MUITable = () => {
         {/* Search Field */}
 
 
-        <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, maxWidth: { sm: '400px' } }}>
-          <Typography variant="body1" sx={{ marginRight: '10px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-            Search:
-          </Typography>
-          <TextField
-            id="search-field"
-            variant="outlined"
-            size="small"
-            placeholder="Search drivers"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            fullWidth
-            InputProps={{
-              endAdornment: (
-                <IconButton onClick={handleSearchClick}>
-                  <SearchIcon />
-                </IconButton>
-              ),
-            }}
-          />
-        </Box>
+       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1, maxWidth: 600 }}>
+  {/* Radio Buttons for Search Type */}
+  <FormControl>
+    <RadioGroup
+      row
+      value={searchType}
+      onChange={(e) => setSearchType(e.target.value)}
+      sx={{ gap: 1 }}
+    >
+      <FormControlLabel 
+        value="driver_number" 
+        control={<Radio size="small" />} 
+        label="Phone Number" 
+        sx={{ fontSize: '0.8rem' }}
+      />
+      <FormControlLabel 
+        value="driver_id" 
+        control={<Radio size="small" />} 
+        label="Driver Id" 
+      />
+      <FormControlLabel 
+        value="vehicle_number" 
+        control={<Radio size="small" />} 
+        label="Vehicle" 
+      />
+    </RadioGroup>
+  </FormControl>
+
+  {/* Search TextField */}
+  <TextField
+    id="search-field"
+    variant="outlined"
+    size="small"
+    placeholder={`Search by ${searchType === 'driver_number' ? 'Phone number' : searchType === 'driver_id' ? 'Driver Id' : 'Vehicle Number'}...`}
+    value={searchText}
+    onChange={(e) => setSearchText(e.target.value)}
+    fullWidth
+    onKeyPress={(e) => e.key === 'Enter' && handleSearchClick()}
+    InputProps={{
+      endAdornment: (
+        <IconButton onClick={handleSearchClick}>
+          <SearchIcon />
+        </IconButton>
+      ),
+    }}
+  />
+</Box>
 
 
 
