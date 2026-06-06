@@ -46,7 +46,7 @@ const UserSelectionDrawer = ({ open, onClose, audienceType, token, selectedUsers
     }, [debouncedSearch]);
 
     const fetchCustomers = useCallback(async () => {
-        if (!token || (audienceType !== "customer" && audienceType !== "both")) return;
+        if (!token || (audienceType !== "customer")) return;
         setLoadingCustomers(true);
         try {
             const res = await fetch(
@@ -66,7 +66,7 @@ const UserSelectionDrawer = ({ open, onClose, audienceType, token, selectedUsers
     }, [token, audienceType, customerPage, debouncedSearch]);
 
     const fetchDrivers = useCallback(async () => {
-        if (!token || (audienceType !== "driver" && audienceType !== "both")) return;
+        if (!token || (audienceType !== "driver")) return;
         setLoadingDrivers(true);
         try {
             const res = await fetch(
@@ -140,8 +140,8 @@ const UserSelectionDrawer = ({ open, onClose, audienceType, token, selectedUsers
         );
     };
 
-    const showCustomers = audienceType === "customer" || audienceType === "both";
-    const showDrivers = audienceType === "driver" || audienceType === "both";
+    const showCustomers = audienceType === "customer";
+    const showDrivers = audienceType === "driver";
 
     return (
         <Drawer
@@ -323,8 +323,9 @@ const AddPromotionalBanner = () => {
     const [formData, setFormData] = useState({
         title: "",
         description: "",
-        audience_type: "both",
+        audience_type: "driver",
         target_type: "all",
+        view_time:'',
         display_type: "multiple",
         priority: 0,
         status: 1,
@@ -371,11 +372,12 @@ const AddPromotionalBanner = () => {
                 setFormData({
                     title: data.title || "",
                     description: data.description || "",
-                    audience_type: data.audience_type || "both",
+                    audience_type: data.audience_type,
                     target_type: data.target_type || "all",
                     display_type: data.display_type || "multiple",
                     priority: data.priority || 0,
                     status: data.status,
+                    view_time: data.view_time ? moment(data.view_time).format("HH:mm") : "",
                     start_time: data.start_time ? moment(data.start_time).format("YYYY-MM-DDTHH:mm") : "",
                     end_time: data.end_time ? moment(data.end_time).format("YYYY-MM-DDTHH:mm") : ""
                 });
@@ -572,7 +574,7 @@ const AddPromotionalBanner = () => {
                                             onChange={handleChange}
                                             label="Audience Type"
                                         >
-                                            <MenuItem value="both">Both (Drivers & Customers)</MenuItem>
+                                            {/* <MenuItem value="both">Both (Drivers & Customers)</MenuItem> */}
                                             <MenuItem value="customer">Customers Only</MenuItem>
                                             <MenuItem value="driver">Drivers Only</MenuItem>
                                         </Select>
@@ -594,7 +596,7 @@ const AddPromotionalBanner = () => {
                                     </FormControl>
                                 </Grid>
 
-                                <Grid item xs={12} sm={4}>
+                                {/* <Grid item xs={12} sm={4}>
                                     <FormControl fullWidth>
                                         <InputLabel>Target Type</InputLabel>
                                         <Select
@@ -607,7 +609,7 @@ const AddPromotionalBanner = () => {
                                             <MenuItem value="selected">Selected Users</MenuItem>
                                         </Select>
                                     </FormControl>
-                                </Grid>
+                                </Grid> */}
 
                                 {/* User Selection Button (shown only when target_type = selected) */}
                                 {formData.target_type === "selected" && (
@@ -672,7 +674,7 @@ const AddPromotionalBanner = () => {
                                 </Grid>
 
                                 {/* Dates */}
-                                <Grid item xs={12} sm={6}>
+                                <Grid item xs={12} sm={4}>
                                     <TextField
                                         fullWidth
                                         label="Start Time"
@@ -684,7 +686,7 @@ const AddPromotionalBanner = () => {
                                         required
                                     />
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid item xs={12} sm={4}>
                                     <TextField
                                         fullWidth
                                         label="End Time (Leave empty for no expiry)"
@@ -696,7 +698,20 @@ const AddPromotionalBanner = () => {
                                     />
                                 </Grid>
 
+                                <Grid item xs={12} sm={4}>
+                                    <TextField
+                                        fullWidth
+                                        label="View Time"
+                                        name="view_time"
+                                        type="time"
+                                        defaultValue="14:30"
+                                        InputLabelProps={{ shrink: true }}
+                                        value={formData.view_time}
+                                        onChange={handleChange}
+                                    />
+                                </Grid>
                                 {/* Image Upload */}
+                                
                                 <Grid item xs={12}>
                                     <Typography variant="subtitle2" sx={{ mb: 1 }}>Banner Image *</Typography>
                                     <Button variant="outlined" component="label" sx={{ mb: 2 }}>
