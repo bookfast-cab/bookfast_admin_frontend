@@ -120,6 +120,7 @@ const PromotionalBanners = () => {
                                 <TableCell><b>Status</b></TableCell>
                                 <TableCell><b>Start Time</b></TableCell>
                                 <TableCell><b>End Time</b></TableCell>
+                                <TableCell><b>View Time</b></TableCell>
                                 <TableCell align="center"><b>Actions</b></TableCell>
                             </TableRow>
                         </TableHead>
@@ -148,6 +149,7 @@ const PromotionalBanners = () => {
                                     </TableCell>
                                     <TableCell>{moment(row.start_time).format('YYYY-MM-DD HH:mm')}</TableCell>
                                     <TableCell>{row.end_time ? moment(row.end_time).format('YYYY-MM-DD HH:mm') : 'No End Time'}</TableCell>
+                                    <TableCell>{row.view_time ? moment(row.view_time).format('hh:mm A') : 'No View Time'}</TableCell>
                                     <TableCell align="center">
                                         <IconButton color="primary" onClick={() => handleEdit(row.id)}>
                                             <EditIcon />
