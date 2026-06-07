@@ -441,6 +441,13 @@ const AddPromotionalBanner = () => {
                 }
             });
 
+            const formattedStartTime = formData.start_time ? new Date(formData.start_time).toISOString() : "";
+            const formattedEndTime = formData.end_time ? new Date(formData.end_time).toISOString() : "";
+            const formattedview_time = formData.view_time ? new Date(formData.view_time).toISOString() : "";
+            formPayload.append("view_time", formattedview_time);
+            formPayload.append("start_time", formattedStartTime);
+            formPayload.append("end_time", formattedEndTime);
+
             // Append selected users as JSON
             if (formData.target_type === "selected" && selectedUsers.length > 0) {
                 selectedUsers.forEach(u => formPayload.append("target_users[]", u));
