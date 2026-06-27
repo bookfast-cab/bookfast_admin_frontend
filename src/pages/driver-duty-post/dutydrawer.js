@@ -403,16 +403,16 @@ const DutyDrawer = ({ open, onClose, data = {} }) => {
 
                   <Grid container spacing={2}>
                     <Grid item xs={6}>
-                      <InfoRow label="Driver ID" value={data.driver.id} />
+                      <InfoRow label="Driver ID" value={data?.driver?.id} />
                     </Grid>
                     <Grid item xs={6}>
-                      <InfoRow label="Driver Name" value={data.driver.driverName} />
+                      <InfoRow label="Driver Name" value={data?.driver?.driverName} />
                     </Grid>
                     <Grid item xs={6}>
-                      <InfoRow label="Phone Number" value={data.driver.phone_number} />
+                      <InfoRow label="Phone Number" value={data?.driver?.phone_number} />
                     </Grid>
                     <Grid item xs={6}>
-                      <InfoRow label="Vehicle RC No" value={data.driver.vehicleRcNo} />
+                      <InfoRow label="Vehicle RC No" value={data?.driver?.vehicleRcNo} />
                     </Grid>
                   </Grid>
               </Grid>
@@ -434,10 +434,10 @@ const DutyDrawer = ({ open, onClose, data = {} }) => {
                 </Typography>
 
                 <Box>
-                  <InfoRow label="Total Amount" value={`₹${data.total_price || 0}`} />
-                  <InfoRow label="Driver Earning" value={`₹${data.driver_earning || 0}`} />
-                  <InfoRow label="Commission" value={`₹${data.commission || 0}`} />
-                  <InfoRow label="Platform Fee" value={`₹${data.platform_fee || 0}`} />
+                  <InfoRow label="Total Amount" value={`₹${data?.total_price || 0}`} />
+                  <InfoRow label="Driver Earning" value={`₹${data?.driver_earning || 0}`} />
+                  <InfoRow label="Commission" value={`₹${data?.commission || 0}`} />
+                  <InfoRow label="Platform Fee" value={`₹${data?.platform_fee || 0}`} />
 
                   <Box 
                     sx={{ 
