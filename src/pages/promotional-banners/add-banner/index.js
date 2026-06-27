@@ -441,6 +441,7 @@ const AddPromotionalBanner = () => {
                 }
             });
 
+            // Append selected users as JSON
             if (formData.target_type === "selected" && selectedUsers.length > 0) {
                 selectedUsers.forEach(u => formPayload.append("target_users[]", u));
             }

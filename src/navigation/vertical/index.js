@@ -70,6 +70,7 @@ const Navigation = () => {
     { privilege: ['drivers', 'driver-wallet-history'], sectionTitle: 'Drivers Management', icon: Car, roles: ['admin', 'staff'] },
     { privilege: ['drivers'], title: 'Drivers', icon: Car, path: '/drivers', roles: ['admin', 'staff'] },
     { privilege: ['driver-wallet-history'], title: 'Driver Wallet History', icon: CurrencyUsd, path: '/driver-wallet-history', roles: ['admin', 'staff'] },
+    { privilege: ['duty-post'], title: 'Driver Duty Post', icon: FormatListBulleted, path: '/driver-duty-post', roles: ['staff'] },
 
     { privilege: ['trips', 'manual-trips'], sectionTitle: 'Trips Management', icon: MapSearch, roles: ['admin', 'staff'] },
     { privilege: ['trips'], title: 'Trips', icon: MapSearch, path: '/trips', roles: ['admin', 'staff'] },
@@ -110,6 +111,7 @@ const Navigation = () => {
     { privilege: ['cities-setup'], title: 'Cities Setup', icon: MapMarkerRadius, path: '/cities-management', roles: ['admin', 'staff'] },
     { privilege: ['whatsapp-setup'], title: 'WhatsApp Setup', icon: MessageText, path: '/whatsapp-con', roles: ['admin', 'staff'] },
     { privilege: ['force-app-update'], title: 'Force App Update', icon: AccountCog, path: '/app-versions', roles: ['admin', 'staff'] },
+    { privilege: ['pricing'], title: 'Pricing & Charges', icon: CurrencyUsd, path: '/pricing', roles: ['admin', 'staff'] },
     { privilege: ['helpline-numbers'], title: 'Helpline Numbers', icon: PhoneAndroid, path: '/help-line-number', roles: ['admin', 'staff'] },
     { privilege: ['support-numbers'], title: 'Support Numbers', icon: PhoneAndroid, path: '/support-numbers', roles: ['admin', 'staff'] },
     { privilege: ['promotional-banners'], title: 'Promotional Banners', icon: Bell, path: '/promotional-banners', roles: ['admin', 'staff'] },
@@ -145,6 +147,8 @@ const Navigation = () => {
 
     { privilege: ['view-videos'], sectionTitle: 'Tutorial Videos', icon: Web, roles: ['admin', 'staff', 'seo',] },
     { privilege: ['view-videos'], title: 'View videos', icon: FormatListBulleted, path: '/tutorial', roles: ['staff', 'seo'] },
+
+
 
   ];
 

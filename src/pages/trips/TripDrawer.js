@@ -486,7 +486,7 @@ const TripDrawer = ({ open, onClose, data = {}, vehicleList = [] }) => {
                             </TableCell>
                             <TableCell>
                               <Typography variant="body2" color={BRAND_COLORS.textPrimary}>
-                                ₹{singleDriver.driver.walletBalance ?? '0.00'}
+                                ₹{singleDriver.driver.wallet ?? '0.00'}
                               </Typography>
                             </TableCell>
                           </TableRow>
