@@ -14,7 +14,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
-import { Switch } from '@mui/material'; // Import Switch
+import { Switch } from '@mui/material';
+
 const PlusIcon = dynamic(() => import('@heroicons/react/24/solid/PlusIcon'), { ssr: false });
 
 const MUITable = () => {
@@ -55,14 +56,13 @@ const MUITable = () => {
       .then((result) => {
         const resData = result.data || [];
         
-        // Yahan 'id' add kar rahe hain taaki MUI DataGrid crash na ho
         const formattedData = resData.map((item) => ({
           ...item,
           id: item.notiId 
         }));
 
         setData(formattedData);
-        // API se aane wala total count set karein, array nahi
+
         setTotalRecords(result.totalRecords || 0); 
         setTotalPages(result.totalPages || 0);
         setCurrentPage(result.currentPage || 1);
