@@ -136,44 +136,7 @@ const DutyDrawer = ({ open, onClose, data = {} }) => {
     }
   }, [searchText]);
 
-  const handleCancelClick = () => setCancelDialogOpen(true);
 
-  const AssignDriverToBooking = (driver) => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/assignDriverToAdvanceBooking`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `${token}`
-      },
-      body: JSON.stringify({
-        driverId: driver.id,
-        bookingId: data.id
-      }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success) {
-          setToastMessage("Driver assigned successfully!");
-          setToastSeverity("success");
-          setToastOpen(true);
-          onClose(true);
-          setSingleDriver({});
-          setSearchText("");
-        } else {
-          setToastMessage("Driver not found!");
-          setToastSeverity("error");
-          setToastOpen(true);
-          setSingleDriver({});
-          setErrorMessage("Driver not found");
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        setToastMessage("Something went wrong!");
-        setToastSeverity("error");
-        setToastOpen(true);
-      });
-  };
 
   const handleClose = () => {
     setReason('');
@@ -365,7 +328,7 @@ const DutyDrawer = ({ open, onClose, data = {} }) => {
                       }}
                     >
                       <Typography variant="body1" fontWeight={600} color={BRAND_COLORS.textPrimary}>
-                        Booking ID: {data.id}
+                        Booking ID: {data.notiId}
                       </Typography>
                       <Chip
                         label={statusLabel}
@@ -379,17 +342,6 @@ const DutyDrawer = ({ open, onClose, data = {} }) => {
                     </Stack>
                   </Grid>
 
-                  {/* Booking Title and Description */}
-                    {data.agent_name && (
-                    <Grid item xs={12}>
-                      <InfoRow label="Agent Name" value={data.agent_name} highlight={true} />
-                    </Grid>
-                  )}
-                   {data.agent_company && (
-                    <Grid item xs={12}>
-                      <InfoRow label="Agent Company" value={data.agent_company} highlight={true} />
-                    </Grid>
-                  )}
                   {data.title && (
                     <Grid item xs={12}>
                       <InfoRow label="Title" value={data.title} highlight={true} />
