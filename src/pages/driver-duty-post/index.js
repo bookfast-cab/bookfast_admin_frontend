@@ -10,9 +10,8 @@ import { useRouter } from 'next/router';
 import { Button, SvgIcon, TextField, Tooltip, IconButton, Chip } from '@mui/material';
 import CommonDataTable from 'src/components/CommonDataTable';
 import { formatDate } from 'src/utils/utils';
-import EditIcon from '@mui/icons-material/Edit';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import DeleteIcon from '@mui/icons-material/Delete';
+import DutyDrawer from './dutydrawer'
+
 import SearchIcon from '@mui/icons-material/Search';
 import { Switch } from '@mui/material';
 
@@ -29,6 +28,9 @@ const MUITable = () => {
   const [token, setToken] = useState(null);
   const [searchText, setSearchText] = useState("");
   const router = useRouter();
+  const [selectedRow, setSelectedRow] = useState(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -113,8 +115,32 @@ const MUITable = () => {
     setSuccessMessage('');
   };
 
+  const handleView = (row) => {
+    setSelectedRow(row);
+    setDrawerOpen(true);
+  };
+
+
+  const handleDrawerClose = () => {
+    setDrawerOpen(false);
+    setSelectedRow(null);
+  };
+
   const columns = [
-    { field: 'notiId', headerName: 'Id', width: 80 },
+    { field: 'notiId', headerName: 'Id', width: 80,
+      renderCell: (params) => (
+        <span
+          style={{
+            cursor: 'pointer',
+            color: '#1976d2',
+            textDecoration: 'underline'
+          }}
+          onClick={() => handleView(params.row)}
+        >
+          {params.row.notiId}
+        </span>
+      )
+    },
     { 
       field: 'driverName', 
       headerName: 'Driver Name', 
@@ -235,6 +261,14 @@ const MUITable = () => {
           />
         </Card>
       </Grid>
+
+
+
+      <DutyDrawer
+        open={drawerOpen}
+        onClose={handleDrawerClose}
+        data={selectedRow}
+      />
 
       <Snackbar open={!!errorMessage} autoHideDuration={3000} onClose={handleCloseSnackbar}>
         <MuiAlert severity="error">{errorMessage}</MuiAlert>
