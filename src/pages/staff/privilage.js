@@ -178,6 +178,7 @@ const StaffTable = () => {
   { id: 'advance-booking', type: 'item', title: 'Advance Booking' },
   { id: 'common-notifications',type: 'item',title: 'Common Notifications',},
   { id: 'trip-notification',type: 'item',title: 'Trip Notification',},
+  { id: 'duty-post', type: 'item', title: 'Driver Duty post' },
   
   // Payment
   
@@ -193,6 +194,8 @@ const StaffTable = () => {
   { id: 'force-app-update', type: 'item', title: 'Force App Update' },
   { id: 'helpline-numbers', type: 'item', title: 'Helpline Numbers' },
   { id: 'whatsapp-keywords', type: 'item', title: 'WhatsApp Keywords' },
+  { id: 'promotional-banners', type: 'item', title: 'Promotional Banners' },
+  { id: 'pricing', type: 'item', title: 'Pricing & Charges' },
   
   // Fare Management
   
@@ -215,7 +218,6 @@ const StaffTable = () => {
   
   { type: 'header', title: 'Staff Management' },
   { id: 'staff-members', type: 'item', title: 'Staff Members' },
-  { id: 'staff-privilege', type: 'item', title: 'Staff Privilege' },
   
   // Blogs
   

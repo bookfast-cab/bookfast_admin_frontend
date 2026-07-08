@@ -748,6 +748,9 @@ const submitVehicleAction = async (id, status, reason) => {
                                           {membership.plan_Remarks}
                                         </Typography>
                                       )}
+                                      <Typography variant="body1" fontWeight={600}>
+                                        By - {membership?.admin?.name}
+                                      </Typography>
                                     </Box>
                                   }
                                 />
