@@ -69,10 +69,15 @@ const RoundTripManagement = () => {
 
   const fetchVehicleList = async () => {
     try {
+
+      const device_id = await getFingerprint()
+      
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/outstation-packageConfig`,
         {
-          headers: { Authorization: token },
+          headers: { Authorization: token,
+            'x-device-id': device_id,
+          },
         }
       );
 
@@ -174,11 +179,15 @@ const RoundTripManagement = () => {
 
       payload.vehicle_type = selectedVehicle;
 
+      const device_id = await getFingerprint()
+
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/save-round-trip-fare`,
         payload,
         {
-          headers: { Authorization: token },
+          headers: { Authorization: token ,
+            'x-device-id': device_id,
+          },
           params: selectedVehicle ? { vehicle_type: selectedVehicle } : undefined,
         }
       );
