@@ -179,7 +179,8 @@ const MUITable = () => {
 
     try {
 
-      const device_id = await getFingerprint()
+      const device_id = await getFingerprint();
+      
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/drivers?${queryParams}`,
         {
