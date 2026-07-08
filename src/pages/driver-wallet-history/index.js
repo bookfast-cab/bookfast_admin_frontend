@@ -150,6 +150,15 @@ const MUITable = () => {
       )
     },
     {
+      field: 'admin',
+      headerName: 'Added By',
+      width: 100,
+      flex: 0.8,
+      renderCell: (params) => (
+        <span style={{ fontWeight: 'bold' }}>{params.row.admin?.name || 'N/A'}</span>
+      )
+    },
+    {
       field: 'action',
       headerName: 'Type',
       width: 100,

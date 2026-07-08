@@ -322,6 +322,15 @@ const DriversTable = ({
         />
       ),
     },
+
+    {
+      field: 'admin',
+      headerName: 'Approve By',
+      width: 100,
+      renderCell: (params) => (
+        <span style={{ fontWeight: 'bold' }}>{params.row.Admin?.name || 'N/A'}</span>
+      )
+    },
     {
       field: 'actions',
       headerName: 'Actions',

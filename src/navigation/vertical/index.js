@@ -70,7 +70,6 @@ const Navigation = () => {
     { privilege: ['drivers', 'driver-wallet-history'], sectionTitle: 'Drivers Management', icon: Car, roles: ['admin', 'staff'] },
     { privilege: ['drivers'], title: 'Drivers', icon: Car, path: '/drivers', roles: ['admin', 'staff'] },
     { privilege: ['driver-wallet-history'], title: 'Driver Wallet History', icon: CurrencyUsd, path: '/driver-wallet-history', roles: ['admin', 'staff'] },
-    { privilege: ['duty-post'], title: 'Driver Duty Post', icon: FormatListBulleted, path: '/driver-duty-post', roles: ['staff'] },
 
     { privilege: ['trips', 'manual-trips'], sectionTitle: 'Trips Management', icon: MapSearch, roles: ['admin', 'staff'] },
     { privilege: ['trips'], title: 'Trips', icon: MapSearch, path: '/trips', roles: ['admin', 'staff'] },
@@ -84,6 +83,8 @@ const Navigation = () => {
 
     { privilege: ['advance-booking', 'common-notifications', 'trip-notification'], sectionTitle: 'Notification Management', icon: Bell, roles: ['admin', 'staff'] },
     { privilege: ['advance-booking'], title: 'Advance Booking', icon: ClipboardList, path: '/advanceBooking', roles: ['admin', 'staff'] },
+    { privilege: ['duty-post'], title: 'Driver Duty Post', icon: FormatListBulleted, path: '/driver-duty-post', roles: ['staff'] },
+
     {
       privilege: ['common-notifications'],
       title: 'Common Notifications',
@@ -140,13 +141,13 @@ const Navigation = () => {
 
     // suru 20-12-2025
     { privilege: ['add-blog', 'view-blogs'], sectionTitle: 'Blogs', icon: Web, roles: ['admin', 'staff', 'seo',] },
-    { privilege: ['add-blog'], title: 'Add Blog', icon: FilePlus, path: '/blogs/addBlog', roles: ['staff', 'seo'] },
-    { privilege: ['view-blogs'], title: 'View Blogs', icon: FormatListBulleted, path: '/blogs', roles: ['staff', 'seo'] },
+    { privilege: ['add-blog'], title: 'Add Blog', icon: FilePlus, path: '/blogs/addBlog', roles: ['admin', 'staff', 'seo'] },
+    { privilege: ['view-blogs'], title: 'View Blogs', icon: FormatListBulleted, path: '/blogs', roles: ['admin', 'staff', 'seo'] },
 
 
 
     { privilege: ['view-videos'], sectionTitle: 'Tutorial Videos', icon: Web, roles: ['admin', 'staff', 'seo',] },
-    { privilege: ['view-videos'], title: 'View videos', icon: FormatListBulleted, path: '/tutorial', roles: ['staff', 'seo'] },
+    { privilege: ['view-videos'], title: 'View videos', icon: FormatListBulleted, path: '/tutorial', roles: ['admin','staff', 'seo'] },
 
 
 
