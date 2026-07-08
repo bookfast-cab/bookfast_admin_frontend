@@ -252,6 +252,7 @@ const MUITable = () => {
       const driverIds = data.map(driver => driver.id);
 
       const device_id = await getFingerprint()
+      
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/updateVisibleDriversDocsCount`,
         { driverIds },
