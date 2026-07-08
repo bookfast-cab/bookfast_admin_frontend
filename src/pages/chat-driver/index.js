@@ -194,9 +194,14 @@ const DriverChatPage = () => {
       setHistoryLoading(true);
       const token = getAuthToken();
 
+      const device_id = await getFingerprint()
+
+
       const response = await axios.get(`${API_BASE_URL}chat/admin/history/${driverId}`, {
 
-        headers: { Authorization: token }
+        headers: { Authorization: token,
+          'x-device-id': device_id,
+         }
 
       });
       console.log("History API Response:", response.data);
@@ -222,13 +227,17 @@ const DriverChatPage = () => {
 
     const token = getAuthToken();
     try {
+      const device_id = await getFingerprint()
+      
       const response = await axios.post(`${API_BASE_URL}chat/admin/send`, {
         receiverId: selectedDriver.driverId,
         receiverType: 'driver',
         message: newMessage,
         messageType: 'text'
       }, {
-        headers: { Authorization: token }
+        headers: { Authorization: token,
+          'x-device-id': device_id,
+         }
       });
 
       if (response.data.success) {
@@ -274,10 +283,13 @@ const DriverChatPage = () => {
     try {
       const token = getAuthToken();
 
-    
+      const device_id = await getFingerprint()
+
 
       await axios.get(`${API_BASE_URL}chat/admin/history/${driverId}`, {
-        headers: { Authorization: token }
+        headers: { Authorization: token,
+          'x-device-id': device_id,
+         }
       });
 
      
