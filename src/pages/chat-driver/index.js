@@ -27,6 +27,7 @@ import axios from 'axios';
 import ProfileAvatar from 'src/layouts/components/ProfileAvatar';
 import { styled } from '@mui/material/styles';
 import io from 'socket.io-client';
+import getFingerprint from 'src/utils/Fingerprint';
 
 const ChatContainer = styled(Card)(({ theme }) => ({
   height: '85vh',
@@ -162,16 +163,25 @@ const DriverChatPage = () => {
     try {
       setLoading(true);
       const token = getAuthToken();
+      const device_id = await getFingerprint()
 
       const response = await axios.get(`${API_BASE_URL}chat/admin/conversations`, {
 
-        headers: { Authorization: token }
+        headers: { Authorization: token,
+          'x-device-id': device_id,
+         }
 
       });
       if (response.data.success) {
         setConversations(response.data.data);
       }
+
+
     } catch (error) {
+      if (error.response && error.response.status === 401) {
+        localStorage.clear(); // Saara data clear karein
+        window.location.href = '/pages/login'; // Redirect
+      }
       console.error("Error fetching conversations", error);
     } finally {
       setLoading(false);

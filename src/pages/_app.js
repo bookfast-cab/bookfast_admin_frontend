@@ -23,6 +23,7 @@ import { createEmotionCache } from 'src/@core/utils/create-emotion-cache'
 
 // ** React Perfect Scrollbar Style
 import 'react-perfect-scrollbar/dist/css/styles.css'
+import getFingerprint from 'src/utils/Fingerprint';
 
 // ** Global css styles
 import '../../styles/globals.css'
@@ -30,7 +31,7 @@ import { listenForMessages, requestPermission } from 'src/utils/NotificationPerm
 import { useEffect } from 'react'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import { useRouter } from 'next/router';
 import { SocketProvider } from 'src/contexts/SocketContext'
 
 import '../styles/tiptap-editor.css'; // ✅ Global CSS import
@@ -53,7 +54,7 @@ if (themeConfig.routingLoader) {
 // ** Configure JSS & ClassName
 const App = props => {
   const { Component, emotionCache = clientSideEmotionCache, pageProps } = props
-
+  const router = useRouter();
 
   // Variables
   const getLayout = Component.getLayout ?? (page => <UserLayout>{page}</UserLayout>)
@@ -63,6 +64,27 @@ const App = props => {
     listenForMessages();
   }, []);
 
+  
+  if (typeof window !== 'undefined') {
+    const originalFetch = window.fetch;
+    window.fetch = async (url, options = {}) => {
+      const device_id = await getFingerprint()
+      options.headers = {
+        'Content-Type': 'application/json',
+        'x-device-id': device_id,
+        ...options.headers,
+      };
+
+      const response = await originalFetch(url, options);
+      if (response.status === 401) {
+        localStorage.clear();
+        router.push('/pages/login');
+        return response;
+      }
+
+      return response;
+    };
+  }
 
   return (
     <CacheProvider value={emotionCache}>

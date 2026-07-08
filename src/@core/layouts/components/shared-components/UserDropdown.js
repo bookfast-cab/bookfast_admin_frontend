@@ -49,6 +49,30 @@ const UserDropdown = () => {
     }
     setAnchorEl(null)
   }
+   const handleSubmit = async () => {
+
+    let token;
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('access_token');
+    }
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/admin-logout`, {
+      method: 'GET',
+      headers: {
+        Authorization: `${token}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    })
+
+    const data = await response.json()    
+    
+    if (data.success) {
+      localStorage.clear();
+      router.push('/pages/login')
+    } else {
+      setErrorMessage(data.message)
+    }
+  }
 
   const styles = {
     py: 2,
@@ -114,7 +138,7 @@ const UserDropdown = () => {
         </MenuItem>
         
         <Divider />
-        <MenuItem sx={{ py: 2 }} onClick={() => handleDropdownClose('/pages/login')}>
+        <MenuItem sx={{ py: 2 }} onClick={() => handleSubmit()}>
           <LogoutVariant sx={{ marginRight: 2, fontSize: '1.375rem', color: 'text.secondary' }} />
           Logout
         </MenuItem>
