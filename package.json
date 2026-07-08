@@ -46,6 +46,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/server": "^11.4.0",
     "@emotion/styled": "^11.14.0",
+    "@fingerprintjs/fingerprintjs": "^5.2.0",
     "@heroicons/react": "2.0.16",
     "@mui/icons-material": "^5.15.17",
     "@mui/lab": "^5.0.0-alpha.70",

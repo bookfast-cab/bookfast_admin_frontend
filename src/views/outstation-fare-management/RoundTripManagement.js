@@ -21,6 +21,7 @@ import {
 import InfoIcon from '@mui/icons-material/Info';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import getFingerprint from 'src/utils/Fingerprint';
 
 const emptyThreshold = {
   baseFare: '',
@@ -98,10 +99,12 @@ const RoundTripManagement = () => {
 
     try {
       setFetching(true);
+      const device_id = await getFingerprint()
+
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/get-round-trip-fare`,
         {
-          headers: { Authorization: token },
+          headers: { Authorization: token, 'x-device-id': device_id, },
           params: { vehicle_type: selectedVehicle },
         }
       );
@@ -127,6 +130,10 @@ const RoundTripManagement = () => {
         resetThresholds();
       }
     } catch (err) {
+      if (err.response && err.response.status === 401) {
+        localStorage.clear(); // Saara data clear karein
+        window.location.href = '/pages/login'; // Redirect
+      }
       console.error(err);
       toast.error('Failed to load configuration');
       resetThresholds();

@@ -16,6 +16,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import axios from 'axios';
 import { Box } from '@mui/material';
 import { FormControlLabel,Radio,RadioGroup, FormControl } from '@mui/material'; // Add these imports
+import getFingerprint from 'src/utils/Fingerprint';
 
 import * as XLSX from 'xlsx';
 
@@ -177,12 +178,15 @@ const MUITable = () => {
     }).toString();
 
     try {
+
+      const device_id = await getFingerprint()
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/drivers?${queryParams}`,
         {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `${token}`,
+            'x-device-id': device_id,
           },
 
           //cancelToken: cancelTokenSource.token,
@@ -206,6 +210,11 @@ const MUITable = () => {
       ]);
       
     } catch (err) {
+      if (err.response && err.response.status === 401) {
+        localStorage.clear();
+        window.location.href = '/pages/login'; 
+      }
+
       if (axios.isCancel(err)) {
         console.log('Request canceled:', err.message);
       } else {
