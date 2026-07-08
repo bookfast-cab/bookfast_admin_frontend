@@ -79,6 +79,7 @@ const App = props => {
       if (response.status === 401) {
         localStorage.clear();
         router.push('/pages/login');
+        
         return response;
       }
 
