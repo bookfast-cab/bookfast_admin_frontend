@@ -74,6 +74,29 @@ const PaymentManagement = () => {
 
  
 
+  const exportToExcel = () => {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-payments`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${token}`
+      }
+    })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'payments.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      })
+      .catch(error => {
+        console.error('Error exporting to Excel:', error);
+      });
+  }
+
   const handleReloadRow = async (row) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/payment/${row.orderId}`, {
@@ -220,7 +243,15 @@ const PaymentManagement = () => {
             style={{ width: '300px' }}
           />
         </div>
-        
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button
+            variant="contained"
+            onClick={() => exportToExcel()}
+          >
+            Export
+          </Button>
+        </div>
       </Grid>
 
       <Grid item xs={12}>
