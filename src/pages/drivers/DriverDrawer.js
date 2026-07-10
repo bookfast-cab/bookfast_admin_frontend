@@ -45,6 +45,7 @@ import PendingIcon from '@mui/icons-material/Pending';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ToastMessage from 'src/components/ToastMessage';
 import AddMembershipDialog from '../drivers-membership/AddMembershipDialog';
+import { Person, Smartphone } from '@mui/icons-material';
 
 // BookFast brand colors - soft and professional
 const BRAND_COLORS = {
@@ -115,6 +116,8 @@ const DriverDrawer = ({onDriverUpdate, open, onClose, data = {} }) => {
 const [isEnableMode, setIsEnableMode] = useState(false);
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
   const [vehicleData,setVehicleData] = useState([]);
+  const [advanceTripList,setadvanceTripList] = useState([]);
+  const [DriversSelfPostList,setDriversSelfPostList] = useState([]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -122,6 +125,8 @@ const [isEnableMode, setIsEnableMode] = useState(false);
 
 useEffect(()=>{
   setVehicleData(data?.driverVehicle ?? []);
+  setadvanceTripList(data?.AdvanceTripList ?? []);
+  setDriversSelfPostList(data?.DriversSelfPostList ?? []);
 },[data])
 
 const [actionDialog, setActionDialog] = useState({ open: false, vehicleId: null, status: '' });
@@ -502,6 +507,9 @@ const submitVehicleAction = async (id, status, reason) => {
                 <Tabs
                   value={tabValue}
                   onChange={handleTabChange}
+                  variant="scrollable"          
+                  scrollButtons="auto"          
+                  allowScrollButtonsMobile
                   sx={{
                     px: 2,
                     '& .MuiTab-root': {
@@ -512,6 +520,40 @@ const submitVehicleAction = async (id, status, reason) => {
                     '& .MuiTabs-indicator': {
                       backgroundColor: BRAND_COLORS.primary,
                     },
+                   alignItems: 'center',
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    minHeight: 48,
+                  },
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: BRAND_COLORS.primary,
+                    height: 3,
+                    borderTopLeftRadius: 3,
+                    borderTopRightRadius: 3,
+                  },
+                  
+                  '& .MuiTabScrollButton-root': {
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    backgroundColor: BRAND_COLORS.paper,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    color: BRAND_COLORS.textSecondary,
+                    margin: '0 4px', 
+                    transition: 'all 0.2s ease-in-out',
+                    zIndex: 1,
+                    '&:hover': {
+                      backgroundColor: BRAND_COLORS.primaryLight,
+                      color: BRAND_COLORS.primary,
+                      transform: 'scale(1.05)',
+                    },
+                    '&.Mui-disabled': {
+                      opacity: 0.3,
+                      boxShadow: 'none',
+                    }
+                  }
+                    
                   }}
                 >
                   <Tab
@@ -541,6 +583,20 @@ const submitVehicleAction = async (id, status, reason) => {
 
                   <Tab
                     label="Driver Vehicles"
+                    icon={<DirectionsCarIcon />}
+                    iconPosition="start"
+                    sx={{ color: BRAND_COLORS.textSecondary }}
+                  />
+
+                  <Tab
+                    label="Advance Trips"
+                    icon={<DirectionsCarIcon />}
+                    iconPosition="start"
+                    sx={{ color: BRAND_COLORS.textSecondary }}
+                  />
+
+                  <Tab
+                    label="Driver Self Posts"
                     icon={<DirectionsCarIcon />}
                     iconPosition="start"
                     sx={{ color: BRAND_COLORS.textSecondary }}
@@ -1170,6 +1226,437 @@ const submitVehicleAction = async (id, status, reason) => {
           </Box>
         </CardContent>
       </Card>
+    ))}
+  </Stack>
+</TabPanel>
+
+
+<TabPanel value={tabValue} index={5}>
+  <Stack spacing={3}>
+    {advanceTripList?.map((advanceTrip, index) => (
+      <Grid item xs={12} key={advanceTrip.id || index}>
+        {console.log(advanceTrip)}
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            borderColor: BRAND_COLORS.border,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+            backgroundColor: BRAND_COLORS.paper,
+            overflow: 'hidden',
+          }}
+        >
+          {/* --- HEADER --- */}
+          <Box
+            sx={{
+              px: 3,
+              py: 1.5,
+              borderBottom: `1px solid ${BRAND_COLORS.border}`,
+              backgroundColor: BRAND_COLORS.background,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Typography variant="subtitle2" fontWeight={700} color={BRAND_COLORS.textSecondary} textTransform="uppercase">
+                TRIP ID: <Box component="span" sx={{ color: BRAND_COLORS.primary, ml: 0.5 }}>#{advanceTrip.id || 'N/A'}</Box>
+              </Typography>
+            </Stack>
+
+            <Stack direction="row" alignItems="center" spacing={2}>
+              {/* Displaying Pickup Date in Header for quick scanning */}
+              <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                {advanceTrip.pickup_date ? new Date(advanceTrip.pickup_date).toLocaleString('en-IN', {
+                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                }) : 'Schedule Pending'}
+              </Typography>
+
+              <Chip
+                label={advanceTrip.status === 1 || advanceTrip.status === 3 ? 'Booked' : 'Cancelled'}
+                color={advanceTrip.status === 1 || advanceTrip.status === 3 ? 'success' : 'error'}
+                size="small"
+                sx={{ fontSize: '0.7rem', height: 24, fontWeight: 700, borderRadius: 1.5 }}
+              />
+            </Stack>
+          </Box>
+
+          <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+            <Grid container>
+              
+              <Grid item xs={12} md={6} sx={{ p: 3, borderRight: { md: `1px dashed ${BRAND_COLORS.border}`, xs: 'none' } }}>
+                
+                <Box sx={{ position: 'relative', ml: 1 }}>
+                  <Box sx={{ position: 'absolute', top: 20, bottom: 20, left: 4, width: 2, backgroundColor: 'grey.300' }} />
+                  
+                  <Box sx={{ position: 'relative', pl: 4, mb: 3 }}>
+                    <Box sx={{ position: 'absolute', left: 0, top: 4, width: 10, height: 10, borderRadius: '50%', backgroundColor: 'success.main', zIndex: 1 }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase">
+                      Pickup Location
+                    </Typography>
+                    <Typography variant="body1" fontWeight={500}  color="text.primary" sx={{ mt: 0.5, wordBreak: 'break-word',fontSize:'13px !important' }}>
+                      {advanceTrip.pickup_address || '—'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block',fontSize:'13px !important' }}>
+                      {advanceTrip.pickup_date ? new Date(advanceTrip.pickup_date).toLocaleString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                      }) : '—'}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ position: 'relative', pl: 4 }}>
+                    <Box sx={{ position: 'absolute', left: 0, top: 4, width: 10, height: 10, borderRadius: '50%', backgroundColor: 'error.main', zIndex: 1 }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase">
+                      Drop Location
+                    </Typography>
+                    <Typography variant="body1" fontWeight={500}  color="text.primary" sx={{ mt: 0.5, wordBreak: 'break-word',fontSize:'13px !important' }}>
+                      {advanceTrip.drop_address || '—'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block',fontSize:'13px !important' }}>
+                      Distance: <Box component="span" fontWeight={600}>{advanceTrip.distance || '—'}</Box>
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  
+                 <Grid container spacing={3} sx={{ mb: 'auto' }}>
+  
+                  <Grid item xs={12} sm={6}>
+                    <Stack spacing={2.5}>
+                      
+                      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'grey.100', display: 'flex' }}>
+                          <Person sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.2 }} color="text.secondary">
+                            Agent Name
+                          </Typography>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 600 }} color="text.primary" noWrap>
+                            {advanceTrip.agent_name || '—'}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'grey.100', display: 'flex' }}>
+                          <Smartphone sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.2 }} color="text.secondary">
+                            Mobile
+                          </Typography>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 600 }} color="text.primary" display="block">
+                            {advanceTrip.contact_mobile || '—'}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                    </Stack>
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6}>
+                    <Stack spacing={2.5}>
+                      
+                      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'grey.100', display: 'flex' }}>
+                          <DirectionsCarIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.2 }} color="text.secondary">
+                            Vehicle Details
+                          </Typography>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 600 }} color="text.primary">
+                            {advanceTrip.acpt_vehicle_type || 'N/A'}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'grey.100', display: 'flex' }}>
+                          <DirectionsCarIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.2 }} color="text.secondary">
+                            RC Number
+                          </Typography>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 600, textTransform: 'uppercase' }} color="text.primary" display="block">
+                            {advanceTrip.acpt_vehicle_rc || '—'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Stack>
+                  </Grid>
+                </Grid>
+
+                  <Divider sx={{ my: 2.5 }} />
+
+                  <Box sx={{ backgroundColor: 'grey.50', p: 2, borderRadius: 2 }}>
+                    <Stack spacing={1.5}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">Total Fare</Typography>
+                        <Typography variant="subtitle1" fontWeight={700} color="text.primary">
+                          ₹{parseFloat(advanceTrip.total_amount || 0).toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">Commission</Typography>
+                        <Typography variant="body2" fontWeight={600} color="error.main">
+                          - ₹{parseFloat(advanceTrip.commission_amount || 0).toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+
+                </Box>
+              </Grid>
+            </Grid>
+
+            {/* --- FOOTER: System Timestamps --- */}
+            <Box sx={{ backgroundColor: 'grey.50', px: 3, py: 1.5, borderTop: `1px solid ${BRAND_COLORS.border}` }}>
+              <Stack direction="row" spacing={3} flexWrap="wrap">
+                <Typography variant="caption" color="text.secondary">
+                  <strong>Created:</strong> {advanceTrip.created_at ? new Date(advanceTrip.created_at).toLocaleString('en-IN', {
+                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                  }) : '—'}
+                </Typography>
+                
+                {advanceTrip.ride_accepted_time && (
+                  <Typography variant="caption" color="text.secondary">
+                    <strong>Accepted:</strong> {new Date(advanceTrip.ride_accepted_time).toLocaleString('en-IN', {
+                      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+
+          </CardContent>
+        </Card>
+      </Grid>
+    ))}
+  </Stack>
+</TabPanel>
+
+
+
+<TabPanel value={tabValue} index={6}>
+  <Stack spacing={3}>
+    {DriversSelfPostList?.map((advanceTrip, index) => (
+      <Grid item xs={12} key={advanceTrip.notiId || index}>
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            borderColor: BRAND_COLORS.border,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+            backgroundColor: BRAND_COLORS.paper,
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              px: 3,
+              py: 1.5,
+              borderBottom: `1px solid ${BRAND_COLORS.border}`,
+              backgroundColor: BRAND_COLORS.background,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Typography variant="subtitle2" fontWeight={700} color={BRAND_COLORS.textSecondary} textTransform="uppercase">
+                ID: <Box component="span" sx={{ color: BRAND_COLORS.primary, ml: 0.5 }}>#{advanceTrip.notiId || 'N/A'}</Box>
+              </Typography>
+            </Stack>
+
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                {advanceTrip.pickup_date ? new Date(advanceTrip.pickup_date).toLocaleString('en-IN', {
+                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                }) : 'Schedule Pending'}
+              </Typography>
+
+              <Chip
+                label={advanceTrip.status === '2' ? 'Accepted' : 'Not Accepted'}
+                color={advanceTrip.status === '2' ? 'success' : 'warning'}
+                size="small"
+                sx={{ fontSize: '0.7rem', height: 24, fontWeight: 700, borderRadius: 1.5 }}
+              />
+            </Stack>
+          </Box>
+
+          <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+            <Grid container>
+              
+              <Grid item xs={12} md={6} sx={{ p: 3, borderRight: { md: `1px dashed ${BRAND_COLORS.border}`, xs: 'none' } }}>
+                
+                <Box sx={{ position: 'relative', ml: 1 }}>
+                  <Box sx={{ position: 'absolute', top: 20, bottom: 20, left: 4, width: 2, backgroundColor: 'grey.300' }} />
+                  
+                  <Box sx={{ position: 'relative', pl: 4, mb: 3 }}>
+                    <Box sx={{ position: 'absolute', left: 0, top: 4, width: 10, height: 10, borderRadius: '50%', backgroundColor: 'success.main', zIndex: 1 }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase">
+                      Pickup Location
+                    </Typography>
+                    <Typography variant="body1" fontWeight={500}  color="text.primary" sx={{ mt: 0.5, wordBreak: 'break-word',fontSize:'13px !important' }}>
+                      {advanceTrip.pick_address || '—'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block',fontSize:'13px !important' }}>
+                      {advanceTrip.pickup_date ? new Date(advanceTrip.pickup_date).toLocaleString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                      }) : '—'}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ position: 'relative', pl: 4 }}>
+                    <Box sx={{ position: 'absolute', left: 0, top: 4, width: 10, height: 10, borderRadius: '50%', backgroundColor: 'error.main', zIndex: 1 }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase">
+                      Drop Location
+                    </Typography>
+                    <Typography variant="body1" fontWeight={500}  color="text.primary" sx={{ mt: 0.5, wordBreak: 'break-word',fontSize:'13px !important' }}>
+                      {advanceTrip.drop_address || '—'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block',fontSize:'13px !important' }}>
+                      Distance: <Box component="span" fontWeight={600}>{advanceTrip.distance || '—'}</Box> • Duration: <Box component="span" fontWeight={600}>{advanceTrip.duration || '—'}</Box>
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  
+                 <Grid container spacing={3} sx={{ mb: 'auto' }}>
+  
+                  <Grid item xs={12} sm={6}>
+                    <Stack spacing={2.5}>
+                      
+                      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'grey.100', display: 'flex' }}>
+                          <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.2 }} color="text.secondary">
+                            Posted By
+                          </Typography>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 600 }} color="text.primary" noWrap>
+                            {advanceTrip.driverId || '—'}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'grey.100', display: 'flex' }}>
+                          <PhoneIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.2 }} color="text.secondary">
+                            Mobile
+                          </Typography>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 600 }} color="text.primary" display="block">
+                            {advanceTrip.mobile || '—'}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                    </Stack>
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6}>
+                    <Stack spacing={2.5}>
+                      
+                      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'grey.100', display: 'flex' }}>
+                          <DirectionsCarIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.2 }} color="text.secondary">
+                            Vehicle Name
+                          </Typography>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 600 }} color="text.primary">
+                            {advanceTrip.acpt_vehicle_name || 'N/A'}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      {(advanceTrip.acpt_vehicle_rc || advanceTrip.acpt_vehicle_name) && (
+                        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                          <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'grey.100', display: 'flex' }}>
+                            <DirectionsCarIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                          </Box>
+                          <Box>
+                            <Typography sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.2 }} color="text.secondary">
+                              Vehicle RC
+                            </Typography>
+                            <Typography sx={{ fontSize: '13px', fontWeight: 600, textTransform: 'uppercase' }} color="text.primary" display="block">
+                              {advanceTrip.acpt_vehicle_name || advanceTrip.acpt_vehicle_type} ({advanceTrip.acpt_vehicle_rc || '—'})
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )}
+                    </Stack>
+                  </Grid>
+                </Grid>
+
+                  <Divider sx={{ my: 2.5 }} />
+
+                  <Box sx={{ backgroundColor: 'grey.50', p: 2, borderRadius: 2 }}>
+                    <Stack spacing={1.5}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">Total Fare</Typography>
+                        <Typography variant="subtitle1" fontWeight={700} color="text.primary">
+                          ₹{parseFloat(advanceTrip.total_price || 0).toFixed(2)}
+                        </Typography>
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">Commission</Typography>
+                        <Typography variant="body2" fontWeight={600} color="error.main">
+                          - ₹{parseFloat(advanceTrip.commission || 0).toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <Divider sx={{ borderStyle: 'dashed' }} />
+                      
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary" fontWeight={600}>Driver Earning</Typography>
+                        <Typography variant="subtitle2" fontWeight={700} color="success.main">
+                          ₹{parseFloat(advanceTrip.driver_earning || 0).toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+
+                </Box>
+              </Grid>
+            </Grid>
+
+            {/* --- FOOTER: System Timestamps --- */}
+            <Box sx={{ backgroundColor: 'grey.50', px: 3, py: 1.5, borderTop: `1px solid ${BRAND_COLORS.border}` }}>
+              <Stack direction="row" spacing={3} flexWrap="wrap">
+                <Typography variant="caption" color="text.secondary">
+                  <strong>Created:</strong> {advanceTrip.createdAt ? new Date(advanceTrip.createdAt).toLocaleString('en-IN', {
+                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                  }) : '—'}
+                </Typography>
+                
+                {advanceTrip.ride_accept_time && (
+                  <Typography variant="caption" color="text.secondary">
+                    <strong>Accepted:</strong> {new Date(advanceTrip.ride_accept_time).toLocaleString('en-IN', {
+                      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+
+          </CardContent>
+        </Card>
+      </Grid>
     ))}
   </Stack>
 </TabPanel>
