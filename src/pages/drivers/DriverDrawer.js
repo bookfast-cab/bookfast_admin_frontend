@@ -119,6 +119,7 @@ const DriverDrawer = ({onDriverUpdate, open, onClose, data = {} }) => {
   const [vehicleData,setVehicleData] = useState([]);
   const [advanceTripData,setadvanceTripData] = useState({});
   const [DriversSelfPostData,setDriversSelfPostdata] = useState({});
+  const [RealtimeBookingData,setRealtimeBookingData] = useState({});
   const [walletHistory,setwalletHistory] = useState([]);
 
   const handleTabChange = (event, newValue) => {
@@ -128,8 +129,15 @@ const DriverDrawer = ({onDriverUpdate, open, onClose, data = {} }) => {
 useEffect(()=>{
   setVehicleData(data?.driverVehicle ?? []);
   if(data?.id){
-    getDriverPartnerList();
-    getDriversAdvanceTrip();
+    if (data?.id) {
+      if (tabValue === 5) {
+        fetchDriverData('getDriverAdvanceTripLists', setadvanceTripData);
+      } else if (tabValue === 6) {
+        fetchDriverData('getDriverPartnerDutyLists', setDriversSelfPostdata);
+      } else if (tabValue === 7) {
+        fetchDriverData('getDriverRealTimeBookingsLists', setRealtimeBookingData);
+      }
+    }
 
     const processedHistory = [...data.walletHistory].reverse().reduce((acc, curr, index) => {
       const lastBalance = index === 0 ? 0 : acc[index - 1].closing_balance;
@@ -143,6 +151,7 @@ useEffect(()=>{
     }, []).reverse();
 
     setwalletHistory(processedHistory)
+
   }
 },[data])
 
@@ -158,85 +167,31 @@ const handleVehicleAction = (vehicleId, status) => {
   }
 };
 
+const fetchDriverData = async (endpoint, setterFunction, page_num = 1, perPage_val = 10) => {
+  const queryParams = new URLSearchParams({
+    page: page_num,
+    perPage: perPage_val,
+    driverId: data.id
+  }).toString();
 
-  const getDriversAdvanceTrip = async (page_num = 1, perPage_val = 10) => {
-
-    const queryParams = new URLSearchParams({
-      page: page_num,
-      perPage: perPage_val,
-      driverId:data.id
-    }).toString();
-
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getDriverAdvanceTripLists?${queryParams}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `${token}`,
-          },
-        }
-      );
-
-      const result = await response.json();
-      console.log(result);
-
-      setadvanceTripData(result);
-      
-    } catch (err) {
-      if (err.response && err.response.status === 401) {
-        localStorage.clear();
-        window.location.href = '/pages/login'; 
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/${endpoint}?${queryParams}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `${token}`,
+        },
       }
+    );
 
-      if (axios.isCancel(err)) {
-        console.log('Request canceled:', err.message);
-      } else {
-        console.error(err);
-      }
-    } finally {
-    }
-  };
-
-    const getDriverPartnerList = async (page_num = 1, perPage_val = 10) => {
-
-    const queryParams = new URLSearchParams({
-      page: page_num,
-      perPage: perPage_val,
-      driverId:data.id
-    }).toString();
-
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getDriverPartnerDutyLists?${queryParams}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `${token}`,
-          },
-        }
-      );
-
-      const result = await response.json();
-
-      setDriversSelfPostdata(result);
-      
-    } catch (err) {
-      if (err.response && err.response.status === 401) {
-        localStorage.clear();
-        window.location.href = '/pages/login'; 
-      }
-
-      if (axios.isCancel(err)) {
-        console.log('Request canceled:', err.message);
-      } else {
-        console.error(err);
-      }
-    } finally {
-    }
-  };
+    const result = await response.json();
+    setterFunction(result); // Dynamically state update hogi
+  } catch (err) {
+    console.error("Error fetching data:", err);
+  }
+};
 
 
 const submitVehicleAction = async (id, status, reason) => {
@@ -690,6 +645,7 @@ const submitVehicleAction = async (id, status, reason) => {
                     label="Advance Trips"
                     icon={<DirectionsCarIcon />}
                     iconPosition="start"
+                    onClick={() => fetchDriverData('getDriverAdvanceTripLists', setadvanceTripData)}
                     sx={{ color: BRAND_COLORS.textSecondary }}
                   />
 
@@ -697,6 +653,15 @@ const submitVehicleAction = async (id, status, reason) => {
                     label="Driver Self Posts"
                     icon={<DirectionsCarIcon />}
                     iconPosition="start"
+                    onClick={() => fetchDriverData('getDriverPartnerDutyLists', setDriversSelfPostdata)}
+                    sx={{ color: BRAND_COLORS.textSecondary }}
+                  />
+
+                  <Tab
+                    label="Real Time Bookings"
+                    icon={<DirectionsCarIcon />}
+                    iconPosition="start"
+                    onClick={() => fetchDriverData('getDriverRealTimeBookingsLists', setRealtimeBookingData)}
                     sx={{ color: BRAND_COLORS.textSecondary }}
                   />
                 </Tabs>
@@ -1337,26 +1302,46 @@ const submitVehicleAction = async (id, status, reason) => {
 <TabPanel value={tabValue} index={5}>
   <Stack spacing={3}>
     <Grid container spacing={2}>
-      <Grid item xs={12} sm={6}>
-        <Card variant="outlined" sx={{ p: 2, borderRadius: 2.5, bgcolor: '#f0fdf4', borderColor: '#bbf7d0', boxShadow: 'none' }}>
-          <Typography variant="caption" color="success.dark" fontWeight={700} sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Total Earning
-          </Typography>
-          <Typography variant="h6" fontWeight={700} color="success.main" sx={{ mt: 0.5, fontSize: '1.1rem' }}>
-            ₹{(parseFloat(advanceTripData?.total_amount || 0) - parseFloat(advanceTripData?.total_commission || 0))
-                .toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </Typography>
+      <Grid item xs={12} sm={4}>
+        <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5, bgcolor: '#f0fdf4', borderColor: '#bbf7d0', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ p: 1, borderRadius: 2, bgcolor: '#dcfce7', color: '#166534' }}> {/* Add an icon here if needed */} </Box>
+          <Box>
+            <Typography variant="caption" color="success.dark" sx={{ fontSize: '0.7rem !important', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Total Earning
+            </Typography>
+            <Typography variant="h6" fontWeight={700} color="success.main" sx={{ fontSize: '1.25rem' }}>
+              ₹{(parseFloat(advanceTripData?.total_amount || 0) - parseFloat(advanceTripData?.total_commission || 0))
+                  .toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </Typography>
+          </Box>
         </Card>
       </Grid>
 
-      <Grid item xs={12} sm={6}>
-        <Card variant="outlined" sx={{ p: 2, borderRadius: 2.5, bgcolor: '#fef2f2', borderColor: '#fecaca', boxShadow: 'none' }}>
-          <Typography variant="caption" color="error.dark" fontWeight={700} sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Total Commission
-          </Typography>
-          <Typography variant="h6" fontWeight={700} color="error.main" sx={{ mt: 0.5, fontSize: '1.1rem' }}>
-            ₹{parseFloat(advanceTripData?.total_commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </Typography>
+      {/* Total Commission */}
+      <Grid item xs={12} sm={4}>
+        <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5, bgcolor: '#fef2f2', borderColor: '#fecaca', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box>
+            <Typography variant="caption" color="error.dark" sx={{ fontSize: '0.7rem !important', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Total Commission
+            </Typography>
+            <Typography variant="h6" fontWeight={700} color="error.main" sx={{ fontSize: '1.25rem' }}>
+              ₹{parseFloat(advanceTripData?.total_commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </Typography>
+          </Box>
+        </Card>
+      </Grid>
+
+      {/* Total Accepted Booking */}
+      <Grid item xs={12} sm={4}>
+        <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5, bgcolor: '#fff7ed', borderColor: '#fed7aa', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box>
+            <Typography variant="caption" color="warning.dark" sx={{ fontSize: '0.7rem !important', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Total Accepted Bookings
+            </Typography>
+            <Typography variant="h6" fontWeight={700} color="warning.main" sx={{ fontSize: '1.25rem' }}>
+              {parseInt(advanceTripData?.count || 0)}
+            </Typography>
+          </Box>
         </Card>
       </Grid>
     </Grid>
@@ -1574,26 +1559,46 @@ const submitVehicleAction = async (id, status, reason) => {
 <TabPanel value={tabValue} index={6}>
   <Stack spacing={3}>
      <Grid container spacing={2}>
-      <Grid item xs={12} sm={6}>
-        <Card variant="outlined" sx={{ p: 2, borderRadius: 2.5, bgcolor: '#f0fdf4', borderColor: '#bbf7d0', boxShadow: 'none' }}>
-          <Typography variant="caption" color="success.dark" fontWeight={700} sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Total Earning
-          </Typography>
-          <Typography variant="h6" fontWeight={700} color="success.main" sx={{ mt: 0.5, fontSize: '1.1rem' }}>
-            ₹{(parseFloat(DriversSelfPostData?.total_amount || 0) - parseFloat(DriversSelfPostData?.total_commission || 0))
-                .toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </Typography>
+      <Grid item xs={12} sm={4}>
+        <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5, bgcolor: '#f0fdf4', borderColor: '#bbf7d0', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ p: 1, borderRadius: 2, bgcolor: '#dcfce7', color: '#166534' }}> {/* Add an icon here if needed */} </Box>
+          <Box>
+            <Typography variant="caption" color="success.dark" sx={{ fontSize: '0.7rem !important', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Total Earning
+            </Typography>
+            <Typography variant="h6" fontWeight={700} color="success.main" sx={{ fontSize: '1.25rem' }}>
+              ₹{(parseFloat(DriversSelfPostData?.total_amount || 0) - parseFloat(DriversSelfPostData?.total_commission || 0))
+                  .toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </Typography>
+          </Box>
         </Card>
       </Grid>
 
-      <Grid item xs={12} sm={6}>
-        <Card variant="outlined" sx={{ p: 2, borderRadius: 2.5, bgcolor: '#fef2f2', borderColor: '#fecaca', boxShadow: 'none' }}>
-          <Typography variant="caption" color="error.dark" fontWeight={700} sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Total Commission
-          </Typography>
-          <Typography variant="h6" fontWeight={700} color="error.main" sx={{ mt: 0.5, fontSize: '1.1rem' }}>
-            ₹{parseFloat(DriversSelfPostData?.total_commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </Typography>
+      {/* Total Commission */}
+      <Grid item xs={12} sm={4}>
+        <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5, bgcolor: '#fef2f2', borderColor: '#fecaca', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box>
+            <Typography variant="caption" color="error.dark" sx={{ fontSize: '0.7rem !important', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Total Commission
+            </Typography>
+            <Typography variant="h6" fontWeight={700} color="error.main" sx={{ fontSize: '1.25rem' }}>
+              ₹{parseFloat(DriversSelfPostData?.total_commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </Typography>
+          </Box>
+        </Card>
+      </Grid>
+
+      {/* Total Accepted Booking */}
+      <Grid item xs={12} sm={4}>
+        <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5, bgcolor: '#fff7ed', borderColor: '#fed7aa', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box>
+            <Typography variant="caption" color="warning.dark" sx={{ fontSize: '0.7rem !important', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Total Accepted Bookings
+            </Typography>
+            <Typography variant="h6" fontWeight={700} color="warning.main" sx={{ fontSize: '1.25rem' }}>
+              {parseInt(DriversSelfPostData?.count || 0)}
+            </Typography>
+          </Box>
         </Card>
       </Grid>
     </Grid>
@@ -1801,6 +1806,235 @@ const submitVehicleAction = async (id, status, reason) => {
                 {advanceTrip.ride_accept_time && (
                   <Typography variant="caption" color="text.secondary">
                     <strong>Accepted:</strong> {new Date(advanceTrip.ride_accept_time).toLocaleString('en-IN', {
+                      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+
+          </CardContent>
+        </Card>
+      </Grid>
+    ))}
+  </Stack>
+</TabPanel>
+
+<TabPanel value={tabValue} index={7}>
+  <Stack spacing={3}>
+     <Grid container spacing={2}>
+      <Grid item xs={12} sm={4}>
+        <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5, bgcolor: '#f0fdf4', borderColor: '#bbf7d0', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ p: 1, borderRadius: 2, bgcolor: '#dcfce7', color: '#166534' }}> {/* Add an icon here if needed */} </Box>
+          <Box>
+            <Typography variant="caption" color="success.dark" sx={{ fontSize: '0.7rem !important', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Total Earning
+            </Typography>
+            <Typography variant="h6" fontWeight={700} color="success.main" sx={{ fontSize: '1.25rem' }}>
+              ₹{parseFloat(RealtimeBookingData?.total_amount || 0)
+                  .toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </Typography>
+          </Box>
+        </Card>
+      </Grid>
+
+      {/* Total Commission */}
+      <Grid item xs={12} sm={4}>
+        <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5, bgcolor: '#fef2f2', borderColor: '#fecaca', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box>
+            <Typography variant="caption" color="error.dark" sx={{ fontSize: '0.7rem !important', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Total Commission
+            </Typography>
+            <Typography variant="h6" fontWeight={700} color="error.main" sx={{ fontSize: '1.25rem' }}>
+              ₹{parseFloat(RealtimeBookingData?.total_commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </Typography>
+          </Box>
+        </Card>
+      </Grid>
+
+      {/* Total Accepted Booking */}
+      <Grid item xs={12} sm={4}>
+        <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2.5, bgcolor: '#fff7ed', borderColor: '#fed7aa', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box>
+            <Typography variant="caption" color="warning.dark" sx={{ fontSize: '0.7rem !important', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Total Accepted Bookings
+            </Typography>
+            <Typography variant="h6" fontWeight={700} color="warning.main" sx={{ fontSize: '1.25rem' }}>
+              {parseInt(RealtimeBookingData?.count || 0)}
+            </Typography>
+          </Box>
+        </Card>
+      </Grid>
+    </Grid>
+    
+
+    {RealtimeBookingData?.data?.map((advanceTrip, index) => (
+      <Grid item xs={12} key={advanceTrip.notiId || index}>
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            borderColor: BRAND_COLORS.border,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+            backgroundColor: BRAND_COLORS.paper,
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              px: 3,
+              py: 1.5,
+              borderBottom: `1px solid ${BRAND_COLORS.border}`,
+              backgroundColor: BRAND_COLORS.background,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Typography variant="subtitle2" fontWeight={700} color={BRAND_COLORS.textSecondary} textTransform="uppercase">
+                ID: <Box component="span" sx={{ color: BRAND_COLORS.primary, ml: 0.5 }}>#{advanceTrip.trip_id || 'N/A'}</Box>
+              </Typography>
+            </Stack>
+
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                {advanceTrip.pickup_date ? new Date(advanceTrip.pickup_date).toLocaleString('en-IN', {
+                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                }) : 'Schedule Pending'}
+              </Typography>
+
+              <Chip
+                label={advanceTrip.status === 4 ? 'Accepted' : 'Not Accepted'}
+                color={advanceTrip.status === 4 ? 'success' : 'warning'}
+                size="small"
+                sx={{ fontSize: '0.7rem', height: 24, fontWeight: 700, borderRadius: 1.5 }}
+              />
+            </Stack>
+          </Box>
+
+          <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+            <Grid container>
+              
+              <Grid item xs={12} md={6} sx={{ p: 3, borderRight: { md: `1px dashed ${BRAND_COLORS.border}`, xs: 'none' } }}>
+                
+                <Box sx={{ position: 'relative', ml: 1 }}>
+                  <Box sx={{ position: 'absolute', top: 20, bottom: 20, left: 4, width: 2, backgroundColor: 'grey.300' }} />
+                  
+                  <Box sx={{ position: 'relative', pl: 4, mb: 3 }}>
+                    <Box sx={{ position: 'absolute', left: 0, top: 4, width: 10, height: 10, borderRadius: '50%', backgroundColor: 'success.main', zIndex: 1 }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase">
+                      Pickup Location
+                    </Typography>
+                    <Typography variant="body1" fontWeight={500}  color="text.primary" sx={{ mt: 0.5, wordBreak: 'break-word',fontSize:'13px !important' }}>
+                      {advanceTrip.pickup_address || '—'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block',fontSize:'13px !important' }}>
+                      {advanceTrip.pickup_date ? new Date(advanceTrip.pickup_date).toLocaleString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                      }) : '—'}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ position: 'relative', pl: 4 }}>
+                    <Box sx={{ position: 'absolute', left: 0, top: 4, width: 10, height: 10, borderRadius: '50%', backgroundColor: 'error.main', zIndex: 1 }} />
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase">
+                      Drop Location
+                    </Typography>
+                    <Typography variant="body1" fontWeight={500}  color="text.primary" sx={{ mt: 0.5, wordBreak: 'break-word',fontSize:'13px !important' }}>
+                      {advanceTrip.drop_address || '—'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  
+                 <Grid container spacing={3} sx={{ mb: 'auto' }}>
+  
+                  <Grid item xs={12} sm={6}>
+                    <Stack spacing={2.5}>
+                      
+                      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'grey.100', display: 'flex' }}>
+                          <PersonIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.2 }} color="text.secondary">
+                            Customer Name
+                          </Typography>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 600 }} color="text.primary" noWrap>
+                            {advanceTrip.customer?.first_name ?? 'N/A'} {advanceTrip.customer?.last_name}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Stack>
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6}>
+                    <Stack spacing={2.5}>
+                      
+                      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'grey.100', display: 'flex' }}>
+                          <DirectionsCarIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.2 }} color="text.secondary">
+                            Ride Distance
+                          </Typography>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 600 }} color="text.primary">
+                            {advanceTrip.distance || 'N/A'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Stack>
+                  </Grid>
+                </Grid>
+
+                  <Divider sx={{ my: 2.5 }} />
+
+                  <Box sx={{ backgroundColor: 'grey.50', p: 2, borderRadius: 2 }}>
+                    <Stack spacing={1.5}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">Total Fare</Typography>
+                        <Typography variant="subtitle1" fontWeight={700} color="text.primary">
+                          ₹{parseFloat(advanceTrip.total || 0).toFixed(2)}
+                        </Typography>
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">Commission</Typography>
+                        <Typography variant="body2" fontWeight={600} color="error.main">
+                          - ₹{parseFloat(advanceTrip.company_amount || 0).toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <Divider sx={{ borderStyle: 'dashed' }} />
+                      
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary" fontWeight={600}>Driver Earning</Typography>
+                        <Typography variant="subtitle2" fontWeight={700} color="success.main">
+                          ₹{parseFloat(advanceTrip.driver_earning || 0).toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+
+                </Box>
+              </Grid>
+            </Grid>
+
+            <Box sx={{ backgroundColor: 'grey.50', px: 3, py: 1.5, borderTop: `1px solid ${BRAND_COLORS.border}` }}>
+              <Stack direction="row" spacing={3} flexWrap="wrap">
+                <Typography variant="caption" color="text.secondary">
+                  <strong>Created:</strong> {advanceTrip.created_at ? new Date(advanceTrip.created_at).toLocaleString('en-IN', {
+                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                  }) : '—'}
+                </Typography>
+                
+                {advanceTrip.ride_accepted_time && (
+                  <Typography variant="caption" color="text.secondary">
+                    <strong>Accepted:</strong> {new Date(advanceTrip.ride_accepted_time).toLocaleString('en-IN', {
                       day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                     })}
                   </Typography>

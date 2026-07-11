@@ -7,6 +7,8 @@ import Snackbar from '@mui/material/Snackbar'
 import MuiAlert from '@mui/material/Alert'
 import TableBasic from 'src/views/tables/TutorialTable'; 
 import { useState, useEffect, useRef } from 'react'
+import getFingerprint from 'src/utils/Fingerprint';
+import axios from 'axios';
 
 const TutorialsList = () => {
   const [data, setData] = useState([])
@@ -103,18 +105,20 @@ const TutorialsList = () => {
       : `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/save-tutorial`;
 
     try {
-      const response = await fetch(apiUrl, {
-        method: 'POST', // Backend typically uses POST for FormData even in updates
-        headers: { 'Authorization': `${token}` },
-        body: uploadData
+      
+      const device_id = await getFingerprint()
+      
+      const response = await axios.post(apiUrl,uploadData, {
+        headers: { 'Authorization': `${token}`,'x-device-id': device_id, },
       });
-      const res = await response.json();
-      if (res.success) {
+      
+      // const res = await response.json();
+      if (response?.data?.success) {
         setSuccessMessage(isEditing ? 'Tutorial updated successfully!' : 'Tutorial added successfully!');
         resetForm();
         getTutorialList(currentPage); 
       } else {
-        setErrorMessage(res.message);
+        setErrorMessage(response?.data?.message);
       }
     } catch (err) {
       setErrorMessage('Operation failed');
