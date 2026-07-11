@@ -137,7 +137,9 @@ useEffect(()=>{
       const newBalance = curr.action === 'cr' ? lastBalance + amount : lastBalance - amount;
       
       acc.push({ ...curr, closing_balance: newBalance });
+      
       return acc;
+
     }, []).reverse();
 
     setwalletHistory(processedHistory)
