@@ -27,6 +27,7 @@ import {
   Switch,
   TextField
 } from '@mui/material';
+import axios from 'axios';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
@@ -113,11 +114,12 @@ const DriverDrawer = ({onDriverUpdate, open, onClose, data = {} }) => {
   const [toastSeverity, setToastSeverity] = useState('success');
   const [blockBy, setBlockBy] = useState('');
   const [blockRemarks, setBlockRemarks] = useState('');
-const [isEnableMode, setIsEnableMode] = useState(false);
+  const [isEnableMode, setIsEnableMode] = useState(false);
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
   const [vehicleData,setVehicleData] = useState([]);
-  const [advanceTripList,setadvanceTripList] = useState([]);
-  const [DriversSelfPostList,setDriversSelfPostList] = useState([]);
+  const [advanceTripData,setadvanceTripData] = useState({});
+  const [DriversSelfPostData,setDriversSelfPostdata] = useState({});
+  const [walletHistory,setwalletHistory] = useState([]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -125,8 +127,21 @@ const [isEnableMode, setIsEnableMode] = useState(false);
 
 useEffect(()=>{
   setVehicleData(data?.driverVehicle ?? []);
-  setadvanceTripList(data?.AdvanceTripList ?? []);
-  setDriversSelfPostList(data?.DriversSelfPostList ?? []);
+  if(data?.id){
+    getDriverPartnerList();
+    getDriversAdvanceTrip();
+
+    const processedHistory = [...data.walletHistory].reverse().reduce((acc, curr, index) => {
+      const lastBalance = index === 0 ? 0 : acc[index - 1].closing_balance;
+      const amount = parseFloat(curr.amount);
+      const newBalance = curr.action === 'cr' ? lastBalance + amount : lastBalance - amount;
+      
+      acc.push({ ...curr, closing_balance: newBalance });
+      return acc;
+    }, []).reverse();
+
+    setwalletHistory(processedHistory)
+  }
 },[data])
 
 const [actionDialog, setActionDialog] = useState({ open: false, vehicleId: null, status: '' });
@@ -140,6 +155,87 @@ const handleVehicleAction = (vehicleId, status) => {
     submitVehicleAction(vehicleId, 'approved', '');
   }
 };
+
+
+  const getDriversAdvanceTrip = async (page_num = 1, perPage_val = 10) => {
+
+    const queryParams = new URLSearchParams({
+      page: page_num,
+      perPage: perPage_val,
+      driverId:data.id
+    }).toString();
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getDriverAdvanceTripLists?${queryParams}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `${token}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+      console.log(result);
+
+      setadvanceTripData(result);
+      
+    } catch (err) {
+      if (err.response && err.response.status === 401) {
+        localStorage.clear();
+        window.location.href = '/pages/login'; 
+      }
+
+      if (axios.isCancel(err)) {
+        console.log('Request canceled:', err.message);
+      } else {
+        console.error(err);
+      }
+    } finally {
+    }
+  };
+
+    const getDriverPartnerList = async (page_num = 1, perPage_val = 10) => {
+
+    const queryParams = new URLSearchParams({
+      page: page_num,
+      perPage: perPage_val,
+      driverId:data.id
+    }).toString();
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getDriverPartnerDutyLists?${queryParams}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `${token}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      setDriversSelfPostdata(result);
+      
+    } catch (err) {
+      if (err.response && err.response.status === 401) {
+        localStorage.clear();
+        window.location.href = '/pages/login'; 
+      }
+
+      if (axios.isCancel(err)) {
+        console.log('Request canceled:', err.message);
+      } else {
+        console.error(err);
+      }
+    } finally {
+    }
+  };
+
 
 const submitVehicleAction = async (id, status, reason) => {
   try {
@@ -927,16 +1023,16 @@ const submitVehicleAction = async (id, status, reason) => {
       </Box>
 
       {/* Transaction List */}
-      {data.walletHistory && data.walletHistory.length > 0 ? (
+      {walletHistory && walletHistory.length > 0 ? (
         <Box sx={{ maxHeight: 480, overflowY: 'auto' }}>
           <List sx={{ p: 0 }}>
-            {data.walletHistory.map((transaction, index) => (
+            {walletHistory.map((transaction, index) => (
               <ListItem
                 key={transaction.id}
                 sx={{
                   px: 3,
                   py: 2.5,
-                  borderBottom: index !== data.walletHistory.slice(0, 10).length - 1 
+                  borderBottom: index !== walletHistory.slice(0, 10).length - 1 
                     ? `1px solid ${BRAND_COLORS.border}` 
                     : 'none',
                   '&:hover': {
@@ -963,22 +1059,22 @@ const submitVehicleAction = async (id, status, reason) => {
                     {transaction.action === 'cr' ? (
                       <Box
                         sx={{
-                          fontSize: 20,
+                          fontSize: 15,
                           fontWeight: 700,
                           color: BRAND_COLORS.success,
                         }}
                       >
-                        ↓
+                        +
                       </Box>
                     ) : (
                       <Box
                         sx={{
-                          fontSize: 20,
+                          fontSize: 15,
                           fontWeight: 700,
                           color: BRAND_COLORS.error,
                         }}
                       >
-                        ↑
+                        -
                       </Box>
                     )}
                   </Box>
@@ -1023,24 +1119,29 @@ const submitVehicleAction = async (id, status, reason) => {
                     }
                     sx={{ mb: 0.3 }}
                   >
-                    {transaction.action === 'cr' ? '+' : '-'}₹{parseFloat(transaction.amount).toFixed(2)}
+                    {transaction.action === 'cr' ? '+' : '-'} ₹{parseFloat(transaction.amount).toFixed(2)}
                   </Typography>
-                  {/* {(transaction.order_id && transaction.order_id !== 'null') && (
-                    <Typography 
-                      variant="caption" 
-                      color={BRAND_COLORS.textSecondary}
-                      sx={{ fontSize: '0.7rem' }}
-                    >
-                      #{transaction.order_id.slice(-6)}
-                    </Typography>
-                  )} */}
+                  
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    display: 'block', 
+                    fontSize: '0.65rem', 
+                    color: 'text.secondary',
+                    mt: -0.2,
+                    fontWeight: 500,
+                    fontSize:'12px !important'
+                  }}
+                >
+                  Bal: ₹{parseFloat(transaction.closing_balance || 0).toFixed(2)}
+                </Typography>
                 </Box>
               </ListItem>
             ))}
           </List>
 
           {/* View More Footer */}
-          {data.walletHistory.length > 10 && (
+          {walletHistory.length > 10 && (
             <Box
               sx={{
                 p: 2,
@@ -1233,7 +1334,32 @@ const submitVehicleAction = async (id, status, reason) => {
 
 <TabPanel value={tabValue} index={5}>
   <Stack spacing={3}>
-    {advanceTripList?.map((advanceTrip, index) => (
+    <Grid container spacing={2}>
+      <Grid item xs={12} sm={6}>
+        <Card variant="outlined" sx={{ p: 2, borderRadius: 2.5, bgcolor: '#f0fdf4', borderColor: '#bbf7d0', boxShadow: 'none' }}>
+          <Typography variant="caption" color="success.dark" fontWeight={700} sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Total Earning
+          </Typography>
+          <Typography variant="h6" fontWeight={700} color="success.main" sx={{ mt: 0.5, fontSize: '1.1rem' }}>
+            ₹{(parseFloat(advanceTripData?.total_amount || 0) - parseFloat(advanceTripData?.total_commission || 0))
+                .toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </Typography>
+        </Card>
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <Card variant="outlined" sx={{ p: 2, borderRadius: 2.5, bgcolor: '#fef2f2', borderColor: '#fecaca', boxShadow: 'none' }}>
+          <Typography variant="caption" color="error.dark" fontWeight={700} sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Total Commission
+          </Typography>
+          <Typography variant="h6" fontWeight={700} color="error.main" sx={{ mt: 0.5, fontSize: '1.1rem' }}>
+            ₹{parseFloat(advanceTripData?.total_commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </Typography>
+        </Card>
+      </Grid>
+    </Grid>
+
+    {advanceTripData?.data?.map((advanceTrip, index) => (
       <Grid item xs={12} key={advanceTrip.id || index}>
         {console.log(advanceTrip)}
         <Card
@@ -1445,7 +1571,33 @@ const submitVehicleAction = async (id, status, reason) => {
 
 <TabPanel value={tabValue} index={6}>
   <Stack spacing={3}>
-    {DriversSelfPostList?.map((advanceTrip, index) => (
+     <Grid container spacing={2}>
+      <Grid item xs={12} sm={6}>
+        <Card variant="outlined" sx={{ p: 2, borderRadius: 2.5, bgcolor: '#f0fdf4', borderColor: '#bbf7d0', boxShadow: 'none' }}>
+          <Typography variant="caption" color="success.dark" fontWeight={700} sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Total Earning
+          </Typography>
+          <Typography variant="h6" fontWeight={700} color="success.main" sx={{ mt: 0.5, fontSize: '1.1rem' }}>
+            ₹{(parseFloat(DriversSelfPostData?.total_amount || 0) - parseFloat(DriversSelfPostData?.total_commission || 0))
+                .toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </Typography>
+        </Card>
+      </Grid>
+
+      <Grid item xs={12} sm={6}>
+        <Card variant="outlined" sx={{ p: 2, borderRadius: 2.5, bgcolor: '#fef2f2', borderColor: '#fecaca', boxShadow: 'none' }}>
+          <Typography variant="caption" color="error.dark" fontWeight={700} sx={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Total Commission
+          </Typography>
+          <Typography variant="h6" fontWeight={700} color="error.main" sx={{ mt: 0.5, fontSize: '1.1rem' }}>
+            ₹{parseFloat(DriversSelfPostData?.total_commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </Typography>
+        </Card>
+      </Grid>
+    </Grid>
+    
+
+    {DriversSelfPostData?.data?.map((advanceTrip, index) => (
       <Grid item xs={12} key={advanceTrip.notiId || index}>
         <Card
           variant="outlined"
