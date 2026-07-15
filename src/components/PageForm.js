@@ -13,6 +13,8 @@ import Underline from "@tiptap/extension-underline";
 import Superscript from "@tiptap/extension-superscript";
 import Subscript from "@tiptap/extension-subscript";
 import FontSize from 'tiptap-extension-font-size';
+import api from "src/@core/utils/api";
+
 
 const PageForm = () => {
   const Router = useRouter();
@@ -570,24 +572,13 @@ const PageForm = () => {
       const endpoint = id ? `website-trip/${id}` : "save-website-form";
       const formmethod = id ? "PUT" : "POST";
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/${endpoint}`,
-        {
-          method: formmethod,
-          body: data,
-          headers: {
-            authorization: localStorage.getItem("access_token"),
-          },
-        }
-      );
+      const result = await api({
+        method: formmethod,
+        url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/${endpoint}`,
+        data: data
+      });
 
-      if (!response.ok) {
-        throw new Error("Failed to submit form.");
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
+      if (result?.data?.success) {
         if (id && !formData.featuredImage) {
           setSuccessMessage("Form submitted and file uploaded successfully.");
           setErrorMessage("");
@@ -602,7 +593,7 @@ const PageForm = () => {
 
           return;
         }
-        const newFileName = result.data.featuredImage;
+        const newFileName = result?.data?.data.featuredImage;
 
         const uploadData = new FormData();
         uploadData.append("file", formData.featuredImage);
@@ -630,7 +621,7 @@ const PageForm = () => {
           setErrorMessage("File upload error: " + uploadResult.message);
         }
       } else {
-        setErrorMessage("Error saving form data: " + result.message);
+        setErrorMessage("Error saving form data: " + result?.data?.message);
       }
     } catch (error) {
       console.error("Error details:", error);

@@ -16,6 +16,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import api from "src/@core/utils/api";
 
 // ─── User Selection Drawer ────────────────────────────────────────────────────
 
@@ -453,18 +454,18 @@ const AddPromotionalBanner = () => {
                 : `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/promotional-banners`;
             const method = isEditMode ? "PUT" : "POST";
 
-            const res = await fetch(url, {
-                method,
-                headers: { Authorization: token },
-                body: formPayload,
-            });
-            const result = await res.json();
 
-            if (res.ok && result.success) {
+             const result = await api({
+                method: method,
+                url: url,
+                data: formPayload
+            });
+
+            if (result?.data?.success) {
                 setSuccessMessage(`Banner ${isEditMode ? "updated" : "created"} successfully.`);
                 setTimeout(() => router.push("/promotional-banners"), 1500);
             } else {
-                setErrorMessage(result.message || `Failed to ${isEditMode ? "update" : "create"} banner.`);
+                setErrorMessage(result?.data.message || `Failed to ${isEditMode ? "update" : "create"} banner.`);
             }
         } catch (error) {
             setErrorMessage(`Error ${isEditMode ? "updating" : "creating"} banner.`);

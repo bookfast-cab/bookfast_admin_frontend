@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 
 import "react-quill/dist/quill.snow.css";
+import api from "src/@core/utils/api";
+
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
@@ -231,25 +233,33 @@ const EditTourPackageForm = (params) => {
       const endpoint = params.id === undefined  ? ''  : `${params.id}`;
       const fetchmethod = params.id === undefined  ? 'POST'  : `PUT`;
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/save-tour-package/${endpoint}`,
-        {
-          method: fetchmethod,
-          body: data,
-          headers: {
-            authorization: localStorage.getItem("access_token"),
-          },
-        }
-      );
+      // const response = await fetch(
+      //   `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/save-tour-package/${endpoint}`,
+      //   {
+      //     method: fetchmethod,
+      //     body: data,
+      //     headers: {
+      //       authorization: localStorage.getItem("access_token"),
+      //     },
+      //   }
+      // );
   
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
+      // if (!response.ok) {
+      //   throw new Error(`HTTP error! Status: ${response.status}`);
+      // }
   
-      const result = await response.json();
+      // const result = await response.json();
+
+
+      const result = await api({
+        method: fetchmethod,
+        url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/save-tour-package/${endpoint}`,
+        data: data
+      });
+      
   
-      if (result.success) {
-        const savedFilenames = result.data.featured_image;
+      if (result?.data?.success) {
+        const savedFilenames = result?.data?.data.featured_image;
         let uploadData = new FormData();
         
         if (savedFilenames) {
@@ -283,7 +293,7 @@ const EditTourPackageForm = (params) => {
           console.error('Error uploading files:', error);
         }
         } else {
-          alert(result.message);
+          alert(result?.data?.message);
         }
       } catch (error) {
         alert("Error during submission: " + error.message);
