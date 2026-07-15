@@ -13,6 +13,8 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 import { useRouter } from 'next/router';
 import { CONNECTING } from 'ws';
 import { Avatar } from "@mui/material";
+import axios from 'axios';
+import getFingerprint from 'src/utils/Fingerprint';
 
 
 
@@ -346,23 +348,25 @@ const EditDriverDetails = () => {
         formData.append('fileName', imageName);
     
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/drivers/${id}/documents/upload`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `${token}`,
-                },
-                body: formData,
+
+
+
+            const device_id = await getFingerprint()
+            
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/drivers/${id}/documents/upload`,formData, {
+                headers: { 'Authorization': `${token}`,'x-device-id': device_id, },
             });
+
     
-            const data = await response.json();
-            if (data.success) {
-                console.log(data);
+            // const data = await response.json();
+            if (response?.data?.success) {
+                console.log(response?.data);
                 setSuccessMessage(`${imageName} uploaded successfully`);
                 setOpenSnackbar(true);
                 fetchDriverDetails();
                 setSelectedFiles((prev) => ({ ...prev, [imageName]: null }));
             } else {
-                console.error('Error uploading file:', data);
+                console.error('Error uploading file:', response?.data);
             }
         } catch (error) {
             console.error('File upload failed', error);
