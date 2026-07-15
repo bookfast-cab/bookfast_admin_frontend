@@ -22,6 +22,13 @@ import LogoutVariant from 'mdi-material-ui/LogoutVariant'
 import AccountOutline from 'mdi-material-ui/AccountOutline'
 import MessageOutline from 'mdi-material-ui/MessageOutline'
 import HelpCircleOutline from 'mdi-material-ui/HelpCircleOutline'
+import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert from "@mui/material/Alert";
+import {
+  Button,
+  TextField,
+} from "@mui/material";
 
 // ** Styled Components
 const BadgeContentSpan = styled('span')(({ theme }) => ({
@@ -35,6 +42,74 @@ const BadgeContentSpan = styled('span')(({ theme }) => ({
 const UserDropdown = () => {
   // ** States
   const [anchorEl, setAnchorEl] = useState(null)
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setconfirmPassword] = useState("");
+  const [openPasswordModal, setOpenPasswordModal] = useState(false);
+  
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleOpenPasswordModal = () => {
+    setNewPassword("");
+    setconfirmPassword("");
+    setOpenPasswordModal(true);
+  };
+
+const handleChangePassword = async () => {
+  try {
+
+    if(!newPassword){
+      setErrorMessage("New Password is required.");
+      return;
+    }
+    
+    if(!confirmPassword){
+      setErrorMessage("Confirm Password is required.");
+      return;
+    }
+    
+    if(newPassword != confirmPassword){
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+
+    let token;
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('access_token');
+    }
+
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/change-admin-password`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${token}`,
+        },
+        body: JSON.stringify({ password: newPassword }),
+      }
+    );
+
+    const result = await response.json();
+    if (result.success) {
+      setSuccessMessage("Password changed successfully!");
+      setOpenPasswordModal(false);
+    } else {
+      setErrorMessage(result.message || "Failed to update password.");
+    }
+  } catch (err) {
+    console.log(err)
+    setErrorMessage("An error occurred.");
+  }
+};
+
+
+
+  const handleCloseSnackbar = () => {
+    setErrorMessage("");
+    setSuccessMessage("");
+  };
+
 
   // ** Hooks
   const router = useRouter()
@@ -130,10 +205,10 @@ const UserDropdown = () => {
           </Box>
         </Box>
         <Divider sx={{ mt: 0, mb: 1 }} />
-        <MenuItem sx={{ p: 0 }} onClick={() => handleDropdownClose()}>
+        <MenuItem sx={{ p: 0 }} onClick={() => handleOpenPasswordModal()}>
           <Box sx={styles}>
             <AccountOutline sx={{ marginRight: 2 }} />
-            Profile
+            Change Password
           </Box>
         </MenuItem>
         
@@ -143,6 +218,59 @@ const UserDropdown = () => {
           Logout
         </MenuItem>
       </Menu>
+
+
+ <Snackbar
+        open={!!errorMessage}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <MuiAlert elevation={6} variant="filled" severity="error">
+          {errorMessage}
+        </MuiAlert>
+      </Snackbar>
+
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <MuiAlert elevation={6} variant="filled" severity="success">
+          {successMessage}
+        </MuiAlert>
+      </Snackbar>
+
+        <Dialog open={openPasswordModal} onClose={() => setOpenPasswordModal(false)} fullWidth maxWidth="xs">
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogContent>
+              <TextField
+                fullWidth
+                margin="dense"
+                label="New Password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Confirm Password"
+                type="text"
+                value={confirmPassword}
+                onChange={(e) => setconfirmPassword(e.target.value)}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenPasswordModal(false)}>Cancel</Button>
+              <Button onClick={handleChangePassword} variant="contained" color="primary">
+                Change Password
+              </Button>
+            </DialogActions>
+          </Dialog>
+    
+    
     </Fragment>
   )
 }

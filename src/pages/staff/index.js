@@ -21,7 +21,9 @@ import EditIcon from "@mui/icons-material/Edit";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
-
+import { Password } from "@mui/icons-material";
+import { Lock } from "mdi-material-ui";
+import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 // Plus icon dynamic import
 const PlusIcon = dynamic(
   () => import("@heroicons/react/24/solid/PlusIcon"),
@@ -39,6 +41,61 @@ const StaffTable = () => {
   const [token, setToken] = useState(null);
   const [searchText, setSearchText] = useState("");
   const router = useRouter();
+const [openPasswordModal, setOpenPasswordModal] = useState(false);
+const [selectedStaffId, setSelectedStaffId] = useState(null);
+const [newPassword, setNewPassword] = useState("");
+const [confirmPassword, setconfirmPassword] = useState("");
+
+const handleOpenPasswordModal = (id) => {
+  setSelectedStaffId(id);
+  setNewPassword("");
+  setconfirmPassword("");
+  setOpenPasswordModal(true);
+};
+
+
+const handleChangePassword = async () => {
+  try {
+
+    if(!newPassword){
+      setErrorMessage("New Password is required.");
+      return;
+    }
+    
+    if(!confirmPassword){
+      setErrorMessage("Confirm Password is required.");
+      return;
+    }
+    
+    console.log(newPassword,confirmPassword)
+    if(newPassword != confirmPassword){
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/change-staff-password`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${token}`,
+        },
+        body: JSON.stringify({ password: newPassword,staff_id:selectedStaffId }),
+      }
+    );
+
+    const result = await response.json();
+    if (result.success) {
+      setSuccessMessage("Password changed successfully!");
+      setOpenPasswordModal(false);
+    } else {
+      setErrorMessage(result.message || "Failed to update password.");
+    }
+  } catch (err) {
+    setErrorMessage("An error occurred.");
+  }
+};
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -217,17 +274,17 @@ const StaffTable = () => {
               </IconButton>
             </Tooltip> */}
 
-            {/* <Tooltip title="View" arrow>
-              <IconButton onClick={() => handleShow(params.row.id)}>
-                <VisibilityIcon sx={{ color: "#2e7d32" }} />
+            <Tooltip title="Reset Password" arrow>
+              <IconButton onClick={() => handleOpenPasswordModal(params.row.id)}>
+                <Lock sx={{ color: "#7d4b2eff" }} />
               </IconButton>
-            </Tooltip> */}
+            </Tooltip>
 
-            {/* <Tooltip title="Delete" arrow>
+            <Tooltip title="Delete" arrow>
               <IconButton onClick={() => handleDelete(params.row.id)}>
                 <DeleteIcon sx={{ color: "red" }} />
               </IconButton>
-            </Tooltip> */}
+            </Tooltip>
           </>
         ) : null
       ),
@@ -340,6 +397,35 @@ const StaffTable = () => {
           {successMessage}
         </MuiAlert>
       </Snackbar>
+
+      <Dialog open={openPasswordModal} onClose={() => setOpenPasswordModal(false)} fullWidth maxWidth="xs">
+        <DialogTitle>Change Password</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            margin="dense"
+            label="New Password"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          <TextField
+            fullWidth
+            margin="dense"
+            label="Confirm Password"
+            type="text"
+            value={confirmPassword}
+            onChange={(e) => setconfirmPassword(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenPasswordModal(false)}>Cancel</Button>
+          <Button onClick={handleChangePassword} variant="contained" color="primary">
+            Change Password
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Grid>
   );
 };
