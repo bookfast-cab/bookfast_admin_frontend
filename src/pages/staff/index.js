@@ -24,7 +24,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { Password } from "@mui/icons-material";
 import { Lock } from "mdi-material-ui";
 import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-// Plus icon dynamic import
+
 const PlusIcon = dynamic(
   () => import("@heroicons/react/24/solid/PlusIcon"),
   { ssr: false }
@@ -58,19 +58,27 @@ const handleChangePassword = async () => {
   try {
 
     if(!newPassword){
+      
       setErrorMessage("New Password is required.");
+      
       return;
+
     }
     
     if(!confirmPassword){
+
       setErrorMessage("Confirm Password is required.");
+      
       return;
+
     }
     
-    console.log(newPassword,confirmPassword)
     if(newPassword != confirmPassword){
+
       setErrorMessage("Passwords do not match.");
+
       return;
+
     }
 
     const response = await fetch(
@@ -86,15 +94,24 @@ const handleChangePassword = async () => {
     );
 
     const result = await response.json();
+
     if (result.success) {
+    
       setSuccessMessage("Password changed successfully!");
+    
       setOpenPasswordModal(false);
+
     } else {
+      
       setErrorMessage(result.message || "Failed to update password.");
+
     }
   } catch (err) {
+
     setErrorMessage("An error occurred.");
+
   }
+  
 };
 
   useEffect(() => {
