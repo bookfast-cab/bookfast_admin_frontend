@@ -19,6 +19,7 @@ const ChangePassword = () => {
   const router = useRouter();
   
   const [showPassword, setShowPassword] = useState(false);
+  
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -42,7 +43,9 @@ const ChangePassword = () => {
     if (formData.newPassword !== formData.confirmPassword) errors.confirmPassword = "Passwords do not match";
     
     setFormErrors(errors);
+
     return Object.keys(errors).length === 0;
+    
   };
 
   const handleSubmit = async (e) => {
