@@ -13,6 +13,9 @@ import Superscript from "@tiptap/extension-superscript";
 import Subscript from "@tiptap/extension-subscript";
 import FontSize from 'tiptap-extension-font-size';
 import { useRouter } from 'next/router';
+import axios from 'axios';
+import getFingerprint from 'src/utils/Fingerprint';
+
 
 
 
@@ -350,26 +353,23 @@ const AddBlog = () => {
   
     try {
       const endpoint = id === undefined  ? ''  : `${id}`;
-      const fetchmethod = id === undefined  ? 'POST'  : `PUT`;
+      const fetchmethod = id === undefined  ? 'post'  : `put`;
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/save-blog/${endpoint}`,
-        {
-          method: fetchmethod,
-          body: data,
-          headers: {
+      const device_id = await getFingerprint()
+    
+      let axiosparams = {
+        method: fetchmethod,
+        url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/save-blog/${endpoint}`,
+        data: data,
+        headers: {
             authorization: localStorage.getItem("access_token"),
-          },
-        }
-      );
-  
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+            'x-device-id': device_id,
+        },
       }
-  
-      const result = await response.json();
-  
-      if (result.success) {
+
+      const response = await axios(axiosparams);
+
+      if (response?.data?.success) {
         console.log('Upload successful');
         resetForm();
         router.push('/blogs');
@@ -405,7 +405,7 @@ const AddBlog = () => {
       //     console.error('Error uploading files:', error);
       //   }
       } else {
-        alert(result.message);
+        alert(response?.data?.message);
       }
     } catch (error) {
       alert("Error during submission: " + error.message);
