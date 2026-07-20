@@ -9,6 +9,7 @@ import MuiAlert from '@mui/material/Alert';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Select, MenuItem, Box ,Button} from '@mui/material';
+import FilePdfBox from 'mdi-material-ui/FilePdfBox'
 
 import { useRouter } from 'next/router';
 import { CONNECTING } from 'ws';
@@ -25,6 +26,7 @@ const EditDriverDetails = () => {
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [vehicleCategories, setVehicleCategories] = useState([]);
     const [cities, setCities] = useState([]);
+    const [documents, setdocuments] = useState([]);
     
     const [errors, setErrors] = useState({
             phone_number: '',
@@ -268,6 +270,8 @@ const EditDriverDetails = () => {
                         vehicleRcBackImage: doc.isVehicleRcBackApproved || false,
                         vehicleRcFrontImage: doc.isVehicleRcFrontApproved || false,
                     });
+
+                    setdocuments(data?.documents)
                 } else {
                     console.warn("No documents available or invalid data structure.");
                 }
@@ -591,41 +595,37 @@ const EditDriverDetails = () => {
             </TableRow>
         </TableHead>
         <TableBody>
-            {[
-                'aadharCardImage.jpg',
-                'aadharCardBackImage.jpg',
-                'licenseBackImage.jpg',
-                'licenseFrontImage.jpg',
-                'panCardImage.jpg',
-                'vehicleBackImage.jpg',
-                'vehicleFrontImage.jpg',
-                'vehicleInsurance.jpg',
-                'vehiclePermitNational.jpg',
-                'vehicleRcBackImage.jpg',
-                'vehicleRcFrontImage.jpg'
-            ].map((imageName, index) => {
-                const imageUrl = `https://bookfast-service.s3.ap-south-1.amazonaws.com/drivers/${id}/${imageName}`;
+            {documents?.map((data, index) => {
+                let imageName = Object.keys(data)?.[0] ?? '';
+                let imageUrl = data?.[imageName] ?? '';
+
+                const cacheBustedUrl = imageUrl ? `${imageUrl}?t=${Date.now()}` : '';
+
                 const file = selectedFiles[imageName];
-                const previewUrl = file ? URL.createObjectURL(file) : imageUrl;
+                const previewUrl = file ? URL.createObjectURL(file) : cacheBustedUrl;
+                const isPdf = imageName?.toLowerCase().endsWith('.pdf');
+                let displayName = imageName.replace(/\.(jpg|jpeg|png|pdf)$/i, '').replace(/([A-Z])/g, ' $1').trim()
 
                 return (
                     <TableRow key={index}>
-                        {/* Image Name & Preview */}
                         <TableCell>
                         <Typography >
-                                <strong>{imageName.replace(/([A-Z])/g, ' $1').replace('.jpg', '')}</strong>
+                                <strong>{displayName}</strong>
                             </Typography>
                         </TableCell>
                         <TableCell sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
     <Box>
+        {isPdf?
+            <FilePdfBox color='error' sx={{ width: '150px', height: '100px', objectFit: 'contain' }} />
+        :
         <img
             src={previewUrl}
             alt={imageName}
             style={{ width: '150px', height: '100px', objectFit: 'contain' }}
-            onLoad={() => setImageExists((prev) => ({ ...prev, [imageName]: true }))}
+            // onLoad={() => setImageExists((prev) => ({ ...prev, [imageName]: true }))}
             onError={(e) => {
                 e.target.src = '/image_not_found.png';
-                setImageExists((prev) => ({ ...prev, [imageName]: false }));
+                // setImageExists((prev) => ({ ...prev, [imageName]: false }));
             }}
             onClick={() => {
                 const newTab = window.open(imageUrl, '_blank');
@@ -642,7 +642,8 @@ const EditDriverDetails = () => {
                 // Close the document writing process (important for the content to render)
                 newTab.document.close();
             }}
-        />
+        />}
+        
     </Box>
     
     <Box sx={{ display: 'flex', gap: 2, marginTop: 2, justifyContent: 'center' }}>
@@ -654,7 +655,7 @@ const EditDriverDetails = () => {
             <input
                 type="file"
                 hidden
-                accept="image/*"
+                accept={displayName == 'vehicle Insurance' ? "image/* , application/pdf" : "image/*"}
                 onChange={(e) => handleFileChange(imageName, e.target.files[0])}
             />
         </Button>
@@ -680,21 +681,25 @@ const EditDriverDetails = () => {
                                 <Button
                                     variant="outlined"
                                     color="primary"
-                                    disabled={!imageExists[imageName]}
+                                    disabled={previewUrl == ''}
                                     onClick={() => {
-                                        const newTab = window.open(imageUrl, '_blank');
-                                        newTab.document.write(`
-                                            <html>
-                                                <head><title>BookFast ${imageName}</title></head>
-                                                <body>
-                                                    <h1>${imageName}</h1><span><a href="${imageUrl}">Download</a></span>
-                                                    <img src="${imageUrl}" alt="${imageName}" style="max-width: 100%; height: auto;" />
-                                                </body>
-                                            </html>
-                                        `);
+                                        if (isPdf) {
+                                            window.open(imageUrl, '_blank');
+                                        } else {
+                                            const newTab = window.open(imageUrl, '_blank');
+                                            newTab.document.write(`
+                                                <html>
+                                                    <head><title>BookFast ${imageName}</title></head>
+                                                    <body>
+                                                        <h1>${imageName}</h1><span><a href="${imageUrl}">Download</a></span>
+                                                        <img src="${imageUrl}" alt="${imageName}" style="max-width: 100%; height: auto;" />
+                                                    </body>
+                                                </html>
+                                            `);
 
-                                        // Close the document writing process (important for the content to render)
-                                        newTab.document.close();
+                                            newTab.document.close();
+                                        }
+                                        
                                     }}
                                 >
                                     View
@@ -703,7 +708,7 @@ const EditDriverDetails = () => {
                                 <Button
                                     variant="outlined"
                                     color="primary"
-                                    disabled={!imageExists[imageName]}
+                                    disabled={previewUrl == ''}
                                     onClick={() => handleDownloadClick(imageUrl, imageName)}
                                 >
                                     Download
