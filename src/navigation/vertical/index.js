@@ -22,6 +22,7 @@ import SettingsOutline from 'mdi-material-ui/CogOutline'
 import Web from 'mdi-material-ui/Web'
 import ShieldAccount from 'mdi-material-ui/ShieldAccount'
 import Phone from 'mdi-material-ui/Phone'
+import ListBox from 'mdi-material-ui/ListBox'
 
 import { useState } from 'react'
 import { PhoneAndroid } from '@mui/icons-material'
@@ -69,7 +70,10 @@ const Navigation = () => {
 
     { privilege: ['drivers', 'driver-wallet-history'], sectionTitle: 'Drivers Management', icon: Car, roles: ['admin', 'staff'] },
     { privilege: ['drivers'], title: 'Drivers', icon: Car, path: '/drivers', roles: ['admin', 'staff'] },
-    { privilege: ['driver-wallet-history'], title: 'Driver Wallet History', icon: CurrencyUsd, path: '/driver-wallet-history', roles: ['admin', 'staff'] },
+    { privilege: ['driver-wallet-history'], title: 'Driver Wallet History', icon: ListBox, path: '/driver-wallet-history', roles: ['admin', 'staff'] },
+    { privilege: ['approve-pending'], title: 'Approve Wallet', icon: ListBox, path: '/driver-wallet-history/approve-pending', roles: ['admin'] },
+    { privilege: ['approve-pending-membership'], title: 'Approve Membership', icon: ListBox, path: '/driver-wallet-history/approve-pending-membership', roles: ['admin'] },
+
 
     { privilege: ['trips', 'manual-trips'], sectionTitle: 'Trips Management', icon: MapSearch, roles: ['admin', 'staff'] },
     { privilege: ['trips'], title: 'Trips', icon: MapSearch, path: '/trips', roles: ['admin', 'staff'] },

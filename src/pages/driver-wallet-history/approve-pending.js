@@ -4,18 +4,16 @@ import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
-import TableBasic from 'src/views/tables/DriverWalletHistoryTable';
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
-import { Button, SvgIcon, TextField ,Switch,FormControlLabel} from '@mui/material'
+import { Button, SvgIcon, TextField, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import CommonDataTable from 'src/components/CommonDataTable';
 import { formatDate } from 'src/utils/utils';
-import EditIcon from '@mui/icons-material/Edit';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Tooltip, IconButton, Chip } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import { Check, Close } from 'mdi-material-ui';
 
 // Dynamically import PlusIcon
 const PlusIcon = dynamic(() => import('@heroicons/react/24/solid/PlusIcon'), { ssr: false });
@@ -32,6 +30,12 @@ const MUITable = () => {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
+  
+  // Reject Dialog States
+  const [openRejectDialog, setOpenRejectDialog] = useState(false);
+  const [rejectId, setRejectId] = useState(null);
+  const [rejectRemark, setRejectRemark] = useState('');
+
   const router = useRouter();
 
   // Retrieve token from localStorage
@@ -42,8 +46,8 @@ const MUITable = () => {
   }, []);
 
   useEffect(() => {
-    getDriversWalletHistorys(0, perPage)
-  }, [searchText,staffOnly]);
+    getDriversWalletHistorys(0, perPage);
+  }, [searchText, staffOnly]);
 
   const handleSearchClick = (searchdata) => {
     getDriversWalletHistorys(1, perPage);
@@ -58,9 +62,9 @@ const MUITable = () => {
   const getDriversWalletHistorys = (page_num, perPage = 10) => {
     if (!token) return;
 
-    const queryParams = new URLSearchParams({ page: page_num, perPage: perPage, search: searchText,only_staff:staffOnly }).toString();
+    const queryParams = new URLSearchParams({ page: page_num, perPage: perPage, search: searchText, only_staff: staffOnly }).toString();
 
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/driver-wallet-histories?${queryParams}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/get-approve-pending-list?${queryParams}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -71,7 +75,6 @@ const MUITable = () => {
         if (!response.ok) {
           throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
-
         return response.json();
       })
       .then((result) => {
@@ -86,47 +89,96 @@ const MUITable = () => {
       .catch((error) => {
         setErrorMessage('Failed to fetch app version data.');
         console.error(error);
-      })
-      .finally(() => {
-        // setIsLoading(false);
       });
   };
 
-  const handleEdit = (id) => {
-    router.push(`/driver-wallet-history/edit?id=${id}`);
-  };
+  const handleApprove = (id) => {
+    if (!token) return;
+    let body = {
+      status: 1,
+      id: id
+    };
 
-  const handleShow = (id) => {
-    router.push(`/driver-wallet-history/show?id=${id}`);
-  };
-
-  const handleDelete = (id) => {
-    // Add your delete logic here
-  };
-
-
-  const exportToExcel = () => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-driver-wallet-histories`, {
-      method: 'GET',
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/approve-wallet-histories`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `${token}`
-      }
+        Authorization: token,
+      },
+      body: JSON.stringify(body),
     })
-      .then(response => response.blob())
-      .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'driver_wallet_history.csv';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch data. Status: ${response.status}`);
+        }
+        return response.json();
       })
-      .catch(error => {
-        console.error('Error exporting to Excel:', error);
+      .then((result) => {
+        if (result.success) {
+          setSuccessMessage('Approved successfully.');
+          getDriversWalletHistorys(0, perPage);
+        } else {
+          setErrorMessage(result.message);
+        }
+      })
+      .catch((error) => {
+        setErrorMessage('Failed to process approval.');
+        console.error(error);
       });
-  }
+  };
+
+  // Open Reject Dialog
+  const handleOpenReject = (id) => {
+    setRejectId(id);
+    setRejectRemark('');
+    setOpenRejectDialog(true);
+  };
+
+  // Close Reject Dialog
+  const handleCloseReject = () => {
+    setOpenRejectDialog(false);
+    setRejectId(null);
+    setRejectRemark('');
+  };
+
+  // Submit Reject with Remark
+  const handleSubmitReject = () => {
+    if (!token || !rejectId) return;
+
+    let body = {
+      status: 2, 
+      id: rejectId,
+      message: rejectRemark
+    };
+
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/approve-wallet-histories`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: token,
+      },
+      body: JSON.stringify(body),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch data. Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((result) => {
+        if (result.success) {
+          setSuccessMessage('Rejected successfully.');
+          handleCloseReject();
+          getDriversWalletHistorys(0, perPage);
+        } else {
+          setErrorMessage(result.message);
+        }
+      })
+      .catch((error) => {
+        setErrorMessage('Failed to process rejection.');
+        console.error(error);
+      });
+  };
 
   useEffect(() => {
     if (token) {
@@ -189,24 +241,22 @@ const MUITable = () => {
       width: 100,
       flex: 0.8,
       renderCell: (params) => (
-        (params.row.admin_approve_status != null)?
-          <Tooltip title={(params?.row?.admin_approve_status == 2)?params.row.admin_remark:''} arrow>
-            <Chip
-              label={params.row.admin_approve_status == 1 ? 'Approved' : params.row.admin_approve_status == 2 ? 'Rejected' : 'Pending'}
-              size="small"
-              sx={{
-                backgroundColor: params.row.admin_approve_status == 1 ? '#4caf50' : params.row.admin_approve_status == 2 ? '#f50c0cff' : '#ff9800',
-                color: 'white',
-                fontWeight: 'bold',
-                fontSize: '12px',
-                '&:hover': {
-                  backgroundColor: params.row.admin_approve_status == 1 ? '#45a049' : params.row.admin_approve_status == 2 ? '#f50c0cff' : '#ff9800',
-                }
-              }}
-            />
-          </Tooltip>
-        :
-        <span style={{ fontWeight: 'bold' }}>--</span>
+        (params.row.admin_approve_status != null) ?
+          <Chip
+            label={params.row.admin_approve_status == 1 ? 'Approved' : params.row.admin_approve_status == 2 ? 'Rejected' : 'Pending'}
+            size="small"
+            sx={{
+              backgroundColor: params.row.admin_approve_status == 1 ? '#4caf50' : params.row.admin_approve_status == 2 ? '#f50c0cff' : '#ff9800',
+              color: 'white',
+              fontWeight: 'bold',
+              fontSize: '12px',
+              '&:hover': {
+                backgroundColor: params.row.admin_approve_status == 1 ? '#45a049' : params.row.admin_approve_status == 2 ? '#f50c0cff' : '#ff9800',
+              }
+            }}
+          />
+          :
+          <span style={{ fontWeight: 'bold' }}>--</span>
       )
     },
     {
@@ -248,10 +298,9 @@ const MUITable = () => {
       filterable: false,
       renderCell: (params) => (
         <>
-        
-          <Tooltip title={(params?.row?.admin_approve_status == 2)?"Not Editable":"Edit"} arrow>
+          <Tooltip title="Approve" arrow>
             <IconButton
-              onClick={() => (params?.row?.admin_approve_status != 2) && handleEdit(params.row.id)}
+              onClick={() => handleApprove(params.row.id)}
               sx={{
                 backgroundColor: '#f0f0f0',
                 borderRadius: '8px',
@@ -263,31 +312,13 @@ const MUITable = () => {
                 },
               }}
             >
-              <EditIcon sx={{ color: '#1976d2', fontSize: '20px' }} />
+              <Check sx={{ color: '#2e7d32', fontSize: '20px' }} />
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="View" arrow>
+          <Tooltip title="Reject" arrow>
             <IconButton
-              onClick={() => handleShow(params.row.id)}
-              sx={{
-                backgroundColor: '#f0f0f0',
-                borderRadius: '8px',
-                padding: '5px',
-                marginRight: '5px',
-                transition: '0.2s',
-                '&:hover': {
-                  backgroundColor: '#e0e0e0',
-                },
-              }}
-            >
-              <VisibilityIcon sx={{ color: '#2e7d32', fontSize: '20px' }} />
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title="Delete" arrow>
-            <IconButton
-              onClick={() => handleDelete(params.row.id)}
+              onClick={() => handleOpenReject(params.row.id)}
               sx={{
                 backgroundColor: '#f0f0f0',
                 borderRadius: '8px',
@@ -298,7 +329,7 @@ const MUITable = () => {
                 },
               }}
             >
-              <DeleteIcon sx={{ color: 'red', fontSize: '20px' }} />
+              <Close sx={{ color: 'red', fontSize: '20px' }} />
             </IconButton>
           </Tooltip>
         </>
@@ -312,30 +343,8 @@ const MUITable = () => {
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
             <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-              Driver Wallet History
+              Approve Pending Wallet
             </Typography>
-          </Grid>
-          <Grid item xs={12} md={6} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-            <Button 
-              startIcon={(
-                <SvgIcon fontSize="small">
-                  <PlusIcon />
-                </SvgIcon>
-              )}
-              variant="contained"
-              onClick={() => router.push('/driver-wallet-history/add')}
-              sx={{
-                backgroundColor: '#1976d2',
-                '&:hover': {
-                  backgroundColor: '#1565c0',
-                },
-                borderRadius: '8px',
-                textTransform: 'none',
-                fontWeight: 'bold',
-              }}
-            >
-              Add New Record
-            </Button>
           </Grid>
         </Grid>
       </Grid>
@@ -377,31 +386,6 @@ const MUITable = () => {
                 }}
               />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={staffOnly} 
-                  onChange={(e) => setStaffOnly(e.target.checked)}
-                  color="info"
-                />
-              }
-              label={
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                  Staff
-                </Typography>
-              }
-            />
-
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <Button
-                variant="contained"
-                onClick={() => exportToExcel()}
-              >
-                Export
-              </Button>
-            </div>
-          </div>
           </div>
           
           <div style={{ width: '100%', overflowX: 'auto' }}>
@@ -443,6 +427,34 @@ const MUITable = () => {
           </div>
         </Card>
       </Grid>
+
+      {/* Reject Remark Dialog */}
+      <Dialog open={openRejectDialog} onClose={handleCloseReject} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 'bold', color: '#d32f2f' }}>Reject Request</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+            Please provide a remark/reason for rejecting this request.
+          </Typography>
+          <TextField
+            autoFocus
+            multiline
+            rows={4}
+            fullWidth
+            variant="outlined"
+            label="Enter Remark"
+            value={rejectRemark}
+            onChange={(e) => setRejectRemark(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions sx={{ padding: '16px' }}>
+          <Button onClick={handleCloseReject} variant="outlined" color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={handleSubmitReject} variant="contained" color="error">
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={!!errorMessage}

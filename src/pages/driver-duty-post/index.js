@@ -7,10 +7,11 @@ import MuiAlert from '@mui/material/Alert';
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
-import { Button, SvgIcon, TextField, Tooltip, IconButton, Chip } from '@mui/material';
+import { Button, SvgIcon, TextField,Tooltip, IconButton, Chip } from '@mui/material';
 import CommonDataTable from 'src/components/CommonDataTable';
 import { formatDate } from 'src/utils/utils';
 import DutyDrawer from './dutydrawer'
+import EditIcon from '@mui/icons-material/Edit';
 
 import SearchIcon from '@mui/icons-material/Search';
 import { Switch } from '@mui/material';
@@ -224,6 +225,28 @@ const MUITable = () => {
             color="info"
             inputProps={{ 'aria-label': 'toggle status' }}
           />
+          {(params.row.status != '2')&&
+            <Tooltip title="Edit" arrow>
+              <IconButton
+                onClick={()=>{
+                  router.push(`/driver-duty-post/edit?id=${params.row.notiId}`)
+                }}
+                sx={{
+                  backgroundColor: '#f0f0f0',
+                  borderRadius: '8px',
+                  padding: '5px',
+                  transition: '0.2s',
+                    marginRight: '5px',
+                  '&:hover': {
+                    backgroundColor: '#e0e0e0'
+                  }
+                }}
+              >
+                <EditIcon sx={{ color: 'blue', fontSize: '20px' }} />
+              </IconButton>
+          </Tooltip>
+            }
+          
         </>
       ),
     }
