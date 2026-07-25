@@ -76,6 +76,7 @@ const MUITable = () => {
           throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
         return response.json();
+
       })
       .then((result) => {
         let resData = result.data;
@@ -99,7 +100,9 @@ const MUITable = () => {
   };
 
   const handleApprove = (id) => {
+
     if (!token) return;
+
     let body = {
       status: 1,
       id: id
@@ -114,10 +117,13 @@ const MUITable = () => {
       body: JSON.stringify(body),
     })
       .then((response) => {
+        
         if (!response.ok) {
           throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
+
         return response.json();
+
       })
       .then((result) => {
         if (result.success) {
@@ -166,10 +172,13 @@ const MUITable = () => {
       body: JSON.stringify(body),
     })
       .then((response) => {
+        
         if (!response.ok) {
           throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
+        
         return response.json();
+
       })
       .then((result) => {
         if (result.success) {

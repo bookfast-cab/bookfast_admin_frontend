@@ -60,6 +60,7 @@ const MUITable = () => {
 
   // Fetch App Versions
   const getDriversWalletHistorys = (page_num, perPage = 10) => {
+    
     if (!token) return;
 
     const queryParams = new URLSearchParams({ page: page_num, perPage: perPage, search: searchText, only_staff: staffOnly }).toString();
@@ -75,7 +76,9 @@ const MUITable = () => {
         if (!response.ok) {
           throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
+        
         return response.json();
+
       })
       .then((result) => {
         let resData = result.data;
@@ -93,7 +96,9 @@ const MUITable = () => {
   };
 
   const handleApprove = (id) => {
+    
     if (!token) return;
+
     let body = {
       status: 1,
       id: id
@@ -111,7 +116,9 @@ const MUITable = () => {
         if (!response.ok) {
           throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
+        
         return response.json();
+
       })
       .then((result) => {
         if (result.success) {
@@ -163,7 +170,9 @@ const MUITable = () => {
         if (!response.ok) {
           throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
+        
         return response.json();
+
       })
       .then((result) => {
         if (result.success) {
