@@ -75,6 +75,7 @@ const MUITable = () => {
         if (!response.ok) {
           throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
+        
         return response.json();
 
       })
