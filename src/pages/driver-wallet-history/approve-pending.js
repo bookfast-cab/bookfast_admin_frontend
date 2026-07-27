@@ -14,7 +14,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { Tooltip, IconButton, Chip } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { Check, Close } from 'mdi-material-ui';
-
+import { Select, MenuItem, FormControl } from '@mui/material';
 // Dynamically import PlusIcon
 const PlusIcon = dynamic(() => import('@heroicons/react/24/solid/PlusIcon'), { ssr: false });
 
@@ -30,6 +30,7 @@ const MUITable = () => {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
+  const [type, settype] = useState(0);
   
   // Reject Dialog States
   const [openRejectDialog, setOpenRejectDialog] = useState(false);
@@ -46,11 +47,11 @@ const MUITable = () => {
   }, []);
 
   useEffect(() => {
-    getDriversWalletHistorys(0, perPage);
+    getDriversWalletHistorys(0, perPage,type);
   }, [searchText, staffOnly]);
 
   const handleSearchClick = (searchdata) => {
-    getDriversWalletHistorys(1, perPage);
+    getDriversWalletHistorys(1, perPage,type);
   };
 
   const handleCloseSnackbar = () => {
@@ -59,11 +60,11 @@ const MUITable = () => {
   };
 
   // Fetch App Versions
-  const getDriversWalletHistorys = (page_num, perPage = 10) => {
+  const getDriversWalletHistorys = (page_num, perPage = 10,type=0) => {
     
     if (!token) return;
 
-    const queryParams = new URLSearchParams({ page: page_num, perPage: perPage, search: searchText, only_staff: staffOnly }).toString();
+    const queryParams = new URLSearchParams({ page: page_num, perPage: perPage, search: searchText, type: type }).toString();
 
     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/get-approve-pending-list?${queryParams}`, {
       method: 'GET',
@@ -81,6 +82,7 @@ const MUITable = () => {
 
       })
       .then((result) => {
+        settype(type);
         let resData = result.data;
 
         setData(resData || []);
@@ -123,7 +125,7 @@ const MUITable = () => {
       .then((result) => {
         if (result.success) {
           setSuccessMessage('Approved successfully.');
-          getDriversWalletHistorys(0, perPage);
+          getDriversWalletHistorys(0, perPage,type);
         } else {
           setErrorMessage(result.message);
         }
@@ -178,7 +180,7 @@ const MUITable = () => {
         if (result.success) {
           setSuccessMessage('Rejected successfully.');
           handleCloseReject();
-          getDriversWalletHistorys(0, perPage);
+          getDriversWalletHistorys(0, perPage,type);
         } else {
           setErrorMessage(result.message);
         }
@@ -306,7 +308,7 @@ const MUITable = () => {
       sortable: false,
       filterable: false,
       renderCell: (params) => (
-        <>
+       (params?.row?.admin_approve_status == 0) && <>
           <Tooltip title="Approve" arrow>
             <IconButton
               onClick={() => handleApprove(params.row.id)}
@@ -345,6 +347,11 @@ const MUITable = () => {
       ),
     }
   ];
+const handleDropdownChange = (event) => {
+  const selectedType = event.target.value;
+  settype(selectedType);
+  getDriversWalletHistorys(0, perPage, selectedType);
+};
 
   return (
     <Grid container spacing={4} sx={{ bgcolor: "white", padding: 3 }}>
@@ -360,15 +367,8 @@ const MUITable = () => {
 
       <Grid item xs={12}>
         <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
-          <div style={{ 
-            padding: '16px', 
-            borderBottom: '1px solid #e0e0e0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '16px'
-          }}>
+           <div style={{ display: 'flex',marginBottom:10,marginRight:10,marginLeft:10, alignItems: 'center',justifyContent:'space-between', gap: '15px', flexWrap: 'wrap' }}>
+            {/* Search Field */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                 Search:
@@ -395,7 +395,26 @@ const MUITable = () => {
                 }}
               />
             </div>
-          </div>
+            <FormControl size="small" sx={{ minWidth: 180}}>
+              <Select
+                value={type}
+                onChange={handleDropdownChange}
+                displayEmpty
+                sx={{
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  color: '#000',
+                  '& .MuiSelect-icon': {
+                    color: '#000', // Dropdown arrow icon color
+                  },
+                }}
+              >
+                <MenuItem value={0}>Pending List</MenuItem>
+                <MenuItem value={1}>Approve List</MenuItem>
+                <MenuItem value={2}>Reject List</MenuItem>
+              </Select>
+            </FormControl>
+</div>
           
           <div style={{ width: '100%', overflowX: 'auto' }}>
             <CommonDataTable
@@ -412,7 +431,7 @@ const MUITable = () => {
               totalPages={totalPages}
               currentPage={currentPage}
               rowsPerPage={perPage}
-              onPageChange={getDriversWalletHistorys}
+              onPageChange={(newPage) => getDriversWalletHistorys(newPage, perPage,type)}
               sx={{
                 '& .MuiDataGrid-root': {
                   border: 'none',
