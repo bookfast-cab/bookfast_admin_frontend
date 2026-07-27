@@ -49,6 +49,12 @@ const UserDropdown = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
+  let userdata;
+  if (typeof window !== 'undefined') {
+    userdata = localStorage.getItem('user');
+    userdata = (userdata)?JSON.parse(userdata):null;
+  }
+
   const handleOpenPasswordModal = () => {
     setNewPassword("");
     setconfirmPassword("");
@@ -197,9 +203,9 @@ const handleChangePassword = async () => {
               <Avatar alt='Admin' src='/images/avatars/1.png' sx={{ width: '2.5rem', height: '2.5rem' }} />
             </Badge>
             <Box sx={{ display: 'flex', marginLeft: 3, alignItems: 'flex-start', flexDirection: 'column' }}>
-              <Typography sx={{ fontWeight: 600 }}>Admin</Typography>
+              <Typography sx={{ fontWeight: 600 }}>{userdata?.name}</Typography>
               <Typography variant='body2' sx={{ fontSize: '0.8rem', color: 'text.disabled' }}>
-                Admin
+                {userdata?.userRole}
               </Typography>
             </Box>
           </Box>
