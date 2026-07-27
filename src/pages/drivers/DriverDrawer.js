@@ -137,22 +137,10 @@ useEffect(()=>{
         fetchDriverData('getDriverPartnerDutyLists', setDriversSelfPostdata);
       } else if (tabValue === 7) {
         fetchDriverData('getDriverRealTimeBookingsLists', setRealtimeBookingData);
+      } else if (tabValue === 3) {
+        fetchDriverData('getWalletHistoryByDriver', setwalletHistory);
       }
     }
-
-    const processedHistory = [...data.walletHistory].reverse().reduce((acc, curr, index) => {
-      const lastBalance = index === 0 ? 0 : acc[index - 1].closing_balance;
-      const amount = parseFloat(curr.amount);
-      const newBalance = curr.action === 'cr' ? lastBalance + amount : lastBalance - amount;
-      
-      acc.push({ ...curr, closing_balance: newBalance });
-      
-      return acc;
-
-    }, []).reverse();
-
-    setwalletHistory(processedHistory)
-
   }
 },[data])
 
@@ -188,7 +176,7 @@ const fetchDriverData = async (endpoint, setterFunction, page_num = 1, perPage_v
     );
 
     const result = await response.json();
-    setterFunction(result); // Dynamically state update hogi
+    setterFunction(result); 
   } catch (err) {
     console.error("Error fetching data:", err);
   }
@@ -632,6 +620,7 @@ const submitVehicleAction = async (id, status, reason) => {
                     label="Wallet"
                     icon={<AccountBalanceWalletIcon />}
                     iconPosition="start"
+                    onClick={() => fetchDriverData('getWalletHistoryByDriver', setwalletHistory)}
                     sx={{ color: BRAND_COLORS.textSecondary }}
                   />
 
@@ -955,21 +944,6 @@ const submitVehicleAction = async (id, status, reason) => {
             >
               ₹{parseFloat(data.wallet || 0).toFixed(2)}
             </Typography>
-
-            <Typography 
-              variant="p" 
-              sx={{ 
-                color: 'rgba(255, 255, 255, 0.7)',
-                fontWeight: 400,
-                fontSize: '0.7rem',
-              }}
-            >
-              Last updated: {new Date().toLocaleDateString('en-IN', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-              })}
-            </Typography>
           </Box>
         </Stack>
       </Box>
@@ -998,16 +972,16 @@ const submitVehicleAction = async (id, status, reason) => {
       </Box>
 
       {/* Transaction List */}
-      {walletHistory && walletHistory.length > 0 ? (
+      {walletHistory?.data && walletHistory?.data?.length > 0 ? (
         <Box sx={{ maxHeight: 480, overflowY: 'auto' }}>
           <List sx={{ p: 0 }}>
-            {walletHistory.map((transaction, index) => (
+            {walletHistory?.data?.map((transaction, index) => (
               <ListItem
                 key={transaction.id}
                 sx={{
                   px: 3,
                   py: 2.5,
-                  borderBottom: index !== walletHistory.slice(0, 10).length - 1 
+                  borderBottom: index !== walletHistory?.data?.slice(0, 10).length - 1 
                     ? `1px solid ${BRAND_COLORS.border}` 
                     : 'none',
                   '&:hover': {
@@ -1016,7 +990,7 @@ const submitVehicleAction = async (id, status, reason) => {
                   transition: 'background-color 0.2s',
                 }}
               >
-                {/* Transaction Icon */}
+
                 <ListItemIcon sx={{ minWidth: 48 }}>
                   <Box
                     sx={{
@@ -1064,7 +1038,7 @@ const submitVehicleAction = async (id, status, reason) => {
                       color={BRAND_COLORS.textPrimary}
                       sx={{ mb: 0.3 }}
                     >
-                      {transaction.message || (transaction.action === 'cr' ? 'Money Added' : 'Payment Made')}
+                     #{transaction.id} - {transaction.message || (transaction.action === 'cr' ? 'Money Added' : 'Payment Made')}
                     </Typography>
                   }
                   secondary={
@@ -1076,6 +1050,7 @@ const submitVehicleAction = async (id, status, reason) => {
                       {new Date(transaction.created_at).toLocaleString('en-IN', {
                         day: 'numeric',
                         month: 'short',
+                        year: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
@@ -1116,7 +1091,7 @@ const submitVehicleAction = async (id, status, reason) => {
           </List>
 
           {/* View More Footer */}
-          {walletHistory.length > 10 && (
+          {walletHistory?.data?.length > 10 && (
             <Box
               sx={{
                 p: 2,
