@@ -200,7 +200,7 @@ const AddMembershipDialog = ({ open, onClose, driverId }) => {
         )}
 
         {/* Add Custom Plan Section */}
-        <Box sx={{ mb: 4 }}>
+        {/* <Box sx={{ mb: 4 }}>
           <Typography variant="h6" gutterBottom>
             Add Custom Membership Plan
           </Typography>
@@ -233,7 +233,7 @@ const AddMembershipDialog = ({ open, onClose, driverId }) => {
               Add Custom
             </Button>
           </Box>
-        </Box>
+        </Box> */}
 
         {/* Membership Plans Table */}
         <Typography variant="h6" gutterBottom>
