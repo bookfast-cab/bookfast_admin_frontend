@@ -15,7 +15,7 @@ import { Tooltip, IconButton, Chip } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { Check, Close } from 'mdi-material-ui';
 import { Select, MenuItem, FormControl } from '@mui/material';
-// Dynamically import PlusIcon
+
 const PlusIcon = dynamic(() => import('@heroicons/react/24/solid/PlusIcon'), { ssr: false });
 
 const MUITable = () => {
@@ -347,6 +347,7 @@ const MUITable = () => {
       ),
     }
   ];
+  
 const handleDropdownChange = (event) => {
   const selectedType = event.target.value;
   settype(selectedType);
