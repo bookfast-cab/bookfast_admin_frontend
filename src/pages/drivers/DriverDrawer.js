@@ -122,6 +122,7 @@ const DriverDrawer = ({onDriverUpdate, open, onClose, data = {} }) => {
   const [RealtimeBookingData,setRealtimeBookingData] = useState({});
   const [myPartnerDutyData,setMyPartnerDutyData] = useState({});
   const [walletHistory,setwalletHistory] = useState([]);
+  const [walletView, setWalletView] = useState('wallet'); // 'wallet' or 'earning'
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -142,7 +143,7 @@ useEffect(()=>{
       }
     }
   }
-},[data])
+},[data,walletView])
 
 const [actionDialog, setActionDialog] = useState({ open: false, vehicleId: null, status: '' });
 const [rejectionReason, setRejectionReason] = useState('');
@@ -160,7 +161,8 @@ const fetchDriverData = async (endpoint, setterFunction, page_num = 1, perPage_v
   const queryParams = new URLSearchParams({
     page: page_num,
     perPage: perPage_val,
-    driverId: data.id
+    driverId: data.id,
+    type:walletView
   }).toString();
 
   try {
@@ -889,7 +891,53 @@ const submitVehicleAction = async (id, status, reason) => {
 
                   {/* Wallet History Tab */}
                  
+{/* Wallet History Tab */}
 <TabPanel value={tabValue} index={3}>
+
+  {/* NEW: Wallet & Earning Toggle Buttons */}
+  <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+    <Button
+      fullWidth
+      variant={walletView === 'wallet' ? 'contained' : 'outlined'}
+      onClick={() => setWalletView('wallet')}
+      sx={{
+        borderRadius: 2,
+        textTransform: 'none',
+        fontWeight: 600,
+        borderColor: walletView === 'wallet' ? 'transparent' : BRAND_COLORS.border,
+        color: walletView === 'wallet' ? '#fff' : BRAND_COLORS.textSecondary,
+        backgroundColor: walletView === 'wallet' ? BRAND_COLORS.primary : 'transparent',
+        boxShadow: walletView === 'wallet' ? '0 2px 4px rgba(37, 99, 235, 0.2)' : 'none',
+        '&:hover': {
+          backgroundColor: walletView === 'wallet' ? '#1d4ed8' : BRAND_COLORS.background,
+        }
+      }}
+    >
+      Wallet History
+    </Button>
+    <Button
+      fullWidth
+      variant={walletView === 'earning' ? 'contained' : 'outlined'}
+      onClick={() => {
+        setWalletView('earning');
+      }}
+      sx={{
+        borderRadius: 2,
+        textTransform: 'none',
+        fontWeight: 600,
+        borderColor: walletView === 'earning' ? 'transparent' : BRAND_COLORS.border,
+        color: walletView === 'earning' ? '#fff' : BRAND_COLORS.textSecondary,
+        backgroundColor: walletView === 'earning' ? BRAND_COLORS.primary : 'transparent',
+        boxShadow: walletView === 'earning' ? '0 2px 4px rgba(37, 99, 235, 0.2)' : 'none',
+        '&:hover': {
+          backgroundColor: walletView === 'earning' ? '#1d4ed8' : BRAND_COLORS.background,
+        }
+      }}
+    >
+      Earning History
+    </Button>
+  </Box>
+
   {/* Wallet Balance Card - Compact Hero Section */}
   <Card 
     variant="outlined" 
@@ -929,7 +977,7 @@ const submitVehicleAction = async (id, status, reason) => {
                   fontSize: '0.8rem',
                 }}
               >
-                Available Balance
+                {walletView === 'wallet' ? 'Wallet Balance' : 'Total Earnings'}
               </Typography>
             </Stack>
 
@@ -942,7 +990,8 @@ const submitVehicleAction = async (id, status, reason) => {
                 mb: 0.3,
               }}
             >
-              ₹{parseFloat(data.wallet || 0).toFixed(2)}
+
+              ₹{parseFloat( (walletView === 'wallet') ? data.wallet : data.commision_earning || 0).toFixed(2)}
             </Typography>
           </Box>
         </Stack>
@@ -950,7 +999,7 @@ const submitVehicleAction = async (id, status, reason) => {
     </CardContent>
   </Card>
 
-  {/* Transaction History */}
+  {/* Transaction History Card */}
   <Card variant="outlined" sx={{ borderRadius: 2, border: `1px solid ${BRAND_COLORS.border}` }}>
     <CardContent sx={{ p: 0 }}>
       {/* Header */}
@@ -967,190 +1016,103 @@ const submitVehicleAction = async (id, status, reason) => {
           fontWeight={600} 
           color={BRAND_COLORS.textPrimary}
         >
-          Recent Transactions
+          {walletView === 'wallet' ? 'Recent Wallet Transactions' : 'Recent Earning Transactions'}
         </Typography>
       </Box>
 
-      {/* Transaction List */}
-      {walletHistory?.data && walletHistory?.data?.length > 0 ? (
-        <Box sx={{ maxHeight: 480, overflowY: 'auto' }}>
-          <List sx={{ p: 0 }}>
-            {walletHistory?.data?.map((transaction, index) => (
-              <ListItem
-                key={transaction.id}
-                sx={{
-                  px: 3,
-                  py: 2.5,
-                  borderBottom: index !== walletHistory?.data?.slice(0, 10).length - 1 
-                    ? `1px solid ${BRAND_COLORS.border}` 
-                    : 'none',
-                  '&:hover': {
-                    backgroundColor: BRAND_COLORS.background,
-                  },
-                  transition: 'background-color 0.2s',
-                }}
-              >
-
-                <ListItemIcon sx={{ minWidth: 48 }}>
-                  <Box
-                    sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 2,
-                      backgroundColor: transaction.action === 'cr'
-                        ? '#dcfce7'
-                        : '#fee2e2',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {transaction.action === 'cr' ? (
-                      <Box
-                        sx={{
-                          fontSize: 15,
-                          fontWeight: 700,
-                          color: BRAND_COLORS.success,
-                        }}
-                      >
-                        +
-                      </Box>
-                    ) : (
-                      <Box
-                        sx={{
-                          fontSize: 15,
-                          fontWeight: 700,
-                          color: BRAND_COLORS.error,
-                        }}
-                      >
-                        -
-                      </Box>
-                    )}
-                  </Box>
-                </ListItemIcon>
-
-                {/* Transaction Details */}
-                <ListItemText
-                  primary={
-                    <Typography 
-                      variant="body2" 
-                      fontWeight={600} 
-                      color={BRAND_COLORS.textPrimary}
-                      sx={{ mb: 0.3 }}
-                    >
-                     #{transaction.id} - {transaction.message || (transaction.action === 'cr' ? 'Money Added' : 'Payment Made')}
-                    </Typography>
-                  }
-                  secondary={
-                    <Typography 
-                      variant="caption" 
-                      color={BRAND_COLORS.textSecondary}
-                      sx={{ fontSize: '0.75rem' }}
-                    >
-                      {new Date(transaction.created_at).toLocaleString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Typography>
-                  }
-                />
-
-                {/* Transaction Amount */}
-                <Box textAlign="right" ml={2}>
-                  <Typography
-                    variant="p"
-                    fontWeight={700}
-                    color={transaction.action === 'cr'
-                      ? BRAND_COLORS.success
-                      : BRAND_COLORS.error
-                    }
-                    sx={{ mb: 0.3 }}
-                  >
-                    {transaction.action === 'cr' ? '+' : '-'} ₹{parseFloat(transaction.amount).toFixed(2)}
-                  </Typography>
-                  
-                <Typography 
-                  variant="caption" 
-                  sx={{ 
-                    display: 'block', 
-                    fontSize: '0.65rem', 
-                    color: 'text.secondary',
-                    mt: -0.2,
-                    fontWeight: 500,
-                    fontSize:'12px !important'
+      {
+        walletHistory?.data && walletHistory?.data?.length > 0 ? (
+          <Box sx={{ maxHeight: 480, overflowY: 'auto' }}>
+            <List sx={{ p: 0 }}>
+              {walletHistory?.data?.map((transaction, index) => (
+                <ListItem
+                  key={transaction.id}
+                  sx={{
+                    px: 3,
+                    py: 2.5,
+                    borderBottom: index !== walletHistory?.data?.slice(0, 10).length - 1 
+                      ? `1px solid ${BRAND_COLORS.border}` 
+                      : 'none',
+                    '&:hover': {
+                      backgroundColor: BRAND_COLORS.background,
+                    },
+                    transition: 'background-color 0.2s',
                   }}
                 >
-                  Bal: ₹{parseFloat(transaction.closing_balance || 0).toFixed(2)}
-                </Typography>
-                </Box>
-              </ListItem>
-            ))}
-          </List>
+                  <ListItemIcon sx={{ minWidth: 48 }}>
+                    <Box
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 2,
+                        backgroundColor: transaction.action === 'cr' ? '#dcfce7' : '#fee2e2',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: transaction.action === 'cr' ? BRAND_COLORS.success : BRAND_COLORS.error,
+                        }}
+                      >
+                        {transaction.action === 'cr' ? '+' : '-'}
+                      </Box>
+                    </Box>
+                  </ListItemIcon>
 
-          {/* View More Footer */}
-          {walletHistory?.data?.length > 10 && (
-            <Box
-              sx={{
-                p: 2,
-                textAlign: 'center',
-                borderTop: `1px solid ${BRAND_COLORS.border}`,
-                backgroundColor: BRAND_COLORS.background,
-              }}
-            >
-              
-            </Box>
-          )}
-        </Box>
-      ) : (
+                  <ListItemText
+                    primary={
+                      <Typography variant="body2" fontWeight={600} color={BRAND_COLORS.textPrimary} sx={{ mb: 0.3 }}>
+                       #{transaction.id} - {transaction.message || (transaction.action === 'cr' ? 'Money Added' : 'Payment Made')}
+                      </Typography>
+                    }
+                    secondary={
+                      <Typography variant="caption" color={BRAND_COLORS.textSecondary} sx={{ fontSize: '0.75rem' }}>
+                        {new Date(transaction.created_at).toLocaleString('en-IN', {
+                          day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                        })}
+                      </Typography>
+                    }
+                  />
 
-        <Box 
-          display="flex" 
-          flexDirection="column"
-          justifyContent="center" 
-          alignItems="center" 
-          py={8}
-        >
-          <Box
-            sx={{
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              backgroundColor: BRAND_COLORS.primaryLight,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mb: 2,
-            }}
-          >
-            <AccountBalanceWalletIcon 
-              sx={{ 
-                fontSize: 40, 
-                color: BRAND_COLORS.primary,
-                opacity: 0.6,
-              }} 
-            />
+                  <Box textAlign="right" ml={2}>
+                    <Typography
+                      variant="p"
+                      fontWeight={700}
+                      color={transaction.action === 'cr' ? BRAND_COLORS.success : BRAND_COLORS.error}
+                      sx={{ mb: 0.3 }}
+                    >
+                      {transaction.action === 'cr' ? '+' : '-'} ₹{parseFloat(transaction.amount).toFixed(2)}
+                    </Typography>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ display: 'block', color: 'text.secondary', mt: -0.2, fontWeight: 500, fontSize:'12px !important' }}
+                    >
+                      Bal: ₹{parseFloat(transaction.closing_balance || 0).toFixed(2)}
+                    </Typography>
+                  </Box>
+                </ListItem>
+              ))}
+            </List>
           </Box>
-          <Typography 
-            variant="body1" 
-            fontWeight={600}
-            color={BRAND_COLORS.textPrimary}
-            mb={0.5}
-          >
-            No Transactions Yet
-          </Typography>
-          <Typography 
-            variant="body2" 
-            color={BRAND_COLORS.textSecondary}
-            textAlign="center"
-            sx={{ maxWidth: 280 }}
-          >
-            All wallet transactions will appear here
-          </Typography>
-        </Box>
-      )}
+        ) : (
+          <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" py={8}>
+            <Box sx={{ width: 80, height: 80, borderRadius: '50%', backgroundColor: BRAND_COLORS.primaryLight, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+              <AccountBalanceWalletIcon sx={{ fontSize: 40, color: BRAND_COLORS.primary, opacity: 0.6 }} />
+            </Box>
+            <Typography variant="body1" fontWeight={600} color={BRAND_COLORS.textPrimary} mb={0.5}>
+              No Transactions Yet
+            </Typography>
+            <Typography variant="body2" color={BRAND_COLORS.textSecondary} textAlign="center" sx={{ maxWidth: 280 }}>
+              All wallet transactions will appear here
+            </Typography>
+          </Box>
+        )
+      }
+
     </CardContent>
   </Card>
 </TabPanel>
