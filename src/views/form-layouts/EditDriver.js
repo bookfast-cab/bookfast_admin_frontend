@@ -252,6 +252,7 @@ const EditDriverDetails = () => {
                     driverProfile: `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/driver_profiles/${data?.data.driverProfile || '' }`,
                     profileApproved: data?.data.profileApproved || 0,
                 });
+                setdocuments(data?.documents ?? [])
 
                 // Check if documents array exists and has at least one object
                 if (data.data.documents && data.data.documents.length > 0 && data.data.documents[0]) {
@@ -270,8 +271,6 @@ const EditDriverDetails = () => {
                         vehicleRcBackImage: doc.isVehicleRcBackApproved || false,
                         vehicleRcFrontImage: doc.isVehicleRcFrontApproved || false,
                     });
-
-                    setdocuments(data?.documents)
                 } else {
                     console.warn("No documents available or invalid data structure.");
                 }
@@ -595,6 +594,7 @@ const EditDriverDetails = () => {
             </TableRow>
         </TableHead>
         <TableBody>
+            {console.log(documents)}
             {documents?.map((data, index) => {
                 let imageName = Object.keys(data)?.[0] ?? '';
                 let imageUrl = data?.[imageName] ?? '';
