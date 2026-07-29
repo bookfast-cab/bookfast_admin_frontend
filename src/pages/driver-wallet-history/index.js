@@ -34,6 +34,13 @@ const MUITable = () => {
   const [searchText, setSearchText] = useState("");
   const router = useRouter();
 
+    let userdata;
+  if (typeof window !== 'undefined') {
+    userdata = localStorage.getItem('user');
+    userdata = (userdata)?JSON.parse(userdata):null;
+  }
+
+
   // Retrieve token from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -378,20 +385,22 @@ const MUITable = () => {
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={staffOnly} 
-                  onChange={(e) => setStaffOnly(e.target.checked)}
-                  color="info"
-                />
-              }
-              label={
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                  Staff
-                </Typography>
-              }
-            />
+            {userdata?.userRole == 'admin' &&(
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={staffOnly} 
+                    onChange={(e) => setStaffOnly(e.target.checked)}
+                    color="info"
+                  />
+                }
+                label={
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                    Staff
+                  </Typography>
+                }
+              />
+            )}
 
             <div style={{ display: 'flex', gap: '10px' }}>
               <Button
