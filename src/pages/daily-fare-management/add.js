@@ -55,7 +55,7 @@ const AddDailyFareManagement = () => {
     getoutstationConfig();
   }, [token]);
 
-  const validateForm = (formData) => {
+  const validateForm = () => {
     let errors = {};
     let formIsValid = true;
 
