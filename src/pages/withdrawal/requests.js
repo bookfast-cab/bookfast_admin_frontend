@@ -276,7 +276,6 @@ const WithdrawalRequestsTable = () => {
     { field: 'user_mobile', headerName: 'User Mobile', width: 140, renderCell: (params) => <div>{params.row?.driver?.phone_number || '-'}</div> },
     { field: 'user_type', headerName: 'User Type', width: 120, renderCell: (params) => <div style={{ textTransform: 'capitalize' }}>{params.row?.user_type || '-'}</div> },
     { field: 'amount', headerName: 'Amount', width: 110, renderCell: (params) => <div>₹{params.row?.amount || 0}</div> },
-    { field: 'razorpay_txn_id', headerName: 'Txn Id', width: 140, renderCell: (params) => <div>{params.row?.razorpay_txn_id || '--'}</div> },
     {
       field: 'admin_status',
       headerName: 'Request Status',
@@ -299,7 +298,6 @@ const WithdrawalRequestsTable = () => {
       
       }
     },
-    { field: 'remark', headerName: 'Remark', width: 150, renderCell: (params) => <div>{params.row?.remark || '-'}</div> },
     {
       field: 'created_at',
       headerName: 'Date',
