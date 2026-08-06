@@ -138,12 +138,13 @@ const WithdrawalHistoryTable = () => {
 
   useEffect(() => {
     fetchWithdrawals(0)
+    
     return () => {
       if (abortControllerRef.current) abortControllerRef.current.abort();
     };
+
   }, []) 
 
-  // Core API call for Approve/Reject
   const executeStatusUpdate = async (id, status, remark = '') => {
     const actionText = status === '1' ? 'Approve' : 'Reject';
     const device_id = await getFingerprint();
@@ -194,7 +195,9 @@ const WithdrawalHistoryTable = () => {
   const handleRejectSubmit = () => {
     if (!rejectRemark.trim()) {
       setErrorMessage("Please enter a remark for rejection.");
+      
       return;
+
     }
     setRejectDialogOpen(false);
     executeStatusUpdate(selectedRequestId, '2', rejectRemark);
@@ -278,7 +281,9 @@ const WithdrawalHistoryTable = () => {
       width: 140,
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.admin_status);
+        
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
+
       }
     },
     {
@@ -287,7 +292,9 @@ const WithdrawalHistoryTable = () => {
       width: 140,
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.payment_status);
+        
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
+
       }
     },
     { field: 'remark', headerName: 'Remark', width: 150, renderCell: (params) => <div>{params.row?.remark || '-'}</div> },

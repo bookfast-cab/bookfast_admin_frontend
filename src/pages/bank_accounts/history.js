@@ -122,12 +122,13 @@ const BankHistoryTable = () => {
 
   useEffect(() => {
     fetchBanks(0)
+
     return () => {
       if (abortControllerRef.current) abortControllerRef.current.abort();
     };
+
   }, []) 
 
-  // Core API call for Approve/Reject
   const executeStatusUpdate = async (id, status, remark = '') => {
     const actionText = status === '1' ? 'Approve' : 'Reject';
     const device_id = await getFingerprint();
@@ -171,17 +172,20 @@ const BankHistoryTable = () => {
     } else {
       // Approve flow
       if (!window.confirm('Are you sure you want to approve this Bank request?')) {
+        
         return;
+
       }
       executeStatusUpdate(id, status);
     }
   }
 
-  // Triggered when user submits the rejection popup
   const handleRejectSubmit = () => {
     if (!rejectRemark.trim()) {
       setErrorMessage("Please enter a remark for rejection.");
+
       return;
+
     }
     setRejectDialogOpen(false);
     executeStatusUpdate(selectedRequestId, '2', rejectRemark);
@@ -265,7 +269,9 @@ const BankHistoryTable = () => {
       width: 140,
       renderCell: (params) => {
         const statusDetails = getAdminStatusDetails(params.row.status);
+        
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
+
       }
     },
     {
