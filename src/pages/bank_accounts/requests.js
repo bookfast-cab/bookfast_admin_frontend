@@ -19,6 +19,8 @@ import CommonDataTable from 'src/components/CommonDataTable'
 import { formatDate } from 'src/utils/utils'
 import axios from 'axios'
 import getFingerprint from 'src/utils/Fingerprint'
+import { CircularProgress } from '@mui/material'
+
 
 // Helper to map status to meaningful labels and colors
 const getAdminStatusDetails = (status) => {
@@ -134,7 +136,7 @@ const BankRequestsTable = () => {
     const actionText = status === '1' ? 'Approve' : 'Reject';
     const device_id = await getFingerprint();
 
-    setActionLoading(true);
+    setLoading(true);
     try {
       const payload = {
         request_id: id,
@@ -159,7 +161,7 @@ const BankRequestsTable = () => {
       console.error(`Error ${actionText}ing request:`, error);
       setErrorMessage(error.response?.data?.message || `Failed to ${actionText.toLowerCase()} request.`);
     } finally {
-      setActionLoading(false);
+      setLoading(false);
     }
   }
 
@@ -343,6 +345,25 @@ const BankRequestsTable = () => {
       </Grid>
 
       <Grid item xs={12}>
+
+         {loading && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(255, 255, 255, 0.6)', // Transparent white overlay
+                zIndex: 10, // Table ke upar dikhane ke liye
+              }}
+            >
+              <CircularProgress color="primary" />
+            </Box>
+          )}
         <Card>
           <CommonDataTable
             columns={columns}
