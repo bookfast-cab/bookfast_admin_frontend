@@ -229,12 +229,43 @@ const MUITable = () => {
       flex: 1.5,
     },
     {
+      field: 'wallet_type',
+      headerName: 'Wallet Type',
+      width: 200,
+      flex: 1.5,
+      renderCell: (params) => (
+        <span style={{ fontWeight: 'bold' }}>{(params.row.wallet_type == 'wallet')?'Main Wallet':'Earning Wallet'}</span>
+      )
+    },
+    {
       field: 'amount',
       headerName: 'Amount',
       width: 100,
       flex: 0.8,
       renderCell: (params) => (
         <span style={{ fontWeight: 'bold' }}>₹{params.row.amount}</span>
+      )
+    },
+
+    {
+      field: 'action',
+      headerName: 'Type',
+      width: 100,
+      flex: 0.8,
+      renderCell: (params) => (
+        <Chip
+          label={params.row.action === 'cr' ? 'Credit' : 'Debit'}
+          size="small"
+          sx={{
+            backgroundColor: params.row.action === 'cr' ? '#4caf50' : '#ff9800',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '12px',
+            '&:hover': {
+              backgroundColor: params.row.action === 'cr' ? '#45a049' : '#e68900',
+            }
+          }}
+        />
       )
     },
     {
@@ -268,27 +299,6 @@ const MUITable = () => {
           />
           :
           <span style={{ fontWeight: 'bold' }}>--</span>
-      )
-    },
-    {
-      field: 'action',
-      headerName: 'Type',
-      width: 100,
-      flex: 0.8,
-      renderCell: (params) => (
-        <Chip
-          label={params.row.action === 'cr' ? 'Credit' : 'Debit'}
-          size="small"
-          sx={{
-            backgroundColor: params.row.action === 'cr' ? '#4caf50' : '#ff9800',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '12px',
-            '&:hover': {
-              backgroundColor: params.row.action === 'cr' ? '#45a049' : '#e68900',
-            }
-          }}
-        />
       )
     },
     {

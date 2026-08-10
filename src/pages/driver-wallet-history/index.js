@@ -173,12 +173,43 @@ const MUITable = () => {
       flex: 1.5,
     },
     {
+      field: 'wallet_type',
+      headerName: 'Wallet Type',
+      width: 200,
+      flex: 1.5,
+      renderCell: (params) => (
+        <span style={{ fontWeight: 'bold' }}>{(params.row.wallet_type == 'wallet')?'Main Wallet':'Earning Wallet'}</span>
+      )
+    },
+    {
       field: 'amount',
       headerName: 'Amount',
       width: 100,
       flex: 0.8,
       renderCell: (params) => (
         <span style={{ fontWeight: 'bold' }}>₹{params.row.amount}</span>
+      )
+    },
+
+    {
+      field: 'action',
+      headerName: 'Type',
+      width: 100,
+      flex: 0.8,
+      renderCell: (params) => (
+        <Chip
+          label={params.row.action === 'cr' ? 'Credit' : 'Debit'}
+          size="small"
+          sx={{
+            backgroundColor: params.row.action === 'cr' ? '#4caf50' : '#ff9800',
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '12px',
+            '&:hover': {
+              backgroundColor: params.row.action === 'cr' ? '#45a049' : '#e68900',
+            }
+          }}
+        />
       )
     },
     {
@@ -217,27 +248,6 @@ const MUITable = () => {
       )
     },
     {
-      field: 'action',
-      headerName: 'Type',
-      width: 100,
-      flex: 0.8,
-      renderCell: (params) => (
-        <Chip
-          label={params.row.action === 'cr' ? 'Credit' : 'Debit'}
-          size="small"
-          sx={{
-            backgroundColor: params.row.action === 'cr' ? '#4caf50' : '#ff9800',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '12px',
-            '&:hover': {
-              backgroundColor: params.row.action === 'cr' ? '#45a049' : '#e68900',
-            }
-          }}
-        />
-      )
-    },
-    {
       field: 'created_at',
       headerName: 'Date',
       width: 160,
@@ -256,9 +266,9 @@ const MUITable = () => {
       renderCell: (params) => (
         <>
         
-          <Tooltip title={(params?.row?.admin_approve_status == 2)?"Not Editable":"Edit"} arrow>
+          <Tooltip title={(params?.row?.admin_approve_status == 0 || params?.row?.admin_approve_status == null)?"Edit":"Not Editable"} arrow>
             <IconButton
-              onClick={() => (params?.row?.admin_approve_status != 2) && handleEdit(params.row.id)}
+              onClick={() => (params?.row?.admin_approve_status == 0 || params?.row?.admin_approve_status == null) && handleEdit(params.row.id)}
               sx={{
                 backgroundColor: '#f0f0f0',
                 borderRadius: '8px',

@@ -273,6 +273,7 @@ const WithdrawalRequestsTable = () => {
         </MuiLink>
       ) 
     },
+    { field: 'user_id', headerName: 'User Id', width: 140, renderCell: (params) => <div>{params.row?.user_id || '-'}</div> },
     { field: 'user_mobile', headerName: 'User Mobile', width: 140, renderCell: (params) => <div>{params.row?.driver?.phone_number || '-'}</div> },
     { field: 'user_type', headerName: 'User Type', width: 120, renderCell: (params) => <div style={{ textTransform: 'capitalize' }}>{params.row?.user_type || '-'}</div> },
     { field: 'amount', headerName: 'Amount', width: 110, renderCell: (params) => <div>₹{params.row?.amount || 0}</div> },
@@ -282,17 +283,6 @@ const WithdrawalRequestsTable = () => {
       width: 140,
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.admin_status);
-      
-        return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
-      
-      }
-    },
-    {
-      field: 'payment_status',
-      headerName: 'Payment Status',
-      width: 140,
-      renderCell: (params) => {
-        const statusDetails = getStatusDetails(params.row.payment_status);
       
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
       
@@ -455,6 +445,12 @@ const WithdrawalRequestsTable = () => {
                 <Typography variant="subtitle2" fontWeight="600" color="textSecondary">Driver Information</Typography>
               </Box>
               <Paper elevation={0} sx={{ p: 2, bgcolor: 'white', borderRadius: 2, border: '1px solid #eaeaea', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="textSecondary">User Id</Typography>
+                  <Typography variant="body2" fontWeight="600">{selectedRow.user_id || '-'}</Typography>
+                </Box>
+                <Divider />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body2" color="textSecondary">Name</Typography>
                   <Typography variant="body2" fontWeight="600">{selectedRow.driver?.driverName || '-'}</Typography>
@@ -511,6 +507,11 @@ const WithdrawalRequestsTable = () => {
                   <Typography variant="body2" color="textSecondary">IFSC Code</Typography>
                   <Typography variant="body2" fontWeight="600" sx={{ fontFamily: 'monospace' }}>{selectedRow.accountDetails?.ifsc_code || '-'}</Typography>
                 </Box>
+                <Divider />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="textSecondary">Relation</Typography>
+                  <Typography variant="body2" fontWeight="600" sx={{ fontFamily: 'monospace' }}>{selectedRow.accountDetails?.relation || '-'}</Typography>
+                </Box>
               </Paper>
               }
             </Box>
@@ -519,7 +520,7 @@ const WithdrawalRequestsTable = () => {
             <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                   <ReceiptLongIcon fontSize="small" color="action" />
-                  <Typography variant="subtitle2" fontWeight="600" color="textSecondary">Request Details</Typography>
+                  <Typography variant="subtitle2" fontWeight="600" color="textSecondary">Payout Details</Typography>
                 </Box>
                 <Paper elevation={0} sx={{ p: 2, bgcolor: 'white', borderRadius: 2, border: '1px solid #eaeaea', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>

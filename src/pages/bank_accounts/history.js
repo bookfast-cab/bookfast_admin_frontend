@@ -26,6 +26,9 @@ const getAdminStatusDetails = (status) => {
     case '0': return { label: 'Pending', color: 'warning' };
     case '1': return { label: 'Approved', color: 'success' };
     case '2': return { label: 'Rejected', color: 'error' };
+    case 'pending': return { label: 'Pending', color: 'warning' };
+    case 'active': return { label: 'Active', color: 'success' };
+    case 'failed': return { label: 'Failed', color: 'error' };
     default: return { label: 'Unknown', color: 'default' };
   }
 };
@@ -269,6 +272,17 @@ const BankHistoryTable = () => {
       width: 140,
       renderCell: (params) => {
         const statusDetails = getAdminStatusDetails(params.row.status);
+        
+        return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
+
+      }
+    },
+    {
+      field: 'bank_status',
+      headerName: 'Bank Status',
+      width: 140,
+      renderCell: (params) => {
+        const statusDetails = getAdminStatusDetails(params.row.bank_status);
         
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
 

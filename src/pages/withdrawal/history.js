@@ -38,6 +38,9 @@ const getStatusDetails = (status) => {
     case '0': return { label: 'Pending', color: 'warning' };
     case '1': return { label: 'Approved', color: 'success' };
     case '2': return { label: 'Rejected', color: 'error' };
+    case 'processed': return { label: 'processed', color: 'success' };
+    case 'reversed': return { label: 'reversed', color: 'error' };
+    case 'processing': return { label: 'processing', color: 'warning' };
     case 'success': return { label: 'Success', color: 'success' };
     case 'failed': return { label: 'Failed', color: 'error' };
     default: return { label: stringStatus, color: 'default' };
@@ -271,6 +274,7 @@ const WithdrawalHistoryTable = () => {
         </MuiLink>
       ) 
     },
+    { field: 'user_id', headerName: 'User Id', width: 140, renderCell: (params) => <div>{params.row?.user_id || '-'}</div> },
     { field: 'user_mobile', headerName: 'User Mobile', width: 140, renderCell: (params) => <div>{params.row?.driver?.phone_number || '-'}</div> },
     { field: 'user_type', headerName: 'User Type', width: 120, renderCell: (params) => <div style={{ textTransform: 'capitalize' }}>{params.row?.user_type || '-'}</div> },
     { field: 'amount', headerName: 'Amount', width: 110, renderCell: (params) => <div>₹{params.row?.amount || 0}</div> },
@@ -300,9 +304,21 @@ const WithdrawalHistoryTable = () => {
     { field: 'remark', headerName: 'Remark', width: 150, renderCell: (params) => <div>{params.row?.remark || '-'}</div> },
     {
       field: 'created_at',
-      headerName: 'Date',
+      headerName: 'Request Date',
       width: 180,
       renderCell: (params) => <span>{formatDate(params.row.created_at) || '-'}</span>
+    },
+    {
+      field: 'approve_date',
+      headerName: 'Approve/Reject Date',
+      width: 180,
+      renderCell: (params) => <span>{(params.row.approve_date)?formatDate(params.row.approve_date): '--'}</span>
+    },
+    {
+      field: 'settlement_date',
+      headerName: 'Settlement Date',
+      width: 180,
+      renderCell: (params) => <span>{(params.row.settlement_date)?formatDate(params.row.settlement_date): '--'}</span>
     }
   ]
 
@@ -403,6 +419,12 @@ const WithdrawalHistoryTable = () => {
                 <Typography variant="subtitle2" fontWeight="600" color="textSecondary">Driver Information</Typography>
               </Box>
               <Paper elevation={0} sx={{ p: 2, bgcolor: 'white', borderRadius: 2, border: '1px solid #eaeaea', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+
+                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="textSecondary">User Id</Typography>
+                  <Typography variant="body2" fontWeight="600">{selectedRow.user_id || '-'}</Typography>
+                </Box>
+                <Divider />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body2" color="textSecondary">Name</Typography>
                   <Typography variant="body2" fontWeight="600">{selectedRow.driver?.driverName || '-'}</Typography>
@@ -459,6 +481,12 @@ const WithdrawalHistoryTable = () => {
                   <Typography variant="body2" color="textSecondary">IFSC Code</Typography>
                   <Typography variant="body2" fontWeight="600" sx={{ fontFamily: 'monospace' }}>{selectedRow.accountDetails?.ifsc_code || '-'}</Typography>
                 </Box>
+
+                <Divider />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="textSecondary">Relation</Typography>
+                  <Typography variant="body2" fontWeight="600" sx={{ fontFamily: 'monospace' }}>{selectedRow.accountDetails?.relation || '-'}</Typography>
+                </Box>
               </Paper>
               }
             </Box>
@@ -467,7 +495,7 @@ const WithdrawalHistoryTable = () => {
             <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                   <ReceiptLongIcon fontSize="small" color="action" />
-                  <Typography variant="subtitle2" fontWeight="600" color="textSecondary">Request Details</Typography>
+                  <Typography variant="subtitle2" fontWeight="600" color="textSecondary">Payout Details</Typography>
                 </Box>
                 <Paper elevation={0} sx={{ p: 2, bgcolor: 'white', borderRadius: 2, border: '1px solid #eaeaea', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -486,6 +514,11 @@ const WithdrawalHistoryTable = () => {
                   </Box>
                   <Divider />
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="textSecondary">UTR</Typography>
+                    <Typography variant="body2" fontWeight="600" sx={{ fontFamily: 'monospace' }}>{selectedRow.utr || '-'}</Typography>
+                  </Box>
+                  <Divider />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body2" color="textSecondary">Remark</Typography>
                     <Typography variant="body2" fontWeight="600">{selectedRow.remark || '-'}</Typography>
                   </Box>
@@ -493,6 +526,16 @@ const WithdrawalHistoryTable = () => {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body2" color="textSecondary">Requested Date</Typography>
                     <Typography variant="body2" fontWeight="600">{formatDate(selectedRow.created_at) || '-'}</Typography>
+                  </Box>
+                  <Divider />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="textSecondary">Approve/Reject Date</Typography>
+                    <Typography variant="body2" fontWeight="600">{(selectedRow.approve_date)?formatDate(selectedRow.approve_date) : '--'}</Typography>
+                  </Box>
+                  <Divider />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="textSecondary">Settlement Date</Typography>
+                    <Typography variant="body2" fontWeight="600">{(selectedRow.settlement_date)? formatDate(selectedRow.settlement_date) : '--'}</Typography>
                   </Box>
                 </Paper>
             </Box>

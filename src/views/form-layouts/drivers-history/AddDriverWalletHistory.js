@@ -29,6 +29,7 @@ const AddDriverWalletHistory = () => {
     wallet_amount: '',
     driver_type: '',
     driver_message: '',
+    wallet_type:''
   }); 
   
   const [formErrors, setFormErrors] = useState({
@@ -36,6 +37,7 @@ const AddDriverWalletHistory = () => {
     wallet_amount: '',
     driver_type: '',
     driver_message: '',
+    wallet_type:''
   });
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
@@ -75,6 +77,11 @@ const AddDriverWalletHistory = () => {
       errors.driver_type = 'Please select the type (Credit or Debit).';
     }
 
+    if (!formData.wallet_type) {
+      formIsValid = false;
+      errors.wallet_type = 'Please select the Wallet type (Main Wallet/Earning Wallet).';
+    }
+
     // Validate driver_message
     if (!formData.driver_message || formData.driver_message.length < 5) {
       formIsValid = false;
@@ -100,6 +107,7 @@ const AddDriverWalletHistory = () => {
         action: formData.driver_type,
         type: formData.driver_type === 'debit' ? 0 : 1,
         message: formData.driver_message,
+        wallet_type: formData.wallet_type,
       });
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/driver-wallet-histories`, {
@@ -266,6 +274,21 @@ const AddDriverWalletHistory = () => {
             {formErrors.driver_type && (
               <Typography color="error" variant="body2">
                 {formErrors.driver_type}
+              </Typography>
+            )}
+          </Box>
+
+           <Box sx={{ mt: 4 }}>
+            <Select name="wallet_type" value={formData.wallet_type} onChange={handleChange} fullWidth displayEmpty>
+              <MenuItem value="" disabled>
+                Wallet Type
+              </MenuItem>
+              <MenuItem value="wallet">Main Wallet</MenuItem>
+              <MenuItem value="earning">Earning Wallet</MenuItem>
+            </Select>
+            {formErrors.wallet_type && (
+              <Typography color="error" variant="body2">
+                {formErrors.wallet_type}
               </Typography>
             )}
           </Box>
