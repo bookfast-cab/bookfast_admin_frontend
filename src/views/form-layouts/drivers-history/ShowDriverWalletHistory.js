@@ -42,6 +42,7 @@ const EditDriverWalletHistory = () => {
     phone_number: '',
     amount: '',
     message: '',
+    wallet_type: '',
     created_at: '',
     updated_at: '',
   });
@@ -55,9 +56,9 @@ const EditDriverWalletHistory = () => {
           driver_id: data.data.driver_id,
           driver_name: data.data.driver.driverName,
           phone_number: data.data.driver.phone_number,
-          
           amount: data.data.amount,
           message: data.data.message,
+          wallet_type: (data.data.wallet_type =='wallet')?'Main Wallet':'Earning Wallet',
           created_at: formatDate(data.data.created_at),
           updated_at: formatDate(data.data.updated_at),
         });
@@ -101,6 +102,15 @@ const EditDriverWalletHistory = () => {
             label="Message"
             name="message"
             value={formData.message}
+            fullWidth
+            readonly
+            margin="normal"
+          />
+
+          <TextField
+            label="Wallet type"
+            name="wallet_type"
+            value={formData.wallet_type}
             fullWidth
             readonly
             margin="normal"

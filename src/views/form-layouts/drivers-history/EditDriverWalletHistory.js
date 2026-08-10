@@ -39,6 +39,7 @@ const EditDriverWalletHistory = () => {
     wallet_amount: '',
     app_type: '',
     driver_message: '',
+    wallet_type:'',
   });
   
   const [formErrors, setFormErrors] = useState({
@@ -46,6 +47,7 @@ const EditDriverWalletHistory = () => {
     wallet_amount: '',
     app_type: '',
     driver_message: '',
+    wallet_type:'',
   });
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
@@ -82,6 +84,11 @@ const EditDriverWalletHistory = () => {
       isValid = false;
     }
 
+    if (!formData.wallet_type) {
+      errors.wallet_type = 'Please select the Wallet type (Main Wallet/Earning Wallet).';
+      isValid = false;
+    }
+
     // Validate driver_message
     if (!formData.driver_message) {
       errors.driver_message = 'Please enter a message.';
@@ -106,6 +113,7 @@ const EditDriverWalletHistory = () => {
         driver_id: formData.driver_id,
         amount: formData.wallet_amount,
         action: formData.app_type,
+        wallet_type: formData.wallet_type,
         message: formData.driver_message,
       });
 
@@ -159,6 +167,7 @@ const EditDriverWalletHistory = () => {
           wallet_amount: driverWalletHistory.amount,
           app_type: driverWalletHistory.action,
           driver_message: driverWalletHistory.message,
+          wallet_type: driverWalletHistory.wallet_type,
         });
       }
       setLoadingData(false);
@@ -233,6 +242,22 @@ const EditDriverWalletHistory = () => {
             {formErrors.app_type && <Typography color="error">{formErrors.app_type}</Typography>}
           </Box>
 
+
+          <Box sx={{ mt: 4 }}>
+            <Select name="wallet_type" value={formData.wallet_type} onChange={handleChange} fullWidth displayEmpty>
+              <MenuItem value="" disabled>
+                Wallet Type
+              </MenuItem>
+              <MenuItem value="wallet">Main Wallet</MenuItem>
+              <MenuItem value="earning">Earning Wallet</MenuItem>
+            </Select>
+            {formErrors.wallet_type && (
+              <Typography color="error" variant="body2">
+                {formErrors.wallet_type}
+              </Typography>
+            )}
+          </Box>
+          
           <TextField
             label="Amount"
             name="wallet_amount"

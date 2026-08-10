@@ -25,7 +25,8 @@ import Phone from 'mdi-material-ui/Phone'
 import ListBox from 'mdi-material-ui/ListBox'
 
 import { useState } from 'react'
-import { PhoneAndroid } from '@mui/icons-material'
+import { List, PhoneAndroid } from '@mui/icons-material'
+import { Bank, Wallet } from 'mdi-material-ui'
 
 
 const getUserPrivilege = () => {
@@ -73,6 +74,19 @@ const Navigation = () => {
     { privilege: ['driver-wallet-history'], title: 'Driver Wallet History', icon: ListBox, path: '/driver-wallet-history', roles: ['admin', 'staff'] },
     { privilege: ['approve-pending'], title: 'Approve Wallet', icon: ListBox, path: '/driver-wallet-history/approve-pending', roles: ['admin'] },
     { privilege: ['approve-pending-membership'], title: 'Approve Membership', icon: ListBox, path: '/driver-wallet-history/approve-pending-membership', roles: ['admin'] },
+
+
+
+    { privilege: ['bank-account-management', 'bank-account-history'], sectionTitle: 'Bank Account Management', icon: Bank, roles: ['admin'] },
+    { privilege: ['bank-account-management'], title: 'Bank Account requests', icon: Bank, path: '/bank_accounts/requests', roles: ['admin'] },
+    { privilege: ['bank-account-history'], title: 'Bank Account history', icon: List, path: '/bank_accounts/history', roles: ['admin'] },
+
+
+    { privilege: ['withdraw-requests', 'withdraw-history'], sectionTitle: 'Withdrawal Management', icon: Wallet, roles: ['admin'] },
+    { privilege: ['withdraw-requests'], title: 'Withdraw requests', icon: Wallet, path: '/withdrawal/requests', roles: ['admin'] },
+    { privilege: ['withdraw-history'], title: 'Withdraw history', icon: List, path: '/withdrawal/history', roles: ['admin'] },
+
+
 
 
     { privilege: ['trips', 'manual-trips'], sectionTitle: 'Trips Management', icon: MapSearch, roles: ['admin', 'staff'] },
