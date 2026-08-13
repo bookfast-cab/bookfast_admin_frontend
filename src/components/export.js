@@ -31,7 +31,9 @@ const ExportButton = (props) => {
             if (!data || data.length === 0) {
                 alert("No data found to export!");
                 setLoading(false);
+                
                 return;
+
             }
 
             // 'actions' column hatayein
@@ -65,13 +67,13 @@ const ExportButton = (props) => {
                             val = row[col.field] || '';
                         }
                     } 
-                    // AGAR RENDER CELL NAHI HAI: Toh direct database value utha lo
+
                     else {
                         val = row[col.field] !== null && row[col.field] !== undefined ? row[col.field] : '';
                     }
 
-                    // CSV me coma(,) ki wajah se text break na ho isliye format karein
                     return `"${String(val).replace(/"/g, '""')}"`;
+
                 });
                 csvRows.push(values.join(','));
             });
