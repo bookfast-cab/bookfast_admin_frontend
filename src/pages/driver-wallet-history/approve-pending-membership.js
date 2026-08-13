@@ -15,6 +15,7 @@ import { Tooltip, IconButton, Chip } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { Check, Close } from 'mdi-material-ui';
 import { Select, MenuItem, FormControl } from '@mui/material';
+import ExportButton from 'src/components/export';
 
 // Dynamically import PlusIcon
 const PlusIcon = dynamic(() => import('@heroicons/react/24/solid/PlusIcon'), { ssr: false });
@@ -413,6 +414,8 @@ const MUITable = () => {
                 }}
               />
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+
              <FormControl size="small" sx={{ minWidth: 180}}>
               <Select
                 value={type}
@@ -432,8 +435,9 @@ const MUITable = () => {
                 <MenuItem value={2}>Reject List</MenuItem>
               </Select>
             </FormControl>
-            
+            <ExportButton columns={columns} url={`get-approve-pending-membership-list`} />
           </div>
+        </div>
           
            
           <div style={{ width: '100%', overflowX: 'auto' }}>

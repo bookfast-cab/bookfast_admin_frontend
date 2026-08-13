@@ -24,6 +24,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { Password } from "@mui/icons-material";
 import { Lock } from "mdi-material-ui";
 import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import ExportButton from "src/components/export";
 
 const PlusIcon = dynamic(
   () => import("@heroicons/react/24/solid/PlusIcon"),
@@ -343,7 +344,7 @@ const handleChangePassword = async () => {
 
       <Grid item xs={12}>
         <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
-          {/* Search Box */}
+        <Grid item xs={12} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div
             style={{
               padding: "16px",
@@ -376,6 +377,9 @@ const handleChangePassword = async () => {
               }}
             />
           </div>
+          <ExportButton columns={columns} url={`staff`} />
+          </Grid>
+
 
           {/* Table */}
           <div style={{ width: "100%", overflowX: "auto" }}>

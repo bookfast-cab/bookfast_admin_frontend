@@ -26,7 +26,7 @@ import ListBox from 'mdi-material-ui/ListBox'
 
 import { useState } from 'react'
 import { List, PhoneAndroid } from '@mui/icons-material'
-import { Bank, Wallet } from 'mdi-material-ui'
+import { Bank, Cog, Wallet } from 'mdi-material-ui'
 
 
 const getUserPrivilege = () => {
@@ -130,7 +130,7 @@ const Navigation = () => {
     { privilege: ['cities-setup'], title: 'Cities Setup', icon: MapMarkerRadius, path: '/cities-management', roles: ['admin', 'staff'] },
     { privilege: ['whatsapp-setup'], title: 'WhatsApp Setup', icon: MessageText, path: '/whatsapp-con', roles: ['admin', 'staff'] },
     { privilege: ['force-app-update'], title: 'Force App Update', icon: AccountCog, path: '/app-versions', roles: ['admin', 'staff'] },
-    { privilege: ['pricing'], title: 'Pricing & Charges', icon: CurrencyUsd, path: '/pricing', roles: ['admin', 'staff'] },
+    { privilege: ['settings'], title: 'Settings', icon: Cog, path: '/settings', roles: ['admin', 'staff'] },
     { privilege: ['helpline-numbers'], title: 'Helpline Numbers', icon: PhoneAndroid, path: '/help-line-number', roles: ['admin', 'staff'] },
     { privilege: ['support-numbers'], title: 'Support Numbers', icon: PhoneAndroid, path: '/support-numbers', roles: ['admin', 'staff'] },
     { privilege: ['promotional-banners'], title: 'Promotional Banners', icon: Bell, path: '/promotional-banners', roles: ['admin', 'staff'] },

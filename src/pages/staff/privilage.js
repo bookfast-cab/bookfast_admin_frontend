@@ -195,7 +195,7 @@ const StaffTable = () => {
   { id: 'helpline-numbers', type: 'item', title: 'Helpline Numbers' },
   { id: 'whatsapp-keywords', type: 'item', title: 'WhatsApp Keywords' },
   { id: 'promotional-banners', type: 'item', title: 'Promotional Banners' },
-  { id: 'pricing', type: 'item', title: 'Pricing & Charges' },
+  { id: 'settings', type: 'item', title: 'Settings' },
   
   // Fare Management
   

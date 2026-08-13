@@ -15,6 +15,7 @@ import EditIcon from '@mui/icons-material/Edit';
 
 import SearchIcon from '@mui/icons-material/Search';
 import { Switch } from '@mui/material';
+import ExportButton from 'src/components/export';
 
 const PlusIcon = dynamic(() => import('@heroicons/react/24/solid/PlusIcon'), { ssr: false });
 
@@ -260,17 +261,29 @@ const MUITable = () => {
 
       <Grid item xs={12}>
         <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
-          <div style={{ padding: '16px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <TextField
-              size="small"
-              placeholder="Search records..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              InputProps={{
-                endAdornment: <IconButton onClick={handleSearchClick}><SearchIcon /></IconButton>,
-              }}
-            />
-          </div>
+          <Grid
+                item
+                xs={12}
+                style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+
+                }}
+            >
+            <div style={{ padding: '16px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <TextField
+                size="small"
+                placeholder="Search records..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                InputProps={{
+                  endAdornment: <IconButton onClick={handleSearchClick}><SearchIcon /></IconButton>,
+                }}
+              />
+            </div>
+            <ExportButton columns={columns} url={`fetchDriverSelfPostList`} />
+            </Grid>
           
           <CommonDataTable
             columns={columns}

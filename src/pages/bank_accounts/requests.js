@@ -20,6 +20,7 @@ import { formatDate } from 'src/utils/utils'
 import axios from 'axios'
 import getFingerprint from 'src/utils/Fingerprint'
 import { CircularProgress } from '@mui/material'
+import ExportButton from 'src/components/export'
 
 
 // Helper to map status to meaningful labels and colors
@@ -198,33 +199,6 @@ const BankRequestsTable = () => {
     if (!loading) fetchBanks(1);
   };
 
-  const exportToExcel = async () => {
-    setLoadingExport(true);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-Banks`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `${token}`
-        }
-      });
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'Bank_requests.csv';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setSuccessMessage('Export successful!');
-    } catch (error) {
-      console.error('Error exporting to Excel:', error);
-      setErrorMessage('Export failed. Please try again.');
-    } finally {
-      setLoadingExport(false);
-    }
-  }
 
   const columns = [
     { field: 'id', headerName: 'Request ID', width: 100 },

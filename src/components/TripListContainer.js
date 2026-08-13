@@ -16,6 +16,7 @@ import { formatDate } from 'src/utils/utils';
 import TripDrawer from '../pages/trips/TripDrawer'; // Adjusted import path
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Info } from '@mui/icons-material';
+import ExportButton from './export';
 
 const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
 
@@ -79,36 +80,6 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
     };
 
 
-    const exportToExcel = () => {
-        setLoadingExport(true);
-        try {
-            fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-trips`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `${token}`
-                }
-            })
-                .then(response => response.blob())
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'trips.csv';
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                })
-                .catch(error => {
-                    console.error('Error exporting to Excel:', error);
-                });
-            setSuccessMessage('Export successful!');
-        } catch (error) {
-            setErrorMessage('Export failed. Please try again.');
-        } finally {
-            setLoadingExport(false);
-        }
-    };
 
     const getTrips = async (page_num, perPage = 10) => {
         const queryParams = new URLSearchParams({
@@ -433,11 +404,12 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
                     </Select>
                 </FormControl>
 
-                {showAddButton && (
-                    <Button
-                        startIcon={(
-                            <SvgIcon fontSize="small">
-                                <PlusIcon />
+                <div style={{ 'display': 'flex', 'gap': '10px' }}>
+                    {showAddButton && (
+                        <Button
+                            startIcon={(
+                                <SvgIcon fontSize="small">
+                                    <PlusIcon />
                             </SvgIcon>
                         )}
                         variant="contained"
@@ -446,6 +418,9 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
                         Add
                     </Button>
                 )}
+                <ExportButton columns={columns} url={`trips`} />
+
+                </div>
             </Grid>
 
             <Grid
