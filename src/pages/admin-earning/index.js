@@ -15,6 +15,7 @@ import CommonDataTable from 'src/components/CommonDataTable'
 import { formatDate } from 'src/utils/utils'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import PaymentRemarksDrawer from './PaymentRemarksDrawer'
+import ExportButton from 'src/components/export'
 
 const AdminEarning = () => {
   const [data, setData] = useState([])
@@ -213,7 +214,7 @@ const columns = [
             style={{ width: '300px' }}
           />
         </div>
-        
+         <ExportButton columns={columns} url={`admin-commission`} />
       </Grid>
 
       <Grid item xs={12}>

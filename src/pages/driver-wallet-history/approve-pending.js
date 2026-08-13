@@ -15,6 +15,7 @@ import { Tooltip, IconButton, Chip } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { Check, Close } from 'mdi-material-ui';
 import { Select, MenuItem, FormControl } from '@mui/material';
+import ExportButton from 'src/components/export';
 
 const PlusIcon = dynamic(() => import('@heroicons/react/24/solid/PlusIcon'), { ssr: false });
 
@@ -406,25 +407,28 @@ const handleDropdownChange = (event) => {
                 }}
               />
             </div>
-            <FormControl size="small" sx={{ minWidth: 180}}>
-              <Select
-                value={type}
-                onChange={handleDropdownChange}
-                displayEmpty
-                sx={{
-                  borderRadius: '8px',
-                  fontWeight: 'bold',
-                  color: '#000',
-                  '& .MuiSelect-icon': {
-                    color: '#000', // Dropdown arrow icon color
-                  },
-                }}
-              >
-                <MenuItem value={0}>Pending List</MenuItem>
-                <MenuItem value={1}>Approve List</MenuItem>
-                <MenuItem value={2}>Reject List</MenuItem>
-              </Select>
-            </FormControl>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FormControl size="small" sx={{ minWidth: 180}}>
+                <Select
+                  value={type}
+                  onChange={handleDropdownChange}
+                  displayEmpty
+                  sx={{
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    color: '#000',
+                    '& .MuiSelect-icon': {
+                      color: '#000', // Dropdown arrow icon color
+                    },
+                  }}
+                >
+                  <MenuItem value={0}>Pending List</MenuItem>
+                  <MenuItem value={1}>Approve List</MenuItem>
+                  <MenuItem value={2}>Reject List</MenuItem>
+                </Select>
+              </FormControl>
+              <ExportButton columns={columns} url={`get-approve-pending-list`} />
+            </div>
 </div>
           
           <div style={{ width: '100%', overflowX: 'auto' }}>

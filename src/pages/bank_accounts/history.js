@@ -19,6 +19,7 @@ import CommonDataTable from 'src/components/CommonDataTable'
 import { formatDate } from 'src/utils/utils'
 import axios from 'axios'
 import getFingerprint from 'src/utils/Fingerprint'
+import ExportButton from 'src/components/export'
 
 // Helper to map status to meaningful labels and colors
 const getAdminStatusDetails = (status) => {
@@ -318,6 +319,7 @@ const BankHistoryTable = () => {
           />
         </Box>
 
+        <ExportButton columns={columns} url={`bank-accounts-history`} />
         {/* <Box sx={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
           <Button
             startIcon={<SvgIcon fontSize="small"><DownloadIcon /></SvgIcon>}

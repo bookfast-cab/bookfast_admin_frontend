@@ -19,6 +19,7 @@ import AccountGroup from 'mdi-material-ui/AccountGroup';
 import CalendarClock from 'mdi-material-ui/CalendarClock';
 import DotsVertical from 'mdi-material-ui/DotsVertical';
 import ReportProblemRounded from '@mui/icons-material/ReportProblemRounded';
+import { BusinessCenter, EventAvailable, LocalTaxi } from '@mui/icons-material';
 
 
 const StatisticsCardSide = ({data}) => {
@@ -28,7 +29,10 @@ const StatisticsCardSide = ({data}) => {
     todayNewCustomers: 0,
     todayNewDrivers: 0,
     activeDrivers: 0,
-    missedTripCount:0
+    missedTripCount:0,
+    todayTripCount:0,
+    todayadvanceDutyCount:0,
+    todaypartnerDutyCount:0,
   });
 
 
@@ -39,7 +43,10 @@ const StatisticsCardSide = ({data}) => {
       todayNewDrivers: data.todayNewDrivers || 0,
       activeDrivers: data.activeDrivers || 0,
       todayBooktripCount:data.todayBooktripCount || 0,
-      missedTripCount:data.missedTripCount||0
+      missedTripCount:data.missedTripCount||0,
+      todayTripCount:data.todayTripCount||0,
+      todayadvanceDutyCount:data.todayadvanceDutyCount||0,
+      todaypartnerDutyCount:data.todaypartnerDutyCount||0,
     });
 
   }, [data]);
@@ -68,6 +75,30 @@ const StatisticsCardSide = ({data}) => {
       bgColor: '#FFEBEE', // light red/pink background
       icon: <ReportProblemRounded sx={{ fontSize: 28 }} />, // warning/alert icon
       link: '/trips?type=9',
+    },
+    {
+      stats: statistics.todayTripCount,
+      title: 'Today Rides',
+      color: theme.palette.info.main, // softer blue
+      bgColor: '#E3F2FD', // light info blue
+      icon: <LocalTaxi sx={{ fontSize: 28 }} />,
+      link: '/trips/',
+    },
+    {
+      stats: statistics.todayadvanceDutyCount,
+      title: 'Today Advance Duty',
+      color: theme.palette.success.dark, // darker green
+      bgColor: '#E6F4EA', // very light mint
+      icon: <EventAvailable sx={{ fontSize: 28 }} />,
+      link: '/advanceBooking/',
+    },
+    {
+      stats: statistics.todaypartnerDutyCount,
+      title: 'Total Partner Duty',
+      color: theme.palette.error.main, // red for alert
+      bgColor: '#FFEBEE', // light red/pink background
+      icon: <BusinessCenter sx={{ fontSize: 28 }} />, // warning/alert icon
+      link: '/driver-duty-post/',
     },
   ];
   

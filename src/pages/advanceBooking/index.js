@@ -18,6 +18,7 @@ import ConfirmationDialog from 'src/components/Confirmation'
 import AdvanceBookingDrawer from './AdvanceBookingDrawer'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import ExportButton from 'src/components/export'
 
 // import AdvanceBookingDrawer from './AdvanceBookingDrawer' // optional detail drawer
 
@@ -415,6 +416,7 @@ const AdvanceBookingManagement = () => {
             style={{ width: '300px' }}
           />
         </div>
+        <ExportButton columns={columns} url={`advance-bookings`} />
       </Grid>
 
       <Grid item xs={12}>

@@ -55,7 +55,10 @@ const Dashboard = () => {
             todayNewCustomers:data.data.todayNewCustomers || 0,
             todayNewDrivers:data.data.todayNewDrivers || 0,
             missedTripCount:data.data.missedTripCount || 0,
-            deviceDetails:data.data.deviceDetails || []
+            deviceDetails:data.data.deviceDetails || [],
+            todayTripCount:data.data.todayTripCount || 0,
+            todayadvanceDutyCount:data.data.todayadvanceDutyCount || 0,
+            todaypartnerDutyCount:data.data.todaypartnerDutyCount || 0,
 
           });
         } catch (error) {

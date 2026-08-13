@@ -25,6 +25,7 @@ import { formatDate } from 'src/utils/utils'
 import axios from 'axios'
 import getFingerprint from 'src/utils/Fingerprint'
 import { List } from '@mui/icons-material'
+import ExportButton from 'src/components/export'
 
 // Helper to map admin_status / payment_status to meaningful labels and colors
 const getStatusDetails = (status) => {
@@ -210,34 +211,6 @@ const WithdrawalHistoryTable = () => {
     if (!loading) fetchWithdrawals(1);
   };
 
-  const exportToExcel = async () => {
-    setLoadingExport(true);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-withdrawals`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `${token}`
-        }
-      });
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'withdrawal_requests.csv';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setSuccessMessage('Export successful!');
-    } catch (error) {
-      console.error('Error exporting to Excel:', error);
-      setErrorMessage('Export failed. Please try again.');
-    } finally {
-      setLoadingExport(false);
-    }
-  }
-
   // Handler to explicitly open the drawer
   const handleOpenDrawer = (row) => {
     setSelectedRow(row);
@@ -342,6 +315,8 @@ const WithdrawalHistoryTable = () => {
             InputProps={{ endAdornment: (<IconButton onClick={handleSearchClick}><SearchIcon /></IconButton>) }}
           />
         </Box>
+
+        <ExportButton columns={columns} url={`driver-withdrawal-history`} />
 
         {/* <Box sx={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
           <Button
