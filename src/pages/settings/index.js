@@ -80,17 +80,21 @@ const Settings = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Basic validation to only allow numbers and decimals
+    
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
+    
       setFormData((prev) => ({ ...prev, [name]: value }));
+    
     }
+    
   };
 
   const handleSave = async () => {
-    // Basic validation
     if (!formData.platform_commission.trim() || !formData.cancellation_penalties.trim()) {
       setErrorMessage("Please fill in all mandatory fields.");
+      
       return;
+
     }
 
     setLoading(true);
