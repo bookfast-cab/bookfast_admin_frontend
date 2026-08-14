@@ -798,6 +798,56 @@ const submitVehicleAction = async (id, status, reason) => {
                           </CardContent>
                         </Card>
                       </Grid>
+                      <Grid item xs={12}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Typography variant="h6" fontWeight={600} color={BRAND_COLORS.textPrimary} mb={2}>
+                              Device Details
+                            </Typography>
+
+                            <InfoRow
+                              label="Device ID"
+                              value={data?.devicedetail?.device_id}
+                            />
+                            <InfoRow
+                              label="Device Brand"
+                              value={data?.devicedetail?.device_brand}
+                            />
+                            <InfoRow
+                              label="Device Model"
+                              value={data?.devicedetail?.device_model}
+                            />
+                            <InfoRow
+                              label="Device Operating System"
+                              value={data?.devicedetail?.device_os}
+                            />
+
+                            <InfoRow
+                              label="App Version"
+                              value={data?.devicedetail?.app_version}
+                            />
+                            
+                            <InfoRow
+                              label="Device Ip"
+                              value={data?.devicedetail?.ip_address}
+                            />
+                            
+                            <InfoRow
+                              label="Last location update"
+                              value={data?.lastLocationUpdateAt 
+                              ? new Date(data.lastLocationUpdateAt).toLocaleString('en-IN', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: true // AM/PM ke liye
+                                }) 
+                              : 'N/A'}
+                            />
+                          </CardContent>
+                        </Card>
+                      </Grid>
                     </Grid>
                   </TabPanel>
 
