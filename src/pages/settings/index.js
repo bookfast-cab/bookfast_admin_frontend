@@ -155,14 +155,11 @@ const Settings = () => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Platform Commission"
+                label="Partner Duty Platform Commission"
                 name="platform_commission"
                 variant="outlined"
                 value={formData.platform_commission}
                 onChange={handleChange}
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { DataGrid } from '@mui/x-data-grid';
 import {
-
   IconButton,
   Button,
   Snackbar,
@@ -15,7 +14,8 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Typography
+  Typography,
+  Switch
 } from '@mui/material';
 import MuiAlert from '@mui/material/Alert'
 
@@ -26,6 +26,7 @@ import { Refresh } from "@mui/icons-material";
 import EditIcon from '@mui/icons-material/Edit';
 import InfoIcon from '@mui/icons-material/Info';
 import DriverDrawer from 'src/pages/drivers/DriverDrawer';
+import { TrashCan } from 'mdi-material-ui';
 // Import your DriverDrawer component
 
 const DriversTable = ({
@@ -45,6 +46,11 @@ const DriversTable = ({
   const [openDateDialog, setOpenDateDialog] = React.useState(false);
   const [endDate, setEndDate] = React.useState('');
 
+  // --- NEW: State for Delete Confirmation ---
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [driverToDelete, setDriverToDelete] = useState(null);
+  // ------------------------------------------
+
   useEffect(() => {
     setRows(items)
   }, [items]);
@@ -60,7 +66,6 @@ const DriversTable = ({
   if (typeof window !== 'undefined') {
     token = localStorage.getItem('access_token')
   }
-
 
   const handleOpenDateDialog = (row) => {
     setSelectedDriver(row);
@@ -153,19 +158,73 @@ const DriversTable = ({
     setDrawerOpen(false);
   };
 
-  const handleDelete = (id) => {
-    onDelete(id);
+  // --- CHANGED: Open delete confirmation dialog instead of deleting immediately ---
+  const handleDeleteClick = (id) => {
+    setDriverToDelete(id);
+    setDeleteDialogOpen(true);
   };
+
+  const handleConfirmDelete = () => {
+    if (driverToDelete) {
+      onDelete(driverToDelete);
+    }
+    setDeleteDialogOpen(false);
+    setDriverToDelete(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setDriverToDelete(null);
+  };
+  // -----------------------------------------------------------------------------
 
   const handlePageChange = (newPage) => {
     onPageChange(newPage);
     setPage(newPage);
   };
 
-      const handleCloseSnackbar = () => {
-        setErrorMessage('')
-        setSuccessMessage('')
-    }
+  const handleCloseSnackbar = () => {
+    setErrorMessage('')
+    setSuccessMessage('')
+  }
+
+  const handleToggleChange = (driverId, isChecked) => {
+    const newStatus = isChecked ? 1 : 0;
+
+    setRows((prevRows) =>
+      prevRows.map((row) =>
+        row.id === driverId ? { ...row, withdraw_disable: newStatus } : row
+      )
+    );
+
+    // Call your API here
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/withdraw-disable`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${token}`
+      },
+      body: JSON.stringify({ id:driverId, status: newStatus }),
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          setSuccessMessage('Status updated successfully');
+        } else {
+          setErrorMessage(data.message || 'Failed to update status');
+          // Revert state if API fails
+          setRows((prevRows) =>
+            prevRows.map((row) =>
+              row.id === driverId ? { ...row, withdraw_disable: isChecked ? 1 : 2 } : row
+            )
+          );
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        setErrorMessage('Something went wrong');
+      });
+  };
 
   const handleCellClick = (params) => {
     if (params.field === "docsCount") {
@@ -198,8 +257,6 @@ const DriversTable = ({
         .catch(error => {
           console.error('Error:', error)
         })
-
-
     }
   };
 
@@ -332,11 +389,47 @@ const DriversTable = ({
       )
     },
     {
+      field: 'withdraw_disable',
+      headerName: 'Withdraw Disable',
+      width: 160, // Increased width slightly to fit both Switch and Name
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Switch
+            size="small"
+            checked={params.row.withdraw_disable} // Change this field based on your DB boolean/status
+            onChange={(e) => handleToggleChange(params.row.id, e.target.checked)}
+            color="success"
+          />
+        </Box>
+      )
+    },
+    {
       field: 'actions',
       headerName: 'Actions',
       width: 120,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 1 }}>
+          
+          {params?.row?.profileApproved == 0 &&
+          <Tooltip title="Delete" arrow>
+            <IconButton
+              // --- CHANGED: Trigger delete dialog instead of immediate delete ---
+              onClick={() => handleDeleteClick(params.row.id)}
+              sx={{
+                backgroundColor: '#f0f0f0',
+                borderRadius: '8px',
+                padding: '5px',
+                transition: '0.2s',
+                '&:hover': {
+                  backgroundColor: '#e0e0e0',
+                },
+              }}
+            >
+              <TrashCan sx={{ color: '#f44336', fontSize: '20px' }} />
+            </IconButton>
+          </Tooltip>
+          }
+
           <Tooltip title="Edit" arrow>
             <IconButton
               onClick={() => handleEdit(params.row.id)}
@@ -427,16 +520,16 @@ const DriversTable = ({
         }}
       />
 
- <Snackbar
-                open={!!successMessage}
-                autoHideDuration={3000}
-                onClose={handleCloseSnackbar}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <MuiAlert elevation={6} variant="filled" onClose={handleCloseSnackbar} severity="success">
-                    {successMessage}
-                </MuiAlert>
-            </Snackbar>
+      <Snackbar
+          open={!!successMessage}
+          autoHideDuration={3000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+          <MuiAlert elevation={6} variant="filled" onClose={handleCloseSnackbar} severity="success">
+              {successMessage}
+          </MuiAlert>
+      </Snackbar>
 
       <Dialog open={openDateDialog} onClose={handleCloseDateDialog}>
         <DialogTitle>
@@ -466,6 +559,24 @@ const DriversTable = ({
         </DialogActions>
       </Dialog>
 
+      {/* --- NEW: Delete Confirmation Dialog --- */}
+      <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            Are you sure you want to delete this driver? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete} color="inherit">
+            Cancel
+          </Button>
+          <Button variant="contained" color="error" onClick={handleConfirmDelete}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* --------------------------------------- */}
     </>
   );
 };
