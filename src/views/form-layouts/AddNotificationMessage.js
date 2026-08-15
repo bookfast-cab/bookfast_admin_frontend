@@ -13,6 +13,8 @@ import MenuItem from '@mui/material/MenuItem';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
 import { useRouter } from 'next/router';
+import getFingerprint from 'src/utils/Fingerprint';
+import axios from 'axios';
 
 const AddNotification = () => {
   const router = useRouter();
@@ -63,23 +65,22 @@ const AddNotification = () => {
     
     // return false;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/notification-messages/add`, {
-        method: 'POST',
-        headers: {
-          Authorization: `${token}`,
-        },
-        body: form,
-      });
-      const data = await response.json();
 
-      if (data.success) {
-        setSuccessMessage(data.message);
+      const device_id = await getFingerprint()
+      
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/notification-messages/add`,form, {
+          headers: { 'Authorization': `${token}`,'x-device-id': device_id, },
+      });
+
+      if (response?.data?.success) {
+        setSuccessMessage(response?.data?.message);
         setTimeout(() => {
           router.push('/notification-messages');
         }, 1000);
       } else {
-        setErrorMessage(data.message);
+        setErrorMessage(response?.data?.message);
       }
+
     } catch (error) {
       console.error('Error:', error);
       setErrorMessage('An error occurred. Please try again.');
