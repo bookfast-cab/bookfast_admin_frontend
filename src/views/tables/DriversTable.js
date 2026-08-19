@@ -410,25 +410,7 @@ const DriversTable = ({
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 1 }}>
           
-          {params?.row?.profileApproved == 0 &&
-          <Tooltip title="Delete" arrow>
-            <IconButton
-              // --- CHANGED: Trigger delete dialog instead of immediate delete ---
-              onClick={() => handleDeleteClick(params.row.id)}
-              sx={{
-                backgroundColor: '#f0f0f0',
-                borderRadius: '8px',
-                padding: '5px',
-                transition: '0.2s',
-                '&:hover': {
-                  backgroundColor: '#e0e0e0',
-                },
-              }}
-            >
-              <TrashCan sx={{ color: '#f44336', fontSize: '20px' }} />
-            </IconButton>
-          </Tooltip>
-          }
+      
 
           <Tooltip title="Edit" arrow>
             <IconButton
@@ -463,6 +445,27 @@ const DriversTable = ({
               <InfoIcon sx={{ color: '#4caf50', fontSize: '20px' }} />
             </IconButton>
           </Tooltip>
+
+          {(params?.row?.profileApproved == 0 || params?.row?.profileApproved == null) &&
+          <Tooltip title="Delete" arrow>
+            <IconButton
+              // --- CHANGED: Trigger delete dialog instead of immediate delete ---
+              onClick={() => handleDeleteClick(params.row.id)}
+              sx={{
+                backgroundColor: '#f0f0f0',
+                borderRadius: '8px',
+                padding: '5px',
+                transition: '0.2s',
+                '&:hover': {
+                  backgroundColor: '#e0e0e0',
+                },
+              }}
+            >
+              <TrashCan sx={{ color: '#f44336', fontSize: '20px' }} />
+            </IconButton>
+          </Tooltip>
+          }
+
         </Box>
       ),
     },
