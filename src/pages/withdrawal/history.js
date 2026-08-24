@@ -194,7 +194,9 @@ const WithdrawalHistoryTable = () => {
       setRejectDialogOpen(true);
     } else {
       if (!window.confirm('Are you sure you want to approve this withdrawal request?')) {
+        
         return;
+
       }
       executeStatusUpdate(id, status);
     }
@@ -203,7 +205,9 @@ const WithdrawalHistoryTable = () => {
   const handleRejectSubmit = () => {
     if (!rejectRemark.trim()) {
       setErrorMessage("Please enter a remark for rejection.");
+      
       return;
+
     }
     setRejectDialogOpen(false);
     executeStatusUpdate(selectedRequestId, '2', rejectRemark);
@@ -294,6 +298,7 @@ const WithdrawalHistoryTable = () => {
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.admin_status);
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
+        
       }
     },
     {
@@ -303,6 +308,7 @@ const WithdrawalHistoryTable = () => {
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.payment_status);
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
+
       }
     },
     { field: 'remark', headerName: 'Remark', width: 150, renderCell: (params) => <div>{params.row?.remark || '-'}</div> },
