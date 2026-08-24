@@ -221,6 +221,7 @@ const WithdrawalRequestsTable = () => {
   const handleRejectSubmit = () => {
     if (!rejectRemark.trim()) {
       setErrorMessage("Please enter a remark for rejection.");
+      
       return;
 
     }
@@ -298,6 +299,7 @@ const WithdrawalRequestsTable = () => {
       width: 140,
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.admin_status);
+
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
         
       }

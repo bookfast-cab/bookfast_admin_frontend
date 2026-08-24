@@ -297,8 +297,9 @@ const WithdrawalHistoryTable = () => {
       width: 140,
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.admin_status);
-        return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
         
+        return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
+
       }
     },
     {
@@ -307,6 +308,7 @@ const WithdrawalHistoryTable = () => {
       width: 140,
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.payment_status);
+        
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
 
       }
