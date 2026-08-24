@@ -222,6 +222,7 @@ const WithdrawalRequestsTable = () => {
     if (!rejectRemark.trim()) {
       setErrorMessage("Please enter a remark for rejection.");
       return;
+
     }
     setRejectDialogOpen(false);
     executeStatusUpdate(selectedRequestId, '2', { remark: rejectRemark });
@@ -298,6 +299,7 @@ const WithdrawalRequestsTable = () => {
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.admin_status);
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
+        
       }
     },
     {
