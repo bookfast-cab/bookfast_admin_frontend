@@ -72,6 +72,10 @@ const WithdrawalHistoryTable = () => {
   const [rejectRemark, setRejectRemark] = useState('');
   const [selectedRequestId, setSelectedRequestId] = useState(null);
 
+  // Image Preview States
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+
   const abortControllerRef = useRef(null); 
 
   let token
@@ -199,9 +203,7 @@ const WithdrawalHistoryTable = () => {
   const handleRejectSubmit = () => {
     if (!rejectRemark.trim()) {
       setErrorMessage("Please enter a remark for rejection.");
-      
       return;
-
     }
     setRejectDialogOpen(false);
     executeStatusUpdate(selectedRequestId, '2', rejectRemark);
@@ -215,6 +217,17 @@ const WithdrawalHistoryTable = () => {
   const handleOpenDrawer = (row) => {
     setSelectedRow(row);
     setDrawerOpen(true);
+  };
+
+  // Handler for opening image preview
+  const handleImageClick = (imageUrl) => {
+    setSelectedImage(imageUrl);
+    setImageModalOpen(true);
+  };
+
+  const handleCloseImageModal = () => {
+    setImageModalOpen(false);
+    setSelectedImage(null);
   };
 
   // Updated columns definition with explicit click trigger on User Name
@@ -251,16 +264,36 @@ const WithdrawalHistoryTable = () => {
     { field: 'user_mobile', headerName: 'User Mobile', width: 140, renderCell: (params) => <div>{params.row?.driver?.phone_number || '-'}</div> },
     { field: 'user_type', headerName: 'User Type', width: 120, renderCell: (params) => <div style={{ textTransform: 'capitalize' }}>{params.row?.user_type || '-'}</div> },
     { field: 'amount', headerName: 'Amount', width: 110, renderCell: (params) => <div>₹{params.row?.amount || 0}</div> },
-    { field: 'razorpay_txn_id', headerName: 'Txn Id', width: 140, renderCell: (params) => <div>{params.row?.razorpay_txn_id || '--'}</div> },
+    { field: 'utr', headerName: 'UTR No.', width: 140, renderCell: (params) => <div>{params.row?.utr || '--'}</div> },
+    {
+      field: 'screenshot',
+      headerName: 'Screenshot',
+      width: 110,
+      renderCell: (params) => (
+        params.row.screenshot ? (
+          <img 
+            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/payment/${params.row.screenshot}`}
+            alt="Screenshot" 
+            width={36} 
+            height={36} 
+            style={{ objectFit: 'cover', borderRadius: '4px', cursor: 'pointer', border: '1px solid #ccc' }} 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleImageClick(`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/payment/${params.row.screenshot}`);
+            }} 
+          />
+        ) : (
+          <div>--</div>
+        )
+      )
+    },
     {
       field: 'admin_status',
       headerName: 'Request Status',
       width: 140,
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.admin_status);
-        
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
-
       }
     },
     {
@@ -269,9 +302,7 @@ const WithdrawalHistoryTable = () => {
       width: 140,
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.payment_status);
-        
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
-
       }
     },
     { field: 'remark', headerName: 'Remark', width: 150, renderCell: (params) => <div>{params.row?.remark || '-'}</div> },
@@ -317,17 +348,6 @@ const WithdrawalHistoryTable = () => {
         </Box>
 
         <ExportButton columns={columns} url={`driver-withdrawal-history`} />
-
-        {/* <Box sx={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
-          <Button
-            startIcon={<SvgIcon fontSize="small"><DownloadIcon /></SvgIcon>}
-            variant="contained"
-            onClick={exportToExcel}
-            disabled={loadingExport}
-          >
-             {loadingExport ? 'Exporting...' : 'Export Requests'}
-          </Button>
-        </Box> */}
       </Grid>
 
       <Grid item xs={12}>
@@ -346,7 +366,7 @@ const WithdrawalHistoryTable = () => {
       </Grid>
 
       {/* Side Drawer for Details */}
-          <Drawer
+      <Drawer
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -493,6 +513,29 @@ const WithdrawalHistoryTable = () => {
                     <Typography variant="body2" fontWeight="600" sx={{ fontFamily: 'monospace' }}>{selectedRow.utr || '-'}</Typography>
                   </Box>
                   <Divider />
+                  {/* Screenshot added here */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" color="textSecondary">Screenshot</Typography>
+                    {selectedRow.screenshot ? (
+                      <Box
+                        component="img"
+                        src={selectedRow.screenshot}
+                        alt="Screenshot"
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          objectFit: 'cover',
+                          borderRadius: 1,
+                          cursor: 'pointer',
+                          border: '1px solid #ccc'
+                        }}
+                        onClick={() => handleImageClick(selectedRow.screenshot)}
+                      />
+                    ) : (
+                      <Typography variant="body2" fontWeight="600">--</Typography>
+                    )}
+                  </Box>
+                  <Divider />
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body2" color="textSecondary">Remark</Typography>
                     <Typography variant="body2" fontWeight="600">{selectedRow.remark || '-'}</Typography>
@@ -548,6 +591,30 @@ const WithdrawalHistoryTable = () => {
           </Box>
         )}
       </Drawer>
+
+      {/* Full-Size Image Preview Dialog */}
+      <Dialog
+        open={imageModalOpen}
+        onClose={handleCloseImageModal}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Payment Preview
+          <IconButton onClick={handleCloseImageModal}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 3, bgcolor: '#f5f5f5' }}>
+          {selectedImage && (
+            <img 
+              src={selectedImage} 
+              alt="Payment Preview" 
+              style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', borderRadius: '4px' }} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Reject Remark Dialog */}
       <Dialog 

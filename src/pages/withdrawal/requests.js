@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography'
 import { 
   Button, Chip, IconButton, SvgIcon, Tooltip, Box, 
   Drawer, Divider, Paper, Link as MuiLink,
-  Dialog, DialogTitle, DialogContent, DialogActions 
+  Dialog, DialogTitle, DialogContent, DialogActions, MenuItem
 } from '@mui/material'
 import TextField from '@mui/material/TextField'
 import Snackbar from '@mui/material/Snackbar'
@@ -17,6 +17,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import PersonIcon from '@mui/icons-material/Person';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
@@ -25,7 +26,6 @@ import { formatDate } from 'src/utils/utils'
 import axios from 'axios'
 import getFingerprint from 'src/utils/Fingerprint'
 import { CircularProgress } from '@mui/material'
-import ExportButton from 'src/components/export'
 
 // Helper to map admin_status / payment_status to meaningful labels and colors
 const getStatusDetails = (status) => {
@@ -39,8 +39,11 @@ const getStatusDetails = (status) => {
     case '0': return { label: 'Pending', color: 'warning' };
     case '1': return { label: 'Approved', color: 'success' };
     case '2': return { label: 'Rejected', color: 'error' };
-    case 'success': return { label: 'Success', color: 'success' };
-    case 'failed': return { label: 'Failed', color: 'error' };
+    case 'success':
+    case 'processed': return { label: 'Success', color: 'success' };
+    case 'failed':
+    case 'reversed': return { label: 'Failed', color: 'error' };
+    case 'processing': return { label: 'Processing', color: 'warning' };
     default: return { label: stringStatus, color: 'default' };
   }
 };
@@ -68,6 +71,13 @@ const WithdrawalRequestsTable = () => {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectRemark, setRejectRemark] = useState('');
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+
+  // Approve Dialog States
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [utrNumber, setUtrNumber] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState('processed');
+  const [screenshot, setScreenshot] = useState(null);
+  const [screenshotPreview, setScreenshotPreview] = useState(null);
 
   const abortControllerRef = useRef(null); 
 
@@ -146,24 +156,38 @@ const WithdrawalRequestsTable = () => {
     
   }, []) 
 
-  const executeStatusUpdate = async (id, status, remark = '') => {
+  const executeStatusUpdate = async (id, status, extraPayload = {}) => {
     const actionText = status === '1' ? 'Approve' : 'Reject';
     const device_id = await getFingerprint();
 
     setLoading(true);
     try {
-      const payload = {
-        request_id: id,
-        admin_status: status,
-      };
-      
-      if (remark) {
-        payload.remark = remark; 
+      let payload;
+      let contentType = 'application/json';
+
+      // Check if a file is present to switch to multipart/form-data
+      if (extraPayload.screenshot) {
+        payload = new FormData();
+        payload.append('request_id', id);
+        payload.append('admin_status', status);
+        
+        Object.keys(extraPayload).forEach((key) => {
+          if (extraPayload[key] !== undefined && extraPayload[key] !== null) {
+            payload.append(key, extraPayload[key]);
+          }
+        });
+        contentType = 'multipart/form-data';
+      } else {
+        payload = {
+          request_id: id,
+          admin_status: status,
+          ...extraPayload
+        };
       }
 
       await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/update-driver-withdrawal-request`, payload, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': contentType,
           'Authorization': `${token}`,
           'x-device-id': device_id,
         }
@@ -181,70 +205,59 @@ const WithdrawalRequestsTable = () => {
   }
 
   const handleUpdateStatus = (id, status) => {
+    setSelectedRequestId(id);
     if (status === '2') {
-      setSelectedRequestId(id);
       setRejectRemark('');
       setRejectDialogOpen(true);
     } else {
-      if (!window.confirm('Are you sure you want to approve this withdrawal request?')) {
-        
-        return;
-
-      }
-      executeStatusUpdate(id, status);
+      setUtrNumber('');
+      setPaymentStatus('processed');
+      setScreenshot(null);
+      setScreenshotPreview(null);
+      setApproveDialogOpen(true);
     }
   }
 
   const handleRejectSubmit = () => {
     if (!rejectRemark.trim()) {
       setErrorMessage("Please enter a remark for rejection.");
-      
       return;
-
     }
     setRejectDialogOpen(false);
-    executeStatusUpdate(selectedRequestId, '2', rejectRemark);
+    executeStatusUpdate(selectedRequestId, '2', { remark: rejectRemark });
+  }
+
+  const handleApproveSubmit = () => {
+    setApproveDialogOpen(false);
+    executeStatusUpdate(selectedRequestId, '1', { 
+      payment_status: paymentStatus, 
+      utr: utrNumber,
+      screenshot: screenshot // passing file object
+    });
   }
 
   const handleSearchClick = () => {
     if (!loading) fetchWithdrawals(1);
   };
-
-  const exportToExcel = async () => {
-    setLoadingExport(true);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-withdrawals`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `${token}`
-        }
-      });
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'withdrawal_requests.csv';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setSuccessMessage('Export successful!');
-    } catch (error) {
-      console.error('Error exporting to Excel:', error);
-      setErrorMessage('Export failed. Please try again.');
-    } finally {
-      setLoadingExport(false);
+  
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setScreenshot(file);
+      setScreenshotPreview(URL.createObjectURL(file));
     }
-  }
+  };
 
-  // Handler to explicitly open the drawer
+  const handleClearScreenshot = () => {
+    setScreenshot(null);
+    setScreenshotPreview(null);
+  };
+
   const handleOpenDrawer = (row) => {
     setSelectedRow(row);
     setDrawerOpen(true);
   };
 
-  // Updated columns definition with explicit click trigger on User Name
   const columns = [
     { field: 'id', headerName: 'Request ID', width: 100, renderCell: (params) => <div>#{params.row?.id || '-'}</div> },
     { 
@@ -284,9 +297,7 @@ const WithdrawalRequestsTable = () => {
       width: 140,
       renderCell: (params) => {
         const statusDetails = getStatusDetails(params.row.admin_status);
-      
         return <Chip label={statusDetails.label} color={statusDetails.color} size="small" />;
-      
       }
     },
     {
@@ -349,39 +360,27 @@ const WithdrawalRequestsTable = () => {
             InputProps={{ endAdornment: (<IconButton onClick={handleSearchClick}><SearchIcon /></IconButton>) }}
           />
         </Box>
-
-        {/* <Box sx={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
-          <Button
-            startIcon={<SvgIcon fontSize="small"><DownloadIcon /></SvgIcon>}
-            variant="contained"
-            onClick={exportToExcel}
-            disabled={loadingExport}
-          >
-             {loadingExport ? 'Exporting...' : 'Export Requests'}
-          </Button>
-        </Box> */}
       </Grid>
 
-      <Grid item xs={12}>
-
+      <Grid item xs={12} sx={{ position: 'relative' }}>
         {loading && (
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: 'rgba(255, 255, 255, 0.6)', // Transparent white overlay
-                zIndex: 10, // Table ke upar dikhane ke liye
-              }}
-            >
-              <CircularProgress color="primary" />
-            </Box>
-          )}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'rgba(255, 255, 255, 0.6)', 
+              zIndex: 10, 
+            }}
+          >
+            <CircularProgress color="primary" />
+          </Box>
+        )}
           
         <Card>
           <CommonDataTable
@@ -398,7 +397,7 @@ const WithdrawalRequestsTable = () => {
       </Grid>
 
       {/* Side Drawer for Details */}
-          <Drawer
+      <Drawer
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -438,7 +437,6 @@ const WithdrawalRequestsTable = () => {
               </Box>
             </Paper>
 
-
             {/* Driver Details Box */}
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
@@ -446,7 +444,6 @@ const WithdrawalRequestsTable = () => {
                 <Typography variant="subtitle2" fontWeight="600" color="textSecondary">Driver Information</Typography>
               </Box>
               <Paper elevation={0} sx={{ p: 2, bgcolor: 'white', borderRadius: 2, border: '1px solid #eaeaea', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body2" color="textSecondary">User Id</Typography>
                   <Typography variant="body2" fontWeight="600">{selectedRow.user_id || '-'}</Typography>
@@ -535,7 +532,7 @@ const WithdrawalRequestsTable = () => {
                   </Box>
                   <Divider />
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="textSecondary">Txn ID</Typography>
+                    <Typography variant="body2" color="textSecondary">Txn ID / UTR</Typography>
                     <Typography variant="body2" fontWeight="600" sx={{ fontFamily: 'monospace' }}>{selectedRow.razorpay_txn_id || '-'}</Typography>
                   </Box>
                   <Divider />
@@ -622,6 +619,92 @@ const WithdrawalRequestsTable = () => {
             disabled={actionLoading || !rejectRemark.trim()}
           >
             Submit Rejection
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Approve Withdrawal Dialog */}
+      <Dialog 
+        open={approveDialogOpen} 
+        onClose={() => setApproveDialogOpen(false)} 
+        fullWidth 
+        maxWidth="sm"
+      >
+        <DialogTitle>Approve Withdrawal Request</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2, mt: 1 }}>
+            Please confirm the payment status and provide a UTR number / Transaction ID if available. You may also attach a screenshot.
+          </Typography>
+          
+          <TextField
+            select
+            margin="dense"
+            label="Payment Status"
+            fullWidth
+            variant="outlined"
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value)}
+            sx={{ mb: 2, mt: 1 }}
+          >
+            <MenuItem value="processed">Success</MenuItem>
+            <MenuItem value="processing">Pending</MenuItem>
+            <MenuItem value="reversed">Failed</MenuItem>
+          </TextField>
+
+          <TextField
+            margin="dense"
+            label="UTR Number / Transaction ID (Optional)"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={utrNumber}
+            onChange={(e) => setUtrNumber(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+
+          {/* Upload Screenshot Button */}
+          <Button
+            variant="outlined"
+            component="label"
+            fullWidth
+            startIcon={<CloudUploadIcon />}
+            sx={{ mb: 2 }}
+          >
+            Upload Screenshot (Optional)
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+          </Button>
+
+          {/* Screenshot Preview Box */}
+          {screenshotPreview && (
+            <Box sx={{ mt: 1, mb: 1, position: 'relative', border: '1px solid #eaeaea', borderRadius: 2, padding: 1, textAlign: 'center', bgcolor: '#fafafa' }}>
+              <IconButton 
+                size="small" 
+                onClick={handleClearScreenshot}
+                sx={{ position: 'absolute', top: 5, right: 5, bgcolor: 'rgba(255,255,255,0.7)', '&:hover': { bgcolor: 'rgba(255,255,255,1)' } }}
+              >
+                <CancelIcon color="error" />
+              </IconButton>
+              <img src={screenshotPreview} alt="Payment Screenshot Preview" style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '4px' }} />
+            </Box>
+          )}
+
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setApproveDialogOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleApproveSubmit} 
+            variant="contained" 
+            color="success" 
+            disabled={actionLoading || !paymentStatus}
+          >
+            Submit Approval
           </Button>
         </DialogActions>
       </Dialog>
