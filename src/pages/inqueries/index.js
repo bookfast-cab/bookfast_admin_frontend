@@ -93,9 +93,11 @@ const InquiriesTable = () => {
 
   useEffect(() => {
     fetchInquiries(1)
+    
     return () => {
       if (abortControllerRef.current) abortControllerRef.current.abort();
     };
+    
   }, [filterType]) 
 
   const handleSearchClick = () => {
