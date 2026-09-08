@@ -99,6 +99,9 @@ const Navigation = () => {
     { privilege: ['zone'], sectionTitle: 'Zone Management', icon: MapMarkerRadius, roles: ['admin', 'staff'] },
     { privilege: ['zone'], title: 'Zone', icon: MapMarkerRadius, path: '/zones', roles: ['admin', 'staff'] },
 
+    { privilege: ['inqueries'], sectionTitle: 'Inquiries Management', icon: FormatListBulleted, roles: ['admin', 'staff'] },
+    { privilege: ['inqueries'], title: 'Inquiries', icon: FormatListBulleted, path: '/inqueries', roles: ['admin', 'staff'] },
+
     { privilege: ['advance-booking', 'common-notifications', 'trip-notification'], sectionTitle: 'Notification Management', icon: Bell, roles: ['admin', 'staff'] },
     { privilege: ['advance-booking'], title: 'Advance Booking', icon: ClipboardList, path: '/advanceBooking', roles: ['admin', 'staff'] },
     { privilege: ['duty-post'], title: 'Driver Duty Post', icon: FormatListBulleted, path: '/driver-duty-post', roles: ['staff'] },

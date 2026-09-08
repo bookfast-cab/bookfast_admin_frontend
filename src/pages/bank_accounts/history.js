@@ -229,7 +229,9 @@ const BankHistoryTable = () => {
 
   const columns = [
     { field: 'id', headerName: 'Request ID', width: 100 },
-    { field: 'user_id', headerName: 'User', width: 100, renderCell: (params) => <div> {params.row?.driver?.driverName} </div> },
+    { field: 'user_name', headerName: 'User Name', width: 120, renderCell: (params) => <div> {params.row?.driver?.driverName} </div> },
+    { field: 'user_id', headerName: 'Driver Id', width: 100, renderCell: (params) => <div> {params.row?.user_id || '-'} </div> },
+    { field: 'driver_mobile', headerName: 'Driver Mobile', width: 130, renderCell: (params) => <div>{params.row?.driver?.phone_number || '-'}</div> },
     { field: 'user_type', headerName: 'User Type', width: 100, textTransform: 'capitalize' },
     { 
       field: 'bankName', 
