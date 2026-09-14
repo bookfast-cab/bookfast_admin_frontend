@@ -4,7 +4,7 @@ import Card from "@mui/material/Card";
 import Typography from "@mui/material/Typography";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   FormControl,
   MenuItem,
@@ -16,7 +16,9 @@ import {
   Checkbox,
   ListItemText,
   List,
-  Button
+  Button,
+  Autocomplete,
+  TextField
 } from "@mui/material";
 
 const StaffTable = () => {
@@ -26,6 +28,7 @@ const StaffTable = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [token, setToken] = useState(null);
   const [staffId, setStaffId] = useState(null);
+  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -113,7 +116,7 @@ const StaffTable = () => {
   const getStaffs = () => {
     if (!token) return;
 
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/staff`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/staff?perPage=100`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -231,6 +234,8 @@ const StaffTable = () => {
 ];
 
 
+  const staffOptions = useMemo(() => data?.filter((v) => v.userRole !== 'admin') || [], [data]);
+
   return (
     <Grid container spacing={4} sx={{ bgcolor: "white", padding: 3 }}>
       <Grid item xs={12}>
@@ -261,20 +266,51 @@ const StaffTable = () => {
                 <FormControl fullWidth>
                     <Select
                         displayEmpty 
+                        value={staffId || ""}
                         inputProps={{ 'aria-label': 'Without label' }}
+                        onClose={() => setSearchText("")}
+                        MenuProps={{ autoFocus: false }}
                         onChange={(event,child)=>{
-                                setStaffId(event?.target?.value)
-                                if(event?.target?.value && child?.props?.privilege){
-                                    setprivilegeList(JSON.parse(child.props.privilege))
+                                setStaffId(event?.target?.value);
+                                if (event?.target?.value && child?.props?.privilege) {
+                                    try {
+                                        if (typeof child.props.privilege === 'string') {
+                                            setprivilegeList(JSON.parse(child.props.privilege));
+                                        } else if (Array.isArray(child.props.privilege)) {
+                                            setprivilegeList(child.props.privilege);
+                                        } else {
+                                            setprivilegeList([]);
+                                        }
+                                    } catch (e) {
+                                        console.error("Error parsing privilege", e);
+                                        setprivilegeList([]);
+                                    }
+                                } else {
+                                    setprivilegeList([]);
                                 }
                             }
                         }
                         >
+                        <ListSubheader>
+                            <TextField
+                                size="small"
+                                autoFocus
+                                placeholder="Search Staff..."
+                                fullWidth
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key !== 'Escape') {
+                                        e.stopPropagation();
+                                    }
+                                }}
+                            />
+                        </ListSubheader>
                         <MenuItem value="">
                             <em style={{ color: '#aaa' }}>Select Staff</em>
                         </MenuItem>
-                        {data?.map((v,i)=>(
-                            (v.userRole != 'admin') && <MenuItem privilege={v.privilege} key={v.id} value={v.id}>{v.name} - {v.email}</MenuItem>
+                        {staffOptions?.filter(v => v.name?.toLowerCase().includes(searchText.toLowerCase()) || v.email?.toLowerCase().includes(searchText.toLowerCase()))?.map((v,i)=>(
+                            <MenuItem privilege={v.privilege} key={v.id} value={v.id}>{v.name} - {v.email}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>
