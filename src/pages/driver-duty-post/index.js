@@ -188,6 +188,7 @@ const MUITable = () => {
             case '0': return { label: 'Inactive', color: '#757575' }; // Grey for Inactive
             case '1': return { label: 'Active', color: '#2196f3' };   // Blue for Active
             case '2': return { label: 'Booked', color: '#4caf50' };   // Green for Booked
+            case '3': return { label: 'Canceled', color: '#ff0000' };   // Green for Booked
             default: return { label: 'Unknown', color: '#ff9800' };   // Orange for default
           }
         };
