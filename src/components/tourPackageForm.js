@@ -195,7 +195,7 @@ const TourPackageForm = (params) => {
         const result = await response.json();
         if (result.success) {
           
-          const baseUrl = "https://bookfast-service.s3.ap-south-1.amazonaws.com/";
+          const baseUrl = process.env.NEXT_PUBLIC_CLOUDFRONT_DOMAIN
 
           const imageUrls = result.data
             .filter((item) => item !== "webImages/")
