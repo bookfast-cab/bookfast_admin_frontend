@@ -115,6 +115,7 @@ const PromotionalBanners = () => {
                                 <TableCell><b>Image</b></TableCell>
                                 <TableCell><b>Title</b></TableCell>
                                 <TableCell><b>Audience</b></TableCell>
+                                <TableCell><b>Type</b></TableCell>
                                 <TableCell><b>Display Type</b></TableCell>
                                 <TableCell><b>Priority</b></TableCell>
                                 <TableCell><b>Status</b></TableCell>
@@ -127,7 +128,7 @@ const PromotionalBanners = () => {
                         <TableBody>
                             {loading && banners.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} align="center">Loading banners...</TableCell>
+                                    <TableCell colSpan={10} align="center">Loading banners...</TableCell>
                                 </TableRow>
                             ) : banners.map((row) => (
                                 <TableRow key={row.id}>
@@ -138,6 +139,7 @@ const PromotionalBanners = () => {
                                     </TableCell>
                                     <TableCell>{row.title}</TableCell>
                                     <TableCell sx={{ textTransform: 'capitalize' }}>{row.audience_type}</TableCell>
+                                    <TableCell sx={{ textTransform: 'capitalize' }}>{row.type || 'Popup'}</TableCell>
                                     <TableCell sx={{ textTransform: 'capitalize' }}>{row.display_type}</TableCell>
                                     <TableCell>{row.priority}</TableCell>
                                     <TableCell>
@@ -162,7 +164,7 @@ const PromotionalBanners = () => {
                             ))}
                             {!loading && banners.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={9} align="center">
+                                    <TableCell colSpan={10} align="center">
                                         No promotional banners found.
                                     </TableCell>
                                 </TableRow>

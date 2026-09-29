@@ -328,6 +328,7 @@ const AddPromotionalBanner = () => {
         target_type: "all",
         view_time:'',
         display_type: "multiple",
+        type: "popup",
         priority: 0,
         status: 1,
         start_time: moment().format("YYYY-MM-DDTHH:mm"),
@@ -376,6 +377,7 @@ const AddPromotionalBanner = () => {
                     audience_type: data.audience_type,
                     target_type: data.target_type || "all",
                     display_type: data.display_type || "multiple",
+                    type: data.type || "popup",
                     priority: data.priority || 0,
                     status: data.status,
                     view_time: data.view_time ? moment(data.view_time).format("HH:mm") : "",
@@ -575,9 +577,23 @@ const AddPromotionalBanner = () => {
                                             onChange={handleChange}
                                             label="Audience Type"
                                         >
-                                            {/* <MenuItem value="both">Both (Drivers & Customers)</MenuItem> */}
                                             <MenuItem value="customer">Customers Only</MenuItem>
                                             <MenuItem value="driver">Drivers Only</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+
+                                <Grid item xs={12} sm={4}>
+                                    <FormControl fullWidth>
+                                        <InputLabel>Banner Type</InputLabel>
+                                        <Select
+                                            name="type"
+                                            value={formData.type}
+                                            onChange={handleChange}
+                                            label="Banner Type"
+                                        >
+                                            <MenuItem value="popup">Popup</MenuItem>
+                                            <MenuItem value="slider">Slider</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
