@@ -28,6 +28,64 @@ const PageForm = () => {
     metaDescription: "",
   });
 
+  const [faqList, setFaqList] = useState([]);
+  const [faqQuestion, setFaqQuestion] = useState("");
+  const [faqAnswer, setFaqAnswer] = useState("");
+
+  const generateFaqHTML = () => {
+    if (faqList.length === 0) return "";
+
+    let html = `<div class="row">
+            <div class="col-lg-8 offset-lg-2 text-center mb-5">
+
+                <h2 id="faq-heading" class="features-title">
+                    Frequently Asked <span style="color: #1532d1;">Questions</span>
+                </h2>
+
+                <p class="features-subtitle">
+                    Find answers to common questions about BookFast outstation taxi services,
+                    one-way and round-trip cab bookings, fares, vehicles and travel support.
+                </p>
+
+            </div>
+        </div>
+        <div class="accordion faq-card-accordion" id="faqLeft">\n`;
+
+faqList.forEach((faq, index) => {
+  const faqNum = index + 1;
+  const isFirst = index === 0;
+  const buttonClass = isFirst ? "accordion-button" : "accordion-button collapsed";
+  const ariaExpanded = isFirst ? "true" : "false";
+  const collapseClass = isFirst ? "accordion-collapse collapse show" : "accordion-collapse collapse";
+  
+  html += ` <div class="accordion-item">
+          <span class="accordion-header" id="faqHeading${faqNum}">
+            <button
+              class="${buttonClass}"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#faq${faqNum}"
+              aria-expanded="${ariaExpanded}"
+              aria-controls="faq${faqNum}">
+              ${faq.question}
+            </button>
+          </span>
+          <div
+            id="faq${faqNum}"
+            class="${collapseClass}"
+            aria-labelledby="faqHeading${faqNum}"
+            data-bs-parent="#faqLeft">
+            <div class="accordion-body">
+              ${faq.answer}
+            </div>
+          </div>
+        </div>\n`;
+});
+
+html += `      </div>`;
+    return html;
+  };
+
   let initialContent = `<p><strong>Chandigarh to Delhi Cab Service – Book a One-Way Taxi at Best Price</strong></p>
 
 <p><strong>Book a One-Way Taxi from Chandigarh to Delhi</strong></p>
@@ -484,7 +542,27 @@ const PageForm = () => {
           metaDescription: result.data.metaDescription || "",
         });
 
-        setLoadedContent(result.data.content);
+        let content = result.data.content || "";
+        const faqs = [];
+        if (typeof window !== 'undefined' && content) {
+           const parser = new DOMParser();
+           const doc = parser.parseFromString(content, 'text/html');
+           const accordionItems = doc.querySelectorAll('.accordion-item');
+           accordionItems.forEach(item => {
+               const question = item.querySelector('.accordion-button')?.textContent || '';
+               const answer = item.querySelector('.accordion-body')?.innerHTML || '';
+               if (question && answer) {
+                   faqs.push({ question: question.trim(), answer: answer.trim() });
+               }
+           });
+           const accordionWrapper = doc.querySelector('#faqLeft');
+           if (accordionWrapper) {
+               accordionWrapper.remove();
+           }
+           content = doc.body.innerHTML;
+        }
+        setFaqList(faqs);
+        setLoadedContent(content);
 
       } else {
         setErrorMessage("Error fetching form data: " + result.message);
@@ -561,9 +639,11 @@ const PageForm = () => {
       return;
     }
 
+    const finalContent = editorContent + generateFaqHTML();
+
     const data = new FormData();
     data.append("title", formData.title);
-    data.append("content", editorContent);
+    data.append("content", finalContent);
     data.append("featuredImage", formData.featuredImage);
     data.append("metaTitle", formData.metaTitle);
     data.append("metaDescription", formData.metaDescription);
@@ -1515,25 +1595,33 @@ const PageForm = () => {
               </div>
             )}
 
+            {/* FAQ Section */}
+            
             {/* Submit Button */}
             <button
               type="submit"
               style={{
-                padding: "10px 20px",
-                backgroundColor: "#007BFF",
+                padding: "12px 30px",
+                backgroundColor: "#28a745",
                 color: "#fff",
                 border: "none",
                 cursor: "pointer",
-                margin: "50px 0",
-                borderRadius: "5px",
+                margin: "40px 0",
+                borderRadius: "6px",
+                fontSize: "16px",
+                fontWeight: "bold",
+                boxShadow: "0 4px 6px rgba(40, 167, 69, 0.2)",
+                transition: "all 0.2s"
               }}
+              onMouseOver={(e) => e.target.style.backgroundColor = "#218838"}
+              onMouseOut={(e) => e.target.style.backgroundColor = "#28a745"}
               disabled={isLoading}
             >
-              {isLoading ? 'Loading...' : 'Submit'}
+              {isLoading ? 'Loading...' : 'Submit Form'}
             </button>
           </form>
         </div>
-
+      <div style={{ flex: "1" }}>
         {/* Image Gallery Sidebar */}
         <div style={{
           flex: "1",
@@ -1657,6 +1745,134 @@ const PageForm = () => {
               No images in gallery
             </div>
           )}
+        </div>
+
+        <div style={{
+              marginTop: "40px",
+              backgroundColor: "#ffffff",
+              padding: "25px",
+              borderRadius: "8px",
+              boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
+              border: "1px solid #eef0f2"
+            }}>
+              <h3 style={{ marginTop: "0", marginBottom: "20px", color: "#333", fontSize: "20px", borderBottom: "2px solid #007BFF", paddingBottom: "10px", display: "inline-block" }}>
+                Frequently Asked Questions (FAQ)
+              </h3>
+              
+              <div style={{ 
+                backgroundColor: "#f8f9fa", 
+                padding: "20px", 
+                borderRadius: "8px", 
+                marginBottom: "25px",
+                border: "1px dashed #ced4da"
+              }}>
+                <h4 style={{ margin: "0 0 15px 0", color: "#495057", fontSize: "16px" }}>Add New FAQ</h4>
+                <input
+                  type="text"
+                  placeholder="e.g. Does BookFast offer one-way outstation taxi service?"
+                  value={faqQuestion}
+                  onChange={(e) => setFaqQuestion(e.target.value)}
+                  style={{ width: "100%", padding: "12px", marginBottom: "15px", borderRadius: "6px", border: "1px solid #ced4da", fontSize: "15px", outline: "none" }}
+                  onFocus={(e) => e.target.style.borderColor = "#80bdff"}
+                  onBlur={(e) => e.target.style.borderColor = "#ced4da"}
+                />
+                <textarea
+                  placeholder="e.g. Yes. BookFast offers one-way outstation taxi booking..."
+                  value={faqAnswer}
+                  onChange={(e) => setFaqAnswer(e.target.value)}
+                  rows={4}
+                  style={{ width: "100%", padding: "12px", marginBottom: "15px", borderRadius: "6px", border: "1px solid #ced4da", fontSize: "15px", fontFamily: "inherit", outline: "none" }}
+                  onFocus={(e) => e.target.style.borderColor = "#80bdff"}
+                  onBlur={(e) => e.target.style.borderColor = "#ced4da"}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (faqQuestion.trim() && faqAnswer.trim()) {
+                      setFaqList([...faqList, { question: faqQuestion, answer: faqAnswer }]);
+                      setFaqQuestion("");
+                      setFaqAnswer("");
+                    }
+                  }}
+                  style={{ 
+                    padding: "10px 24px", 
+                    backgroundColor: "#007BFF", 
+                    color: "white", 
+                    border: "none", 
+                    borderRadius: "6px", 
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "15px",
+                    transition: "background-color 0.2s"
+                  }}
+                  onMouseOver={(e) => e.target.style.backgroundColor = "#0056b3"}
+                  onMouseOut={(e) => e.target.style.backgroundColor = "#007BFF"}
+                >
+                  + Add FAQ
+                </button>
+              </div>
+
+              {faqList.length > 0 && (
+                <div>
+                  <h4 style={{ marginBottom: "15px", color: "#333" }}>Added FAQs ({faqList.length})</h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+                    {faqList.map((faq, index) => (
+                      <div key={index} style={{ 
+                        padding: "15px 20px", 
+                        backgroundColor: "#fff", 
+                        border: "1px solid #e0e0e0", 
+                        borderRadius: "8px",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                        position: "relative"
+                      }}>
+                        <div style={{ paddingRight: "80px" }}>
+                          <p style={{ margin: "0 0 8px 0", fontWeight: "600", fontSize: "16px", color: "#2c3e50" }}>
+                            <span style={{ color: "#007BFF", marginRight: "8px" }}>Q:</span> 
+                            {faq.question}
+                          </p>
+                          <div style={{ margin: "0", fontSize: "14px", color: "#555", lineHeight: "1.5" }}>
+                            <span style={{ color: "#28a745", marginRight: "8px", fontWeight: "bold" }}>A:</span>
+                            <span dangerouslySetInnerHTML={{ __html: faq.answer }} />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newFaqList = [...faqList];
+                            newFaqList.splice(index, 1);
+                            setFaqList(newFaqList);
+                          }}
+                          style={{ 
+                            position: "absolute",
+                            top: "15px",
+                            right: "20px",
+                            padding: "6px 12px", 
+                            backgroundColor: "#ffebee", 
+                            color: "#dc3545", 
+                            border: "1px solid #ffcdd2", 
+                            borderRadius: "4px", 
+                            cursor: "pointer", 
+                            fontSize: "13px",
+                            fontWeight: "500",
+                            transition: "all 0.2s"
+                          }}
+                          onMouseOver={(e) => {
+                            e.target.style.backgroundColor = "#dc3545";
+                            e.target.style.color = "white";
+                          }}
+                          onMouseOut={(e) => {
+                            e.target.style.backgroundColor = "#ffebee";
+                            e.target.style.color = "#dc3545";
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
         </div>
       </div>
     </>
