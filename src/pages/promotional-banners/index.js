@@ -147,7 +147,7 @@ const PromotionalBanners = () => {
                                             label={row.status === 1 ? 'Active' : 'Inactive'} 
                                             color={row.status === 1 ? 'success' : 'default'} 
                                             size="small" 
-                                        />
+                                        /> 
                                     </TableCell>
                                     <TableCell>{moment(row.start_time).format('YYYY-MM-DD HH:mm')}</TableCell>
                                     <TableCell>{row.end_time ? moment(row.end_time).format('YYYY-MM-DD HH:mm') : 'No End Time'}</TableCell>
