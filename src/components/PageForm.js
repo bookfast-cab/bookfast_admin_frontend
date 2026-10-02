@@ -574,22 +574,41 @@ const PageForm = () => {
 
         let content = result.data.content || "";
         const faqs = [];
-        if (typeof window !== 'undefined' && content) {
-           const parser = new DOMParser();
-           const doc = parser.parseFromString(content, 'text/html');
-           const accordionItems = doc.querySelectorAll('.accordion-item');
-           accordionItems.forEach(item => {
-               const question = item.querySelector('.accordion-button')?.textContent || '';
-               const answer = item.querySelector('.accordion-body')?.innerHTML || '';
-               if (question && answer) {
-                   faqs.push({ question: question.trim(), answer: answer.trim() });
+        if (typeof window !== 'undefined') {
+            // First try to parse from faq_content if available
+            let faqHtml = result.data.faq_content;
+            
+            // Backward compatibility: If no faq_content, check if it's embedded in content
+            if (!faqHtml && content && content.includes('id="faqLeft"')) {
+               const parser = new DOMParser();
+               const doc = parser.parseFromString(content, 'text/html');
+               const accordionWrapper = doc.querySelector('#faqLeft');
+               if (accordionWrapper) {
+                   // Get the parent container (the .row with columns)
+                   const row = accordionWrapper.closest('.row');
+                   if (row) {
+                       faqHtml = row.outerHTML;
+                       row.remove();
+                   } else {
+                       faqHtml = accordionWrapper.outerHTML;
+                       accordionWrapper.remove();
+                   }
+                   content = doc.body.innerHTML;
                }
-           });
-           const accordionWrapper = doc.querySelector('#faqLeft');
-           if (accordionWrapper) {
-               accordionWrapper.remove();
-           }
-           content = doc.body.innerHTML;
+            }
+
+            if (faqHtml) {
+               const parser = new DOMParser();
+               const doc = parser.parseFromString(faqHtml, 'text/html');
+               const accordionItems = doc.querySelectorAll('.accordion-item');
+               accordionItems.forEach(item => {
+                   const question = item.querySelector('.accordion-button')?.textContent || '';
+                   const answer = item.querySelector('.accordion-body')?.innerHTML || '';
+                   if (question && answer) {
+                       faqs.push({ question: question.trim(), answer: answer.trim() });
+                   }
+               });
+            }
         }
         setFaqList(faqs);
         setLoadedContent(content);
@@ -669,11 +688,10 @@ const PageForm = () => {
       return;
     }
 
-    const finalContent = editorContent + generateFaqHTML();
-
     const data = new FormData();
     data.append("title", formData.title);
-    data.append("content", finalContent);
+    data.append("content", editorContent);
+    data.append("faq_content", generateFaqHTML());
     data.append("featuredImage", formData.featuredImage);
     data.append("metaTitle", formData.metaTitle);
     data.append("metaDescription", formData.metaDescription);
