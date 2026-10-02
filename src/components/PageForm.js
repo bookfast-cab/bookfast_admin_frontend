@@ -83,8 +83,9 @@ faqList.forEach((faq, index) => {
 });
 
 html += `      </div>`;
+
     return html;
-    
+
   };
 
   let initialContent = `<p><strong>Chandigarh to Delhi Cab Service – Book a One-Way Taxi at Best Price</strong></p>
