@@ -33,60 +33,88 @@ const PageForm = () => {
   const [faqAnswer, setFaqAnswer] = useState("");
 
   const generateFaqHTML = () => {
+
     if (faqList.length === 0) return "";
 
+    // 1. Header Section
     let html = `<div class="row">
             <div class="col-lg-8 offset-lg-2 text-center mb-5">
-
                 <h2 id="faq-heading" class="features-title">
                     Frequently Asked <span style="color: #1532d1;">Questions</span>
                 </h2>
-
                 <p class="features-subtitle">
                     Find answers to common questions about BookFast outstation taxi services,
                     one-way and round-trip cab bookings, fares, vehicles and travel support.
                 </p>
-
             </div>
         </div>
-        <div class="accordion faq-card-accordion" id="faqLeft">\n`;
+        <div class="row">\n`; // Start row for the 6-6 columns
 
-faqList.forEach((faq, index) => {
-  const faqNum = index + 1;
-  const isFirst = index === 0;
-  const buttonClass = isFirst ? "accordion-button" : "accordion-button collapsed";
-  const ariaExpanded = isFirst ? "true" : "false";
-  const collapseClass = isFirst ? "accordion-collapse collapse show" : "accordion-collapse collapse";
-  
-  html += ` <div class="accordion-item">
-          <span class="accordion-header" id="faqHeading${faqNum}">
-            <button
-              class="${buttonClass}"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#faq${faqNum}"
-              aria-expanded="${ariaExpanded}"
-              aria-controls="faq${faqNum}">
-              ${faq.question}
-            </button>
-          </span>
-          <div
-            id="faq${faqNum}"
-            class="${collapseClass}"
-            aria-labelledby="faqHeading${faqNum}"
-            data-bs-parent="#faqLeft">
-            <div class="accordion-body">
-              ${faq.answer}
-            </div>
-          </div>
-        </div>\n`;
-});
+    // 2. Prepare left and right column HTML
+    let leftHtml = `          <div class="col-md-6">
+            <div class="accordion faq-card-accordion" id="faqLeft">\n`;
+            
+    let rightHtml = `          <div class="col-md-6">
+            <div class="accordion faq-card-accordion" id="faqRight">\n`;
 
-html += `      </div>`;
+    // Calculate the middle point to split the array
+    const midIndex = Math.ceil(faqList.length / 2);
+
+    // 3. Loop through FAQs and divide them
+    faqList.forEach((faq, index) => {
+      const faqNum = index + 1;
+      const isFirst = index === 0;
+      const isLeftColumn = index < midIndex;
+      
+      const buttonClass = isFirst ? "accordion-button" : "accordion-button collapsed";
+      const ariaExpanded = isFirst ? "true" : "false";
+      const collapseClass = isFirst ? "accordion-collapse collapse show" : "accordion-collapse collapse";
+      
+      // Ensure the accordion data-bs-parent targets the correct column ID
+      const parentId = isLeftColumn ? "faqLeft" : "faqRight";
+      
+      const itemHtml = `              <div class="accordion-item">
+                <span class="accordion-header" id="faqHeading${faqNum}">
+                  <button
+                    class="${buttonClass}"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#faq${faqNum}"
+                    aria-expanded="${ariaExpanded}"
+                    aria-controls="faq${faqNum}">
+                    ${faq.question}
+                  </button>
+                </span>
+                <div
+                  id="faq${faqNum}"
+                  class="${collapseClass}"
+                  aria-labelledby="faqHeading${faqNum}"
+                  data-bs-parent="#${parentId}">
+                  <div class="accordion-body">
+                    ${faq.answer}
+                  </div>
+                </div>
+              </div>\n`;
+
+      // Append to the respective column
+      if (isLeftColumn) {
+        leftHtml += itemHtml;
+      } else {
+        rightHtml += itemHtml;
+      }
+    });
+
+    // Close the accordions and columns
+    leftHtml += `            </div>\n          </div>\n`;
+    rightHtml += `            </div>\n          </div>\n`;
+
+    // 4. Combine and close the row
+    html += leftHtml + rightHtml + `        </div>`;
 
     return html;
-
+    
   };
+
 
   let initialContent = `<p><strong>Chandigarh to Delhi Cab Service – Book a One-Way Taxi at Best Price</strong></p>
 
