@@ -145,6 +145,9 @@ const Navigation = () => {
     { privilege: ['daily-fare-management'], title: 'Daily Fare Management', icon: Table, path: '/daily-fare-management', roles: ['admin', 'staff'] },
     { privilege: ['package'], title: 'Package', icon: FolderOpen, path: '/package', roles: ['admin', 'staff'] },
 
+    { privilege: ['vehicle-category'], sectionTitle: 'Vehicle Management', icon: Car, roles: ['admin', 'staff'] },
+    { privilege: ['vehicle-category'], title: 'Vehicle Category', icon: Car, path: '/vehicle-category', roles: ['admin', 'staff'] },
+
     { privilege: ['view-bookings', 'add-one-way-trip', 'view-trips', 'add-package', 'view-package'], sectionTitle: 'Website Pages', icon: Web, roles: ['admin', 'staff', 'seo'] },
     { privilege: ['view-bookings'], title: 'View Bookings', icon: ViewList, path: '/websiteForm/viewBooking', roles: ['admin', 'staff'] },
     { privilege: ['add-one-way-trip'], title: 'Add One Way Trip', icon: FilePlus, path: '/websiteForm', roles: ['admin', 'staff', 'seo'] },
