@@ -50,7 +50,9 @@ const EditVehicleCategory = () => {
     })
       .then((response) => {
         if (!response.ok) throw new Error(`Failed to fetch data. Status: ${response.status}`);
+        
         return response.json();
+
       })
       .then((result) => {
         let data = result.data;
@@ -97,7 +99,9 @@ const EditVehicleCategory = () => {
     if (!formData.description) { formIsValid = false; errors.description = 'Description is required.'; }
 
     setFormErrors(errors);
+    
     return formIsValid;
+
   };
 
   const handleSubmit = async (e) => {

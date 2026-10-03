@@ -57,7 +57,9 @@ const VehicleCategoryTable = () => {
         if (!response.ok) {
           throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
+        
         return response.json();
+        
       })
       .then((result) => {
         setData(result.data || []);
