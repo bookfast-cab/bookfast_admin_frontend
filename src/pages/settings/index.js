@@ -24,7 +24,8 @@ const Settings = () => {
     realtime_ride_commission: "",
     bank_verification_fee: "",
     withdrawal_payment_fee: "",
-    minimum_ride_distance:''
+    minimum_ride_distance:'',
+    bike_auto_maximum_ride_distance:""
   });
 
   const [successMessage, setSuccessMessage] = useState("");
@@ -66,6 +67,8 @@ const Settings = () => {
           bank_verification_fee: result.data.bank_verification_fee || "",
           withdrawal_payment_fee: result.data.withdrawal_payment_fee || "",
           minimum_ride_distance: result.data.minimum_ride_distance || "",
+          bike_auto_maximum_ride_distance: result.data.bike_auto_maximum_ride_distance || "",
+
         });
       } else {
         setErrorMessage(result.message || "Failed to load pricing configurations.");
@@ -244,6 +247,19 @@ const Settings = () => {
                 name="minimum_ride_distance"
                 variant="outlined"
                 value={formData.minimum_ride_distance}
+                onChange={handleChange}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">KM</InputAdornment>,
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Bike/Auto Ride Maximum Distance (in KM)"
+                name="bike_auto_maximum_ride_distance"
+                variant="outlined"
+                value={formData.bike_auto_maximum_ride_distance}
                 onChange={handleChange}
                 InputProps={{
                   startAdornment: <InputAdornment position="start">KM</InputAdornment>,
