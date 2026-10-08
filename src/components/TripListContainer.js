@@ -401,6 +401,7 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
                         <MenuItem value={4}>Completed</MenuItem>
                         <MenuItem value={5}>Cancelled</MenuItem>
                         <MenuItem value={9}>Missed Trip</MenuItem>
+                        <MenuItem value={'ongoing'}>On Going</MenuItem>
                     </Select>
                 </FormControl>
 
