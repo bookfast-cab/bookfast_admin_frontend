@@ -85,7 +85,7 @@ const StatisticsCard = ({data}) => {
       color: theme.palette.info.main,
       bgColor: '#e0f7fa', // light cyan
       icon: <Car sx={{ fontSize: 28 }} />,
-      link: '/trips',
+      link: '/trips?type=ongoing',
     },
     {
       stats: statistics.busyDriver || 0,
