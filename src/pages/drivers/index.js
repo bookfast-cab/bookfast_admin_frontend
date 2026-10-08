@@ -57,7 +57,7 @@ const MUITable = () => {
     token = localStorage.getItem('access_token')
   }
   const router = useRouter();
-  const { type } = router.query; // Get driver ID from query params
+  const { type, driver_type } = router.query; // Get driver ID from query params
 
   const handleCloseSnackbar = () => {
     setErrorMessage('')
@@ -119,8 +119,9 @@ const MUITable = () => {
 
 
   useEffect(() => {
+    if (!router.isReady) return;
     getDrivers(currentPage, perPage);
-  }, [perPage, sort, sortColumn])
+  }, [router.isReady, perPage, sort, sortColumn, driver_type])
 
   const handleDelete = async (idToDelete) => {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/delete-driver/${idToDelete}`, {
@@ -174,7 +175,8 @@ const MUITable = () => {
       search: searchText,
       filter:searchFilter,
       sort,
-      sortColumn
+      sortColumn,
+      ...(driver_type && { driver_type })
     }).toString();
 
     try {
@@ -293,8 +295,9 @@ const MUITable = () => {
   };
 
   useEffect(() => {
+    if (!router.isReady) return;
     getDrivers(1, perPage);
-  }, [searchFilter]);
+  }, [router.isReady, searchFilter]);
 
   const handleClose = (type) => {
     setAnchorEl(null);

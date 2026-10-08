@@ -25,7 +25,9 @@ const Dashboard = () => {
       todayNewCustomers:0,
       todayNewDrivers:0,
       missedTripCount:0,
-      deviceDetails:[]
+      deviceDetails:[],
+      ongoingActiveRide: 0,
+      busyDriver: 0
     });
 
 
@@ -59,6 +61,8 @@ const Dashboard = () => {
             todayTripCount:data.data.todayTripCount || 0,
             todayadvanceDutyCount:data.data.todayadvanceDutyCount || 0,
             todaypartnerDutyCount:data.data.todaypartnerDutyCount || 0,
+            ongoingActiveRide: data.data.ongoingActiveRide || 0,
+            busyDriver: data.data.busyDriver || 0,
 
           });
         } catch (error) {

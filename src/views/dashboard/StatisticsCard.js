@@ -18,6 +18,8 @@ import AccountOutline from 'mdi-material-ui/AccountOutline';
 import AccountGroup from 'mdi-material-ui/AccountGroup';
 import CalendarClock from 'mdi-material-ui/CalendarClock';
 import DotsVertical from 'mdi-material-ui/DotsVertical';
+import Car from 'mdi-material-ui/Car';
+import AccountClock from 'mdi-material-ui/AccountClock';
 
 const StatisticsCard = ({data}) => {
   const theme = useTheme();
@@ -26,6 +28,8 @@ const StatisticsCard = ({data}) => {
     customers: 0,
     drivers: 0,
     activeDrivers: 0,
+    ongoingActiveRide: 0,
+    busyDriver: 0,
   });
 
 
@@ -36,6 +40,8 @@ const StatisticsCard = ({data}) => {
       drivers: data.drivers || 0,
       activeDrivers: data.activeDrivers || 0,
       todayBooktripCount:data.todayBooktripCount || 0,
+      ongoingActiveRide: data.ongoingActiveRide || 0,
+      busyDriver: data.busyDriver || 0,
     });
 
   }, [data]);
@@ -69,15 +75,31 @@ const StatisticsCard = ({data}) => {
       stats: statistics.todayBooktripCount || 0,
       title: 'Today Trips',
       color: theme.palette.secondary.main,
-      bgColor: '#8dbbf7', // soft pink-purple
+      bgColor: '#8dbbf7', 
       icon: <CalendarClock sx={{ fontSize: 28 }} />,
       link: '/trips/today',
+    },
+    {
+      stats: statistics.ongoingActiveRide || 0,
+      title: 'Ongoing Active Ride',
+      color: theme.palette.info.main,
+      bgColor: '#e0f7fa', // light cyan
+      icon: <Car sx={{ fontSize: 28 }} />,
+      link: '/trips',
+    },
+    {
+      stats: statistics.busyDriver || 0,
+      title: 'Busy Driver',
+      color: theme.palette.error.main,
+      bgColor: '#ffebee', // light red
+      icon: <AccountClock sx={{ fontSize: 28 }} />,
+      link: '/drivers?driver_type=busy',
     },
   ];
   
   const renderStats = () =>
     statisticsData.map((item, index) => (
-      <Grid item xs={12} sm={6} md={3} key={index}>
+      <Grid item xs={12} sm={6} md={4} key={index}>
         <Link href={item.link} passHref legacyBehavior>
           <Box
             component="a"
