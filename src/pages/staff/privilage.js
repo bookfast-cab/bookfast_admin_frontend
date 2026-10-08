@@ -20,6 +20,7 @@ import {
   Autocomplete,
   TextField
 } from "@mui/material";
+import { getAllMenuItems } from 'src/navigation/vertical/menuItems';
 
 const StaffTable = () => {
   const [data, setData] = useState([]);
@@ -139,100 +140,19 @@ const StaffTable = () => {
       });
   };
 
- const allMenuItems = [
+  const rawItems = getAllMenuItems();
+  const allMenuItems = [];
+  
+  allMenuItems.push({ type: 'header', title: 'Dashboard' });
 
-  // Dashboard & Dispatch
-
-  { type: 'header', title: 'Dashboard' },
-  { id: 'dashboard', type: 'item', title: 'Dashboard' },
-  { id: 'dispatch', type: 'item', title: 'Dispatch' },
-  
-  // Customers Management
-  
-  { type: 'header', title: 'Customers Management' },
-  { id: 'customers', type: 'item', title: 'Customers' },
-  { id: 'promo-coupon', type: 'item', title: 'Promo Coupon' },
-  
-  // Drivers Management
-  
-  { type: 'header', title: 'Drivers Management' },
-  { id: 'drivers', type: 'item', title: 'Drivers' },
-  { id: 'driver-wallet-history', type: 'item', title: 'Driver Wallet History' },
-  
-  // Trips Management
-  
-  { type: 'header', title: 'Trips Management' },
-  { id: 'trips', type: 'item', title: 'Trips' },
-  { id: 'manual-trips', type: 'item', title: 'Manual Trips' },
-  
-  // Chat
-  
-  { type: 'header', title: 'Chat' },
-  { id: 'driver-chat', type: 'item', title: 'Driver Chat' },
-  
-  // Zone Management
-  
-  { type: 'header', title: 'Zone Management' },
-  { id: 'zone', type: 'item', title: 'Zone' },
-  
-  // Notification Management
-  
-  { type: 'header', title: 'Notification Management' },
-  { id: 'advance-booking', type: 'item', title: 'Advance Booking' },
-  { id: 'common-notifications',type: 'item',title: 'Common Notifications',},
-  { id: 'trip-notification',type: 'item',title: 'Trip Notification',},
-  { id: 'duty-post', type: 'item', title: 'Driver Duty post' },
-  
-  // Payment
-  
-  { type: 'header', title: 'Payment' },
-  { id: 'payment-management', type: 'item', title: 'Payment Management' },
-  { id: 'admin-earning', type: 'item', title: 'Admin Earning' },
-  
-  // Settings
-  
-  { type: 'header', title: 'Settings' },
-  { id: 'cities-setup', type: 'item', title: 'Cities Setup' },
-  { id: 'whatsapp-setup', type: 'item', title: 'WhatsApp Setup' },
-  { id: 'force-app-update', type: 'item', title: 'Force App Update' },
-  { id: 'helpline-numbers', type: 'item', title: 'Helpline Numbers' },
-  { id: 'whatsapp-keywords', type: 'item', title: 'WhatsApp Keywords' },
-  { id: 'promotional-banners', type: 'item', title: 'Promotional Banners' },
-  { id: 'settings', type: 'item', title: 'Settings' },
-  
-  // Fare Management
-  
-  { type: 'header', title: 'Fare Management' },
-  { id: 'outstation-package', type: 'item', title: 'Outstation Package' },
-  { id: 'outstation-fare', type: 'item', title: 'Outstation Fare' },
-  { id: 'daily-fare-management', type: 'item', title: 'Daily Fare Management' },
-  { id: 'package', type: 'item', title: 'Package' },
-  
-  // Website Pages
-  
-  { type: 'header', title: 'Website Pages' },
-  { id: 'view-bookings', type: 'item', title: 'View Bookings' },
-  { id: 'add-one-way-trip', type: 'item', title: 'Add One Way Trip' },
-  { id: 'view-trips', type: 'item', title: 'View Trips' },
-  { id: 'add-package', type: 'item', title: 'Add Package' },
-  { id: 'view-package', type: 'item', title: 'View Package' },
-  
-  // Staff Management
-  
-  { type: 'header', title: 'Staff Management' },
-  { id: 'staff-members', type: 'item', title: 'Staff Members' },
-  
-  // Blogs
-  
-  { type: 'header', title: 'Blogs' },
-  { id: 'add-blog', type: 'item', title: 'Add Blog' },
-  { id: 'view-blogs', type: 'item', title: 'View Blogs' },
-
-
-  { type: 'header', title: 'Tutorial Videos' },
-  { id: 'view-videos', type: 'item', title: 'View Videos' },
-];
-
+  rawItems.forEach(item => {
+    if (item.sectionTitle) {
+      allMenuItems.push({ type: 'header', title: item.sectionTitle });
+    }
+    if (item.title && item.privilege && item.privilege.length > 0 && !item.sectionTitle) {
+      allMenuItems.push({ id: item.privilege[0], type: 'item', title: item.title });
+    }
+  });
 
   const staffOptions = useMemo(() => data?.filter((v) => v.userRole !== 'admin') || [], [data]);
 
