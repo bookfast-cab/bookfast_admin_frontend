@@ -14,7 +14,7 @@ const WebsiteForm = () => {
           <Typography variant="h5" align="center" gutterBottom>
             One Way Trip
           </Typography>
-          <PageForm />
+          <PageForm hidefeatureImage={true} />
         </Paper>
       </Grid>
     </Grid>

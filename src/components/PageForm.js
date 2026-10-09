@@ -16,7 +16,7 @@ import FontSize from 'tiptap-extension-font-size';
 import api from "src/@core/utils/api";
 
 
-const PageForm = () => {
+const PageForm = ({ hidefeatureImage }) => {
   const Router = useRouter();
   const { id } = Router.query;
 
@@ -39,9 +39,9 @@ const PageForm = () => {
     // 1. Header Section
     let html = `<div class="row">
             <div class="col-lg-8 offset-lg-2 text-center mb-5">
-                <h2 id="faq-heading" class="features-title">
+                <h3 id="faq-heading" class="features-title">
                     Frequently Asked <span style="color: #1532d1;">Questions</span>
-                </h2>
+                </h3>
                 <p class="features-subtitle">
                     Find answers to common questions about BookFast outstation taxi services,
                     one-way and round-trip cab bookings, fares, vehicles and travel support.
@@ -681,7 +681,7 @@ const PageForm = () => {
       return;
     }
 
-    if (!formData.featuredImage && !id) {
+    if (!hidefeatureImage && !formData.featuredImage && !id) {
       setErrorMessage("Please select an image.");
       setLoading(false);
 
@@ -692,7 +692,9 @@ const PageForm = () => {
     data.append("title", formData.title);
     data.append("content", editorContent);
     data.append("faq_content", generateFaqHTML());
-    data.append("featuredImage", formData.featuredImage);
+    if (formData.featuredImage) {
+      data.append("featuredImage", formData.featuredImage);
+    }
     data.append("metaTitle", formData.metaTitle);
     data.append("metaDescription", formData.metaDescription);
 
@@ -707,7 +709,7 @@ const PageForm = () => {
       });
 
       if (result?.data?.success) {
-        if (id && !formData.featuredImage) {
+        if (!formData.featuredImage) {
           setSuccessMessage("Form submitted and file uploaded successfully.");
           setErrorMessage("");
           setFormData({
@@ -1585,21 +1587,23 @@ const PageForm = () => {
             </div>
 
             {/* Featured Image Field */}
-            <div style={{ marginBottom: "20px" }}>
-              <label htmlFor="featuredImage" style={{ display: "block", fontWeight: "bold" }}>
-                Featured Image
-              </label>
-              <input
-                type="file"
-                id="featuredImage"
-                ref={fileInput}
-                name="featuredImage"
-                accept="image/*"
-                onChange={handleFileChange}
-                required={!id}
-                style={{ marginTop: "5px" }}
-              />
-            </div>
+            {!hidefeatureImage && (
+              <div style={{ marginBottom: "20px" }}>
+                <label htmlFor="featuredImage" style={{ display: "block", fontWeight: "bold" }}>
+                  Featured Image
+                </label>
+                <input
+                  type="file"
+                  id="featuredImage"
+                  ref={fileInput}
+                  name="featuredImage"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  required={!id}
+                  style={{ marginTop: "5px" }}
+                />
+              </div>
+            )}
 
             {/* Content Editor */}
             <div style={{ marginBottom: "20px" }}>
