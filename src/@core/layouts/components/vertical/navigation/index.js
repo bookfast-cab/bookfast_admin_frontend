@@ -7,6 +7,10 @@ import Box from '@mui/material/Box'
 import { styled, useTheme } from '@mui/material/styles'
 import IconButton from '@mui/material/IconButton'
 import MenuIcon from '@mui/icons-material/Menu'
+import TextField from '@mui/material/TextField'
+import InputAdornment from '@mui/material/InputAdornment'
+import SearchIcon from '@mui/icons-material/Search'
+import ClearIcon from '@mui/icons-material/Clear'
 
 // ** Third Party Components
 import PerfectScrollbar from 'react-perfect-scrollbar'
@@ -20,17 +24,7 @@ import VerticalNavHeader from './VerticalNavHeader'
 import { hexToRGBA } from 'src/@core/utils/hex-to-rgba'
 
 const StyledBoxForShadow = styled(Box)({
-  top: 50,
-  left: -8,
-  zIndex: 2,
-  height: 75,
-  display: 'none',
-  position: 'absolute',
-  pointerEvents: 'none',
-  width: 'calc(100% + 15px)',
-  '&.d-block': {
-    display: 'block'
-  }
+  display: 'none !important'
 })
 
 const Navigation = props => {
@@ -46,6 +40,14 @@ const Navigation = props => {
   const [groupActive, setGroupActive] = useState([])
   const [currentActiveGroup, setCurrentActiveGroup] = useState([])
   const [menuVisible, setMenuVisible] = useState(true) // State for burger icon toggle
+  const [menuSearchText, setMenuSearchText] = useState('')
+
+  // filter
+  const filteredNavItems = (props.verticalNavItems || []).filter(item => {
+    if (!menuSearchText) return true;
+    if (item.sectionTitle) return false; // Hide section titles during search
+    return item.title && item.title.toLowerCase().includes(menuSearchText.toLowerCase());
+  })
 
   // ** Ref
   const shadowRef = useRef(null)
@@ -98,6 +100,41 @@ const Navigation = props => {
       {menuVisible && (
         <Drawer {...props}>
           <VerticalNavHeader {...props} />
+          <Box sx={{ pl: 0, pr: 4.5, pb: 1, pt: 5 }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Search Menu"
+              value={menuSearchText}
+              onChange={(e) => setMenuSearchText(e.target.value)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '0px 50px 50px 0px',
+                  paddingRight: '8px'
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderLeft: 'none'
+                },
+                '& .MuiOutlinedInput-input': {
+                  padding: '4.5px 0', // Much slimmer height
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+                endAdornment: menuSearchText ? (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setMenuSearchText('')} edge="end">
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null
+              }}
+            />
+          </Box>
           <StyledBoxForShadow
             ref={shadowRef}
             sx={{
@@ -132,6 +169,7 @@ const Navigation = props => {
                       currentActiveGroup={currentActiveGroup}
                       setCurrentActiveGroup={setCurrentActiveGroup}
                       {...props}
+                      verticalNavItems={filteredNavItems}
                     />
                   </List>
                 )}

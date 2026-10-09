@@ -15,6 +15,7 @@ import {
     Autocomplete
 } from "@react-google-maps/api";
 import { Window } from "@mui/icons-material";
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import TripDrawer from "../trips/TripDrawer";
 
 import { TextField, IconButton, Box, Tabs, Tab } from '@mui/material';
@@ -55,7 +56,8 @@ const DispatchPanel = () => {
     const [driverSearchText, setDriverSearchText] = useState('');
     const hoverTimeoutRef = useRef(null);
     const autocompleteRef = useRef(null);
-    const [tabIndex, setTabIndex] = useState(0); // 0: Active, 1: Inactive
+    const [tabIndex, setTabIndex] = useState(0); // 0: Active, 1: Busy, 2: Inactive
+    const [rideTabIndex, setRideTabIndex] = useState(0); // 0: Unassigned, 1: Assigned
 
 
     const [toastOpen, setToastOpen] = useState(false);
@@ -128,13 +130,15 @@ const DispatchPanel = () => {
 
 
     useEffect(() => {
-        getTrips();
-        getActiveDrivers("", 0)
+        getTrips(rideTabIndex);
+        getActiveDrivers("", tabIndex)
     }, [])
 
+
     const handleTripNotification = useCallback((data) => {
-        getTrips();
-    }, []);
+        getTrips(rideTabIndex);
+    }, [rideTabIndex]);
+
 
     useEffect(() => {
 
@@ -150,12 +154,18 @@ const DispatchPanel = () => {
         getActiveDrivers("", tabIndex)
     }, [tabIndex, selectedRowData])
 
-    const getTrips = async () => {
+    useEffect(() => {
+        getTrips(rideTabIndex);
+    }, [rideTabIndex])
 
-        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getNewTripsList`, {
+
+    const getTrips = async (tab = rideTabIndex) => {
+        const type = tab === 0 ? 'unassigned' : 'assigned';
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getNewTripsList?type=${type}`, {
             method: 'GET',
 
             headers: {
+
                 'Content-Type': 'application/json',
                 'Authorization': `${token}`
             }
@@ -170,9 +180,11 @@ const DispatchPanel = () => {
             })
     }
 
-    const getActiveDrivers = async (searchText = '', driverType = 0) => {
+    const getActiveDrivers = async (searchText = '', driverType = tabIndex) => {
 
-        const type = driverType === 0 ? 'active' : 'inactive';
+        let type = 'active';
+        if (driverType === 1) type = 'busy';
+        if (driverType === 2) type = 'inactive';
 
         const queryParams = new URLSearchParams({
             searchText,
@@ -180,6 +192,7 @@ const DispatchPanel = () => {
             lat: selectedRowData?.pickup_lat ?? 0,
             lng: selectedRowData?.pickup_lng ?? 0
         });
+
 
         fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getActiveDrivers?${queryParams.toString()}`, {
             method: 'GET',
@@ -207,8 +220,9 @@ const DispatchPanel = () => {
     const handleDrawerClose = () => {
         setDrawerOpen(false);
         setSelectedRowData(null);
-        getTrips();
+        getTrips(rideTabIndex);
     };
+
 
     const handleMouseOut = () => {
         hoverTimeoutRef.current = setTimeout(() => {
@@ -234,6 +248,14 @@ const DispatchPanel = () => {
 
     let pickupMarker = null; // define this at the top level, so it doesn't stack markers
     const pickupMarkerRef = React.useRef(null);
+
+    useEffect(() => {
+        setSelectedDriver(null);
+        if (pickupMarkerRef.current) {
+            pickupMarkerRef.current.setMap(null);
+            pickupMarkerRef.current = null;
+        }
+    }, [tabIndex]);
 
     const goToPickupLocation = (trip) => {
         setSelectedRowData(trip);
@@ -285,50 +307,18 @@ const DispatchPanel = () => {
             if (mapRef.current && !isNaN(latitude) && !isNaN(longitude)) {
                 const position = { lat: latitude, lng: longitude };
 
-                // Pan and zoom
+                // Pan and zoom closely to the driver
                 mapRef.current.panTo(position);
-                mapRef.current.setZoom(12);
+                mapRef.current.setZoom(20);
 
-                // Remove existing marker
+                // Set as selected driver to open the InfoWindow natively in React
+                setSelectedDriver(driver);
+
+                // Remove the manual pickup marker if it was there (so they don't overlap)
                 if (pickupMarkerRef.current) {
                     pickupMarkerRef.current.setMap(null);
+                    pickupMarkerRef.current = null;
                 }
-
-                // Create new marker
-                const marker = new window.google.maps.Marker({
-                    position,
-                    map: mapRef.current,
-                    icon: {
-                        url: "/icons/active_car.png",
-                        scaledSize: new window.google.maps.Size(30, 30),
-                    },
-                });
-
-                // Store full driver info in marker
-                marker.driverData = driver;
-
-                // Create InfoWindow
-                const infoWindow = new window.google.maps.InfoWindow();
-
-                marker.addListener("click", () => {
-
-                });
-                const d = marker.driverData;
-
-                const contentHtml = `
-          <div style="font-size: 14px; min-width: 200px;">
-            <div style="font-weight: bold; margin-bottom: 8px;">Driver Details</div>
-            
-            <div><strong>ID:</strong> ${d.id}</div>
-            <div><strong>Name:</strong> ${d.driverName}</div>
-            <div><strong>Phone:</strong> ${d.phone_number}</div>
-            <div><strong>Vehicle:</strong> ${d.vehicleCategory?.vehicle_type || 'N/A'}</div>
-          </div>
-        `;
-
-                infoWindow.setContent(contentHtml);
-                infoWindow.open(mapRef.current, marker);
-                pickupMarkerRef.current = marker;
             } else {
                 console.warn("Invalid latitude or longitude:", latitude, longitude);
             }
@@ -426,8 +416,9 @@ const DispatchPanel = () => {
                     setToastMessage(data.message);
                     setToastSeverity("success");
                     setToastOpen(true);
-                    getTrips();
+                    getTrips(rideTabIndex);
                 } else {
+
                     setToastMessage(data.message);
                     setToastSeverity("error");
                     setToastOpen(true);
@@ -548,18 +539,27 @@ const DispatchPanel = () => {
                                 flexDirection: 'column',
                             }}
                         >
-                            <div
-                                style={{
-                                    padding: '5px',
-                                    fontSize: '16px',
-                                    fontWeight: 'bold',
-                                    borderBottom: '1px solid #ffffff',
+                            <Box
+                                sx={{
+                                    borderBottom: 1,
+                                    borderColor: 'divider',
                                     textAlign: 'center',
+                                    padding: '5px',
                                     color: "#FFFFFF"
                                 }}
                             >
-                                Ride Request ({totalRideCount})
-                            </div>
+                                <Tabs
+                                    value={rideTabIndex}
+                                    onChange={(e, newValue) => setRideTabIndex(newValue)}
+                                    centered
+                                    textColor="inherit"
+                                    TabIndicatorProps={{ style: { backgroundColor: 'white' } }}
+                                >
+                                    <Tab label={`Unassigned ${rideTabIndex === 0 ? `(${totalRideCount})` : ''}`} sx={{ color: 'white' }} />
+                                    <Tab label={`Assigned ${rideTabIndex === 1 ? `(${totalRideCount})` : ''}`} sx={{ color: 'white' }} />
+                                </Tabs>
+                            </Box>
+
 
                             {/* Scrollable list */}
                             <div
@@ -652,6 +652,14 @@ const DispatchPanel = () => {
   <div><strong>{trip.vehicleCategory?.vehicle_type || '—'}</strong></div>
   <div><strong>Total:</strong> ₹{trip.total}</div>
 </div>
+     {trip.driver && (
+        <div style={{ marginTop: '12px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '8px' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#495057' }}>Driver Info</div>
+            <div><strong style={{ color: '#007bff' }}>Id:</strong> {trip.driver.id}</div>
+            <div><strong>Driver:</strong> {trip.driver.driverName || 'N/A'}</div>
+            <div><strong>Phone:</strong> {trip.driver.phone_number || 'N/A'}</div>
+        </div>
+    )}
   </div>
 );
 
@@ -730,10 +738,12 @@ const DispatchPanel = () => {
                                         textColor="inherit"
                                         TabIndicatorProps={{ style: { backgroundColor: 'white' } }}
                                     >
-                                        <Tab label="Active" sx={{ color: 'white' }} />
-                                        <Tab label="Inactive" sx={{ color: 'white' }} />
+                                        <Tab label="Active" sx={{ color: tabIndex === 0 ? '#ffffff' : 'white', fontWeight: tabIndex === 0 ? 'bold' : 'normal',marginLeft:'30px' }} />
+                                        <Tab label="Busy" sx={{ color: tabIndex === 1 ? '#ffffff' : 'white', fontWeight: tabIndex === 1 ? 'bold' : 'normal' }} />
+                                        <Tab label="Inactive" sx={{ color: tabIndex === 2 ? '#ffffff' : 'white', fontWeight: tabIndex === 2 ? 'bold' : 'normal' }} />
                                     </Tabs>
                                 </Box>
+
 
                             </div>
 
@@ -772,12 +782,14 @@ const DispatchPanel = () => {
                                                 style={{
                                                     color: '#17a2b8',
                                                     cursor: 'pointer',
-
                                                     marginBottom: '6px',
                                                     fontWeight: 'bold',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px'
                                                 }}
                                             >
-                                                📍 Current Location
+                                                <DirectionsCarIcon fontSize="small" /> View on Map
                                             </div>
                                             <div><strong style={{ color: '#007bff' }}>Id:</strong> {driver.id}</div>
                                             <div><strong style={{ color: '#007bff' }}>Name:</strong> {driver.driverName}</div>
@@ -792,6 +804,15 @@ const DispatchPanel = () => {
                                                     ? `${driver.distance_km.toFixed(2)} km`
                                                     : 'N/A'}
                                             </div>
+
+                                            {tabIndex === 1 && driver.latestTrip && (
+                                                <div style={{ marginTop: '12px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '8px' }}>
+                                                    <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#495057' }}>Latest Trip Details</div>
+                                                    <div><strong style={{ color: '#007bff' }}>Trip ID:</strong> {driver.latestTrip.id}</div>
+                                                    <div><strong>Customer:</strong> {driver.latestTrip.customer_name || 'N/A'}</div>
+                                                    <div><strong>Phone:</strong> {driver.latestTrip.customer_phone_number || 'N/A'}</div>
+                                                </div>
+                                            )}
 
                                             {(selectedRowData?.id && !isInactive) ? (
                                                 <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }}>
@@ -856,12 +877,11 @@ const DispatchPanel = () => {
                                     onClick={() => setSelectedDriver(driver)}
                                     onMouseOver={() => setSelectedDriver(driver)}
                                     icon={{
-                                        url:
-                                            tabIndex === 1
-                                                ? "/icons/inactive_car.png"
-                                                : driver.latestTrip?.id
-                                                    ? "/icons/busy_car.png"
-                                                    : "/icons/active_car.png",
+                                        url: tabIndex === 2
+                                            ? "/icons/inactive_car.png"
+                                            : tabIndex == 1
+                                                ? "/icons/busy_car.png"
+                                                : "/icons/active_car.png",
                                         scaledSize: googleLoaded
                                             ? new window.google.maps.Size(30, 30)
                                             : undefined,
