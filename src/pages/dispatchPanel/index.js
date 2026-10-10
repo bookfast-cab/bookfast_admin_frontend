@@ -616,7 +616,7 @@ const DispatchPanel = () => {
             );
 
         }
-        
+
         return filteredDriversData.map((driver) => {
             const lastSeen = new Date(driver.lastLocationUpdateAt);
             const now = new Date();
@@ -714,6 +714,7 @@ const DispatchPanel = () => {
 
     const memoizedMarkers = useMemo(() => {
         if (!googleLoaded) return null;
+
         return filteredDriversData
             .filter(driver => driver.latitude && driver.longitude) // Ensures both are not null/0
             .map((driver) => (
@@ -732,6 +733,7 @@ const DispatchPanel = () => {
                     }}
                 />
             ));
+            
     }, [googleLoaded, filteredDriversData, loadedTabIndex]);
 
 
