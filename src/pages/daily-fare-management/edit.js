@@ -131,12 +131,12 @@ const EditDailyFareManagement = () => {
       errors.price_per_min = 'Price per minute is required and should be a positive number.';
     }
 
-    if (!formData.waiting_time_charge || isNaN(formData.waiting_time_charge) || parseFloat(formData.waiting_time_charge) <= 0) {
+    if (!formData.waiting_time_charge || isNaN(formData.waiting_time_charge) || parseFloat(formData.waiting_time_charge) < 0) {
       formIsValid = false;
       errors.waiting_time_charge = 'Waiting time charge is required and should be a positive number.';
     }
 
-    if (!formData.cancellation_charge || isNaN(formData.cancellation_charge) || parseFloat(formData.cancellation_charge) <= 0) {
+    if (!formData.cancellation_charge || isNaN(formData.cancellation_charge) || parseFloat(formData.cancellation_charge) < 0) {
       formIsValid = false;
       errors.cancellation_charge = 'Cancellation charge is required and should be a positive number.';
     }

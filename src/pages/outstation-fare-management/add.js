@@ -109,7 +109,7 @@ const AddOuStationFare = () => {
       errors.per_km_rs = 'Price per km is required and should be a positive number.';
     }
 
-    if (!formData.driver_allowance || isNaN(formData.driver_allowance) || parseFloat(formData.driver_allowance) <= 0) {
+    if (!formData.driver_allowance || isNaN(formData.driver_allowance) || parseFloat(formData.driver_allowance) < 0) {
       formIsValid = false;
       errors.driver_allowance = 'Driver allowance is required and should be a positive number.';
     }
