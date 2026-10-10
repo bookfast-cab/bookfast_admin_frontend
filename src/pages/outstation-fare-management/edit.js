@@ -144,7 +144,7 @@ const AddOuStationFareManagement = () => {
     //   formIsValid = false;
     //   errors.after_limit_km_charge = 'After limit km charge is required and should be a positive number.';
     // }
-    if (!formData.driver_allowance || isNaN(formData.driver_allowance) || parseFloat(formData.driver_allowance) <= 0) {
+    if (!formData.driver_allowance || isNaN(formData.driver_allowance) || parseFloat(formData.driver_allowance) < 0) {
       formIsValid = false;
       errors.driver_allowance = 'Driver allowance is required and should be a positive number.';
     }

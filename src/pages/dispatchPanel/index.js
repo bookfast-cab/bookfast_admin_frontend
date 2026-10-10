@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import Card from "@mui/material/Card";
 import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
@@ -18,7 +18,7 @@ import { Window } from "@mui/icons-material";
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import TripDrawer from "../trips/TripDrawer";
 
-import { TextField, IconButton, Box, Tabs, Tab } from '@mui/material';
+import { TextField, IconButton, Box, Tabs, Tab, CircularProgress } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { listenForMessages } from "src/utils/NotificationPermission";
 import ToastMessage from "src/components/ToastMessage";
@@ -43,7 +43,8 @@ const DispatchPanel = () => {
     const router = useRouter();
     const { id } = router.query;
     const [errorMessage, setErrorMessage] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [tripsLoading, setTripsLoading] = useState(false);
+    const [driversLoading, setDriversLoading] = useState(false);
     const [googleLoaded, setGoogleLoaded] = useState(false);
     const [selectedDriver, setSelectedDriver] = useState(null);
     const mapRef = useRef(null);
@@ -57,6 +58,7 @@ const DispatchPanel = () => {
     const hoverTimeoutRef = useRef(null);
     const autocompleteRef = useRef(null);
     const [tabIndex, setTabIndex] = useState(0); // 0: Active, 1: Busy, 2: Inactive
+    const [loadedTabIndex, setLoadedTabIndex] = useState(0);
     const [rideTabIndex, setRideTabIndex] = useState(0); // 0: Unassigned, 1: Assigned
 
 
@@ -160,6 +162,7 @@ const DispatchPanel = () => {
 
 
     const getTrips = async (tab = rideTabIndex) => {
+        setTripsLoading(true);
         const type = tab === 0 ? 'unassigned' : 'assigned';
         fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getNewTripsList?type=${type}`, {
             method: 'GET',
@@ -174,13 +177,17 @@ const DispatchPanel = () => {
             .then((data) => {
                 setTripData(data.data);
                 setTotalRideCount(data.count)
+                setTripsLoading(false);
             })
             .catch((err) => {
                 console.log(err)
+                setTripsLoading(false);
             })
     }
 
     const getActiveDrivers = async (searchText = '', driverType = tabIndex) => {
+        setDriversLoading(true);
+        
 
         let type = 'active';
         if (driverType === 1) type = 'busy';
@@ -205,9 +212,12 @@ const DispatchPanel = () => {
             .then((data) => {
                 setDriversData(data.data.drivers || []);
                 setTotalDriverCount(data.data.totalCount || 0)
+                setDriversLoading(false);
+                setLoadedTabIndex(driverType);
             })
             .catch((err) => {
                 console.log(err)
+                setDriversLoading(false);
             })
     }
 
@@ -231,7 +241,7 @@ const DispatchPanel = () => {
     };
 
     const handleDriverSearch = () => {
-        getActiveDrivers(driverSearchText, tabIndex)
+        getActiveDrivers("", tabIndex)
     };
 
     const handlePlaceChanged = () => {
@@ -353,6 +363,7 @@ const DispatchPanel = () => {
 
     const handleChange = (event, newValue) => {
         setTabIndex(newValue);
+        setDriverSearchText('');
     };
 
     const requestDriver = (driver) => {
@@ -477,6 +488,247 @@ const DispatchPanel = () => {
         URL.revokeObjectURL(url);
     };
 
+    const memoizedTrips = useMemo(() => {
+        if (tripsLoading) {
+            return (
+                <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+                    <CircularProgress sx={{ color: 'white' }} />
+                </Box>
+            );
+        }
+        if (!googleLoaded) return null;
+
+        return tripData.map((trip) => {
+            const createdAt = new Date(trip.created_at);
+            const now = new Date();
+            const isNew = (now - createdAt) < 15000; // less than 15 seconds
+
+            return (
+                <div
+                    key={trip.id}
+                    className={isNew ? 'blink' : ''}
+                    style={{
+                        marginBottom: '20px',
+                        padding: '10px',
+                        borderRadius: '12px',
+                        backgroundColor: selectedRowData?.id === trip.id ? '#fcba03' : '#f0f0f0',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                        border: '1px solid #e0e0e0',
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                        color: "#000000"
+                    }}
+                >
+                    {/* Badges - shown above Trip ID */}
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                        {trip.trip_type === 1 && (
+                            <span style={{ color: '#0f5132', padding: '2px 5px', borderRadius: '8px', fontWeight: 600 }}>
+                                Local
+                            </span>
+                        )}
+                        {trip.trip_type === 3 && (
+                            <span style={{ color: '#055160', padding: '2px 5px', borderRadius: '8px', fontWeight: 600 }}>
+                                Outstation
+                            </span>
+                        )}
+                        {trip.status === 0 && (
+                            <span style={{ color: '#842029', padding: '2px 5px', borderRadius: '8px', fontWeight: 600 }}>
+                                Instant
+                            </span>
+                        )}
+                        {trip.status === 6 && (
+                            <span style={{ color: '#1a1a77', padding: '2px 5px', borderRadius: '8px', fontWeight: 600 }}>
+                                Scheduled
+                            </span>
+                        )}
+                        {trip.pickup_date && (
+                            <span style={{ backgroundColor: '#ffffff', color: '#333', padding: '2px 5px', borderRadius: '8px', fontWeight: 500 }}>
+                                Pickup: {formatDate(trip.pickup_date)} {getRemainingTime(trip.pickup_date)}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Trip Details */}
+                    <div onClick={() => handleView(trip)} style={{ marginBottom: '8px', cursor: 'pointer' }}>
+                        <strong style={{ color: '#9acd32' }}>Trip ID:</strong> {trip.trip_id}
+                    </div>
+
+                    <div>
+                        <strong>Customer:</strong>{' '}
+                        {trip.customer?.first_name || trip.customer?.last_name
+                            ? `${trip.customer?.first_name || ''} ${trip.customer?.last_name || ''}`.trim()
+                            : 'N/A'}
+                    </div>
+
+                    <div>
+                        <strong>Phone:</strong>
+                        {trip.customer?.phone_number && ` ${trip.customer.phone_number}`}
+                    </div>
+
+
+                    <div>
+                        <strong>Pickup:</strong>{' '}
+                        <span
+                            style={{ color: '#007bff', cursor: 'pointer', textDecoration: 'underline' }}
+                            onClick={() => goToPickupLocation(trip)}
+                        >
+                            {trip.pickup_address}
+                        </span>
+                    </div>
+
+                    <div><strong>Drop:</strong> {trip.drop_address}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '8px' }}>
+                        <div><strong>{trip.vehicleCategory?.vehicle_type || '—'}</strong></div>
+                        <div><strong>Total:</strong> ₹{trip.total}</div>
+                    </div>
+                    {trip.driver && (
+                        <div style={{ marginTop: '12px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '8px' }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#495057' }}>Driver Info</div>
+                            <div><strong style={{ color: '#007bff' }}>Id:</strong> {trip.driver.id}</div>
+                            <div><strong>Driver:</strong> {trip.driver.driverName || 'N/A'}</div>
+                            <div><strong>Phone:</strong> {trip.driver.phone_number || 'N/A'}</div>
+                        </div>
+                    )}
+                </div>
+            );
+        });
+    }, [tripData, tripsLoading, googleLoaded, selectedRowData]);
+
+    const filteredDriversData = useMemo(() => {
+        if (!driverSearchText) return driversData;
+        const lowerSearch = driverSearchText.toLowerCase();
+        return driversData.filter(driver => 
+            String(driver.id).toLowerCase().includes(lowerSearch) || 
+            String(driver.phone_number).toLowerCase().includes(lowerSearch) ||
+            String(driver.driverName || '').toLowerCase().includes(lowerSearch)
+        );
+    }, [driversData, driverSearchText]);
+
+    const memoizedDrivers = useMemo(() => {
+        if (driversLoading) {
+            return (
+                <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+                    <CircularProgress sx={{ color: 'white' }} />
+                </Box>
+            );
+        }
+        return filteredDriversData.map((driver) => {
+            const lastSeen = new Date(driver.lastLocationUpdateAt);
+            const now = new Date();
+            const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
+            const isInactive = now - lastSeen > threeDaysInMs;
+
+            return (
+                <div
+                    key={driver.id}
+                    style={{
+                        marginBottom: '16px',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        backgroundColor: '#f0f0f0',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                    }}
+                >
+                    <div
+                        onClick={() => goToDriverLocation(driver)}
+                        style={{
+                            color: '#17a2b8',
+                            cursor: 'pointer',
+                            marginBottom: '6px',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                        }}
+                    >
+                        <DirectionsCarIcon fontSize="small" /> View on Map
+                    </div>
+                    <div><strong style={{ color: '#007bff' }}>Id:</strong> {driver.id}</div>
+                    <div><strong style={{ color: '#007bff' }}>Name:</strong> {driver.driverName}</div>
+                    <div><strong>Phone:</strong> {driver.phone_number}</div>
+                    <div>
+                        <strong>Vehicle:</strong>{' '}
+                        {driver.vehicleCategory ? driver.vehicleCategory.vehicle_type : 'N/A'}
+                    </div>
+                    <div>
+                        <strong>Distance:</strong>{' '}
+                        {driver.distance_km !== undefined
+                            ? `${driver.distance_km.toFixed(2)} km`
+                            : 'N/A'}
+                    </div>
+
+                    {loadedTabIndex === 1 && driver.latestTrip && (
+                        <div style={{ marginTop: '12px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '8px' }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#495057' }}>Latest Trip Details</div>
+                            <div><strong style={{ color: '#007bff' }}>Trip ID:</strong> {driver.latestTrip.id}</div>
+                            <div><strong>Customer:</strong> {driver.latestTrip.customer_name || 'N/A'}</div>
+                            <div><strong>Phone:</strong> {driver.latestTrip.customer_phone_number || 'N/A'}</div>
+                        </div>
+                    )}
+
+                    {(selectedRowData?.id && !isInactive) ? (
+                        <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }}>
+                            <button
+                                onClick={() => requestDriver(driver)}
+                                style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: '#007bff',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Request
+                            </button>
+                            <button
+                                onClick={() => AssignDriverToTrip(driver)}
+                                style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: '#28a745',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Assign
+                            </button>
+                        </div>
+                    ) : (
+                        <div style={{ marginTop: '12px', color: '#dc3545' }}>
+                            <strong>Last Login:</strong> {lastSeen.toLocaleDateString()} {lastSeen.toLocaleTimeString()}
+                        </div>
+                    )}
+                </div>
+            );
+        });
+    }, [filteredDriversData, driversLoading, loadedTabIndex, selectedRowData]);
+
+    const memoizedMarkers = useMemo(() => {
+        if (!googleLoaded) return null;
+        return filteredDriversData
+            .filter(driver => driver.latitude && driver.longitude) // Ensures both are not null/0
+            .map((driver) => (
+                <Marker
+                    key={driver.id}
+                    position={{ lat: driver.latitude, lng: driver.longitude }}
+                    onClick={() => setSelectedDriver(driver)}
+                    onMouseOver={() => setSelectedDriver(driver)}
+                    icon={{
+                        url: loadedTabIndex === 2
+                            ? "/icons/inactive_car.png"
+                            : loadedTabIndex === 1
+                                ? "/icons/busy_car.png"
+                                : "/icons/active_car.png",
+                        scaledSize: new window.google.maps.Size(30, 30),
+                    }}
+                />
+            ));
+    }, [googleLoaded, filteredDriversData, loadedTabIndex]);
+
 
     return (
         <>
@@ -569,102 +821,7 @@ const DispatchPanel = () => {
                                     flex: 1,
                                 }}
                             >
-                                {googleLoaded && tripData.map((trip) => {
-                                    const createdAt = new Date(trip.created_at);
-                                    const now = new Date();
-                                    const isNew = (now - createdAt) < 15000; // less than 15 seconds
-
-                                  return (
-  <div
-    key={trip.id}
-    className={isNew ? 'blink' : ''}
-    style={{
-      marginBottom: '20px',
-      padding: '10px',
-      borderRadius: '12px',
-      backgroundColor: selectedRowData?.id === trip.id ? '#fcba03' :  '#f0f0f0',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e0e0e0',
-      fontSize: '14px',
-      lineHeight: '1.6',
-      color:"#000000"
-    }}
-  >
-    {/* Badges - shown above Trip ID */}
-    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
-      {trip.trip_type === 1 && (
-        <span style={{  color: '#0f5132', padding: '2px 5px', borderRadius: '8px', fontWeight: 600 }}>
-          Local
-        </span>
-      )}
-      {trip.trip_type === 3 && (
-        <span style={{  color: '#055160', padding: '2px 5px', borderRadius: '8px', fontWeight: 600 }}>
-          Outstation
-        </span>
-      )}
-      {trip.status === 0 && (
-        <span style={{  color: '#842029', padding: '2px 5px', borderRadius: '8px', fontWeight: 600 }}>
-          Instant
-        </span>
-      )}
-      {trip.status === 6 && (
-        <span style={{  color: '#1a1a77', padding: '2px 5px', borderRadius: '8px', fontWeight: 600 }}>
-          Scheduled
-        </span>
-      )}
-      {trip.pickup_date && (
-        <span style={{ backgroundColor: '#ffffff', color: '#333', padding: '2px 5px', borderRadius: '8px', fontWeight: 500 }}>
-  Pickup: {formatDate(trip.pickup_date)} {getRemainingTime(trip.pickup_date)}
-</span>
-      )}
-    </div>
-
-    {/* Trip Details */}
-    <div onClick={() => handleView(trip)} style={{ marginBottom: '8px' }}>
-      <strong style={{ color: '#9acd32' }}>Trip ID:</strong> {trip.trip_id}
-    </div>
-
-    <div>
-      <strong>Customer:</strong>{' '}
-      {trip.customer?.first_name || trip.customer?.last_name
-        ? `${trip.customer?.first_name || ''} ${trip.customer?.last_name || ''}`.trim()
-        : 'N/A'}
-    </div>
-
-    <div>
-      <strong>Phone:</strong>
-      {trip.customer?.phone_number && ` ${trip.customer.phone_number}`}
-    </div>
-
-
-    <div>
-      <strong>Pickup:</strong>{' '}
-      <span
-        style={{ color: '#007bff', cursor: 'pointer', textDecoration: 'underline' }}
-        onClick={() => goToPickupLocation(trip)}
-      >
-        {trip.pickup_address}
-      </span>
-    </div>
-
-    <div><strong>Drop:</strong> {trip.drop_address}</div>
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '8px' }}>
-  <div><strong>{trip.vehicleCategory?.vehicle_type || '—'}</strong></div>
-  <div><strong>Total:</strong> ₹{trip.total}</div>
-</div>
-     {trip.driver && (
-        <div style={{ marginTop: '12px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '8px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#495057' }}>Driver Info</div>
-            <div><strong style={{ color: '#007bff' }}>Id:</strong> {trip.driver.id}</div>
-            <div><strong>Driver:</strong> {trip.driver.driverName || 'N/A'}</div>
-            <div><strong>Phone:</strong> {trip.driver.phone_number || 'N/A'}</div>
-        </div>
-    )}
-  </div>
-);
-
-
-                                })}
+                                {memoizedTrips}
 
 
                             </div>
@@ -758,100 +915,7 @@ const DispatchPanel = () => {
                                 }}
                             >
 
-                                {driversData.map((driver) => {
-                                    const lastSeen = new Date(driver.lastLocationUpdateAt);
-                                    const now = new Date();
-                                    const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
-                                    const isInactive = now - lastSeen > threeDaysInMs;
-
-                                    return (
-                                        <div
-                                            key={driver.id}
-                                            style={{
-                                                marginBottom: '16px',
-                                                padding: '12px',
-                                                borderRadius: '10px',
-                                                backgroundColor: '#f0f0f0',
-                                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                                                fontSize: '14px',
-                                                lineHeight: '1.6',
-                                            }}
-                                        >
-                                            <div
-                                                onClick={() => goToDriverLocation(driver)}
-                                                style={{
-                                                    color: '#17a2b8',
-                                                    cursor: 'pointer',
-                                                    marginBottom: '6px',
-                                                    fontWeight: 'bold',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '4px'
-                                                }}
-                                            >
-                                                <DirectionsCarIcon fontSize="small" /> View on Map
-                                            </div>
-                                            <div><strong style={{ color: '#007bff' }}>Id:</strong> {driver.id}</div>
-                                            <div><strong style={{ color: '#007bff' }}>Name:</strong> {driver.driverName}</div>
-                                            <div><strong>Phone:</strong> {driver.phone_number}</div>
-                                            <div>
-                                                <strong>Vehicle:</strong>{' '}
-                                                {driver.vehicleCategory ? driver.vehicleCategory.vehicle_type : 'N/A'}
-                                            </div>
-                                            <div>
-                                                <strong>Distance:</strong>{' '}
-                                                {driver.distance_km !== undefined
-                                                    ? `${driver.distance_km.toFixed(2)} km`
-                                                    : 'N/A'}
-                                            </div>
-
-                                            {tabIndex === 1 && driver.latestTrip && (
-                                                <div style={{ marginTop: '12px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '8px' }}>
-                                                    <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#495057' }}>Latest Trip Details</div>
-                                                    <div><strong style={{ color: '#007bff' }}>Trip ID:</strong> {driver.latestTrip.id}</div>
-                                                    <div><strong>Customer:</strong> {driver.latestTrip.customer_name || 'N/A'}</div>
-                                                    <div><strong>Phone:</strong> {driver.latestTrip.customer_phone_number || 'N/A'}</div>
-                                                </div>
-                                            )}
-
-                                            {(selectedRowData?.id && !isInactive) ? (
-                                                <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }}>
-                                                    <button
-                                                        onClick={() => requestDriver(driver)}
-                                                        style={{
-                                                            padding: '6px 12px',
-                                                            backgroundColor: '#007bff',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            borderRadius: '6px',
-                                                            cursor: 'pointer',
-                                                        }}
-                                                    >
-                                                        Request
-                                                    </button>
-                                                    <button
-                                                        onClick={() => AssignDriverToTrip(driver)}
-                                                        style={{
-                                                            padding: '6px 12px',
-                                                            backgroundColor: '#28a745',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            borderRadius: '6px',
-                                                            cursor: 'pointer',
-                                                        }}
-                                                    >
-                                                        Assign
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div style={{ marginTop: '12px', color: '#dc3545' }}>
-                                                    <strong>Last Login:</strong> {lastSeen.toLocaleDateString()} {lastSeen.toLocaleTimeString()}
-                                                </div>
-                                            )}
-
-                                        </div>
-                                    );
-                                })}
+                                {memoizedDrivers}
 
                             </div>
                         </div>
@@ -868,26 +932,7 @@ const DispatchPanel = () => {
                         onLoad={onLoad}
                     >
 
-                        {googleLoaded && driversData
-                            .filter(driver => driver.latitude && driver.longitude) // Ensures both are not null/0
-                            .map((driver) => (
-                                <Marker
-                                    key={driver.id}
-                                    position={{ lat: driver.latitude, lng: driver.longitude }}
-                                    onClick={() => setSelectedDriver(driver)}
-                                    onMouseOver={() => setSelectedDriver(driver)}
-                                    icon={{
-                                        url: tabIndex === 2
-                                            ? "/icons/inactive_car.png"
-                                            : tabIndex == 1
-                                                ? "/icons/busy_car.png"
-                                                : "/icons/active_car.png",
-                                        scaledSize: googleLoaded
-                                            ? new window.google.maps.Size(30, 30)
-                                            : undefined,
-                                    }}
-                                />
-                            ))}
+                        {memoizedMarkers}
 
 
 
