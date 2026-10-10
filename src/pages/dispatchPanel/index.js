@@ -597,21 +597,26 @@ const DispatchPanel = () => {
     const filteredDriversData = useMemo(() => {
         if (!driverSearchText) return driversData;
         const lowerSearch = driverSearchText.toLowerCase();
+
         return driversData.filter(driver => 
             String(driver.id).toLowerCase().includes(lowerSearch) || 
             String(driver.phone_number).toLowerCase().includes(lowerSearch) ||
             String(driver.driverName || '').toLowerCase().includes(lowerSearch)
         );
+
     }, [driversData, driverSearchText]);
 
     const memoizedDrivers = useMemo(() => {
         if (driversLoading) {
+        
             return (
                 <Box display="flex" justifyContent="center" alignItems="center" height="100%">
                     <CircularProgress sx={{ color: 'white' }} />
                 </Box>
             );
+
         }
+        
         return filteredDriversData.map((driver) => {
             const lastSeen = new Date(driver.lastLocationUpdateAt);
             const now = new Date();
