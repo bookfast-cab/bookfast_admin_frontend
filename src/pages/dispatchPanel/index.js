@@ -66,7 +66,12 @@ const DispatchPanel = () => {
     const [toastMessage, setToastMessage] = useState('');
     const [toastSeverity, setToastSeverity] = useState('success');
     const [totalDriverCount, setTotalDriverCount] = useState(0)
+    const [activeDriverCount, setActiveDriverCount] = useState(0)
+    const [inactiveDriverCount, setInactiveDriverCount] = useState(0)
+    const [busyDriverCount, setBusyDriverCount] = useState(0)
     const [totalRideCount, setTotalRideCount] = useState(0)
+    const [unassignedRideCount, setUnassignedRideCount] = useState(0);
+    const [assignedRideCount, setAssignedRideCount] = useState(0);
     const [markerPosition, setMarkerPosition] = useState(null);
     const socket = useSocket();
 
@@ -176,7 +181,8 @@ const DispatchPanel = () => {
             .then((response) => response.json())
             .then((data) => {
                 setTripData(data.data);
-                setTotalRideCount(data.count)
+                if (data.totalUnassigned !== undefined) setUnassignedRideCount(data.totalUnassigned);
+                if (data.totalAssigned !== undefined) setAssignedRideCount(data.totalAssigned);
                 setTripsLoading(false);
             })
             .catch((err) => {
@@ -211,7 +217,9 @@ const DispatchPanel = () => {
             .then((response) => response.json())
             .then((data) => {
                 setDriversData(data.data.drivers || []);
-                setTotalDriverCount(data.data.totalCount || 0)
+                setActiveDriverCount(data.data.active || 0)
+                setInactiveDriverCount(data.data.inactive || 0)
+                setBusyDriverCount(data.data.busy || 0)
                 setDriversLoading(false);
                 setLoadedTabIndex(driverType);
             })
@@ -309,8 +317,10 @@ const DispatchPanel = () => {
         }
     };
 
-    const goToDriverLocation = (driver) => {
+    const goToDriverLocation = async (driver, switchTab = false) => {
         try {
+            console.log(driver);
+            
             const latitude = parseFloat(driver.latitude);
             const longitude = parseFloat(driver.longitude);
 
@@ -328,6 +338,40 @@ const DispatchPanel = () => {
                 if (pickupMarkerRef.current) {
                     pickupMarkerRef.current.setMap(null);
                     pickupMarkerRef.current = null;
+                }
+
+                if (switchTab) {
+                    const currentToken = localStorage.getItem('access_token') || '';
+                    try {
+                        const busyQuery = new URLSearchParams({ type: 'busy', searchText: driver.phone_number, lat: 0, lng: 0 });
+                        const busyRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getActiveDrivers?${busyQuery.toString()}`, {
+                            headers: { 'Authorization': `${currentToken}` }
+                        });
+                        const busyData = await busyRes.json();
+                        const isBusy = busyData.data?.drivers?.some(d => d.id === driver.id);
+                        
+                        if (isBusy) {
+                            setTabIndex(1);
+                            setDriverSearchText(driver.phone_number);
+                        } else {
+                            const activeQuery = new URLSearchParams({ type: 'active', searchText: driver.phone_number, lat: 0, lng: 0 });
+                            const activeRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getActiveDrivers?${activeQuery.toString()}`, {
+                                headers: { 'Authorization': `${currentToken}` }
+                            });
+                            const activeData = await activeRes.json();
+                            const isActive = activeData.data?.drivers?.some(d => d.id === driver.id);
+                            
+                            if (isActive) {
+                                setTabIndex(0);
+                                setDriverSearchText(driver.phone_number);
+                            } else {
+                                setTabIndex(2);
+                                setDriverSearchText(driver.phone_number);
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Error determining driver state for tabs", e);
+                    }
                 }
             } else {
                 console.warn("Invalid latitude or longitude:", latitude, longitude);
@@ -355,7 +399,12 @@ const DispatchPanel = () => {
 
             // Only fit bounds if there are valid points
             if (!bounds.isEmpty()) {
-                mapRef.current.fitBounds(bounds);
+                mapRef.current.fitBounds(bounds, {
+                    top: 50,       // Top se 50px ka gap
+                    right: 400,    // 350px ka apka right panel + 50px ka extra gap
+                    bottom: 50,    // Bottom se 50px ka gap
+                    left: 320      // 270px ka apka left panel + 50px ka extra gap
+                });
             }
         }
     }, [driversData]);
@@ -583,7 +632,26 @@ const DispatchPanel = () => {
                     </div>
                     {trip.driver && (
                         <div style={{ marginTop: '12px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '8px' }}>
-                            <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#495057' }}>Driver Info</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                <div style={{ fontWeight: 'bold', color: '#495057' }}>Driver Info</div>
+                                <div
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        goToDriverLocation(trip.driver, true);
+                                    }}
+                                    style={{
+                                        color: '#17a2b8',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        fontSize: '12px'
+                                    }}
+                                >
+                                    <DirectionsCarIcon fontSize="small" /> View on Map
+                                </div>
+                            </div>
                             <div><strong style={{ color: '#007bff' }}>Id:</strong> {trip.driver.id}</div>
                             <div><strong>Driver:</strong> {trip.driver.driverName || 'N/A'}</div>
                             <div><strong>Phone:</strong> {trip.driver.phone_number || 'N/A'}</div>
@@ -666,7 +734,26 @@ const DispatchPanel = () => {
 
                     {loadedTabIndex === 1 && driver.latestTrip && (
                         <div style={{ marginTop: '12px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '8px' }}>
-                            <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#495057' }}>Latest Trip Details</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                <div style={{ fontWeight: 'bold', color: '#495057' }}>Latest Trip Details</div>
+                                <div
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setRideTabIndex(1);
+                                    }}
+                                    style={{
+                                        color: '#17a2b8',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        fontSize: '12px'
+                                    }}
+                                >
+                                    View Trip
+                                </div>
+                            </div>
                             <div><strong style={{ color: '#007bff' }}>Trip ID:</strong> {driver.latestTrip.id}</div>
                             <div><strong>Customer:</strong> {driver.latestTrip.customer_name || 'N/A'}</div>
                             <div><strong>Phone:</strong> {driver.latestTrip.customer_phone_number || 'N/A'}</div>
@@ -814,8 +901,8 @@ const DispatchPanel = () => {
                                     textColor="inherit"
                                     TabIndicatorProps={{ style: { backgroundColor: 'white' } }}
                                 >
-                                    <Tab label={`Unassigned ${rideTabIndex === 0 ? `(${totalRideCount})` : ''}`} sx={{ color: 'white' }} />
-                                    <Tab label={`Assigned ${rideTabIndex === 1 ? `(${totalRideCount})` : ''}`} sx={{ color: 'white' }} />
+                                    <Tab label={`Unassigned (${unassignedRideCount})`} sx={{ color: 'white' }} />
+                                    <Tab label={`Assigned (${assignedRideCount})`} sx={{ color: 'white' }} />
                                 </Tabs>
                             </Box>
 
@@ -845,7 +932,7 @@ const DispatchPanel = () => {
                                 position: 'absolute',
                                 top: 0,
                                 right: 0,
-                                width: '250px',
+                                width: '350px',
                                 height: '100%',
                                 backgroundColor: 'rgba(70, 130, 180, 0.9)',
                                 zIndex: 10,
@@ -866,7 +953,7 @@ const DispatchPanel = () => {
                             >
                                 <div style={{ position: 'relative', padding: '5px', color: '#ffffff' }}>
                                     <div style={{ textAlign: 'left', fontSize: '16px', fontWeight: 'bold' }}>
-                                        Drivers ({totalDriverCount})
+                                        Drivers
                                     </div>
 
                                     <div style={{ position: 'absolute', right: '10px', top: '5px' }}>
@@ -887,26 +974,63 @@ const DispatchPanel = () => {
                                 </div>
 
 
-                                <Box
-                                    sx={{
-                                        borderBottom: 1,
-                                        borderColor: 'divider',
-                                        textAlign: 'center',
-
+                              <Box
+                                sx={{
+                                    borderBottom: 1,
+                                    borderColor: 'rgba(255, 255, 255, 0.2)', // Softer border line
+                                    width: '100%',
+                                }}
+                            >
+                                <Tabs
+                                    value={tabIndex}
+                                    onChange={handleChange}
+                                    variant="fullWidth" // Teeno tabs equal space lenge
+                                    textColor="inherit"
+                                    TabIndicatorProps={{
+                                        style: { 
+                                            backgroundColor: '#ffffff', 
+                                            height: '3px', 
+                                            borderTopLeftRadius: '3px', 
+                                            borderTopRightRadius: '3px' 
+                                        } 
                                     }}
+                                    sx={{ minHeight: '36px' }} // Default 48px height ko kam karke compact kiya hai
                                 >
-                                    <Tabs
-                                        value={tabIndex}
-                                        onChange={handleChange}
-                                        centered
-                                        textColor="inherit"
-                                        TabIndicatorProps={{ style: { backgroundColor: 'white' } }}
-                                    >
-                                        <Tab label="Active" sx={{ color: tabIndex === 0 ? '#ffffff' : 'white', fontWeight: tabIndex === 0 ? 'bold' : 'normal',marginLeft:'30px' }} />
-                                        <Tab label="Busy" sx={{ color: tabIndex === 1 ? '#ffffff' : 'white', fontWeight: tabIndex === 1 ? 'bold' : 'normal' }} />
-                                        <Tab label="Inactive" sx={{ color: tabIndex === 2 ? '#ffffff' : 'white', fontWeight: tabIndex === 2 ? 'bold' : 'normal' }} />
-                                    </Tabs>
-                                </Box>
+                                    <Tab 
+                                        label={`Active (${activeDriverCount})`} 
+                                        sx={{
+                                            minHeight: '36px',
+                                            padding: '4px 8px', // Padding kam kardi gayi hai
+                                            fontSize: '12px',
+                                            textTransform: 'none', // Capital letters hata kar clean look
+                                            color: tabIndex === 0 ? '#ffffff' : 'rgba(255, 255, 255, 0.7)', // Unselected thode dim rahenge
+                                            fontWeight: tabIndex === 0 ? 'bold' : 'normal',
+                                        }} 
+                                    />
+                                    <Tab 
+                                        label={`Busy (${busyDriverCount})`} 
+                                        sx={{
+                                            minHeight: '36px',
+                                            padding: '4px 8px',
+                                            fontSize: '12px',
+                                            textTransform: 'none',
+                                            color: tabIndex === 1 ? '#ffffff' : 'rgba(255, 255, 255, 0.7)',
+                                            fontWeight: tabIndex === 1 ? 'bold' : 'normal' 
+                                        }} 
+                                    />
+                                    <Tab 
+                                        label={`Inactive (${inactiveDriverCount})`} 
+                                        sx={{
+                                            minHeight: '36px',
+                                            padding: '4px 8px',
+                                            fontSize: '12px',
+                                            textTransform: 'none',
+                                            color: tabIndex === 2 ? '#ffffff' : 'rgba(255, 255, 255, 0.7)',
+                                            fontWeight: tabIndex === 2 ? 'bold' : 'normal' 
+                                        }} 
+                                    />
+                                </Tabs>
+                            </Box>
 
 
                             </div>

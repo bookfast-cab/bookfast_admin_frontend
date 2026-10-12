@@ -29,6 +29,7 @@ import { Bank, Cog, Wallet } from 'mdi-material-ui'
 export const getAllMenuItems = (notificationCount = 0) => [
   { privilege: ['dashboard'], title: 'Dashboard', icon: HomeOutline, path: '/', roles: ['admin', 'staff'] },
   { privilege: ['dispatch'], title: 'Dispatch', icon: MapSearch, path: '/dispatchPanel', roles: ['admin', 'staff'] },
+  { privilege: ['global-search'], title: 'Global Search', icon: MapSearch, path: '/global-search', roles: ['admin', 'staff'] },
 
   { privilege: ['customers', 'promo-coupon'], sectionTitle: 'Customers Management', icon: AccountGroup, roles: ['admin', 'staff'] },
   { privilege: ['customers'], title: 'Customers', icon: AccountGroup, path: '/customers', roles: ['admin', 'staff'] },

@@ -77,7 +77,7 @@ const StatisticsCard = ({data}) => {
       color: theme.palette.secondary.main,
       bgColor: '#8dbbf7', 
       icon: <CalendarClock sx={{ fontSize: 28 }} />,
-      link: '/trips/today',
+      link: '/trips?date_type=today',
     },
     {
       stats: statistics.ongoingActiveRide || 0,
