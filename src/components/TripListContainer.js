@@ -38,7 +38,7 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
         token = localStorage.getItem('access_token')
     }
     const router = useRouter();
-    const { type } = router.query;
+    const { type, date_type } = router.query;
 
     const handleCloseSnackbar = () => {
         setErrorMessage('')
@@ -96,6 +96,10 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
             queryParams.append('status', selectedStatus);
         }
 
+        if (date_type) {
+            queryParams.append('date_type', date_type);
+        }
+
         const queryString = queryParams.toString();
         console.log(`queryString is ${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/trips?${queryString}`);
         fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/trips?${queryString}`, {
@@ -120,14 +124,16 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
     }
 
     useEffect(() => {
+        if (!router.isReady) return;
         getTrips(0);
-    }, [selectedStatus, isFromAdmin]) // Refetch if view changes
+    }, [router.isReady, selectedStatus, isFromAdmin, date_type]); // Refetch if view changes
 
 
 
     const searchTrips = async (searchdata) => {
         let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/trip-search?search=${searchdata}`;
         if (type) url += `&type=${type}`;
+        if (date_type) url += `&date_type=${date_type}`;
         if (typeof isFromAdmin === 'boolean') url += `&isFromAdmin=${isFromAdmin}`; // Assuming search also needs this filter
 
         fetch(url, {
