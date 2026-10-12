@@ -187,7 +187,7 @@ const GlobalSearch = () => {
     if (typeof window !== 'undefined') {
 
       return localStorage.getItem('access_token') || '';
-      
+
     }
 
     return '';
@@ -340,7 +340,6 @@ const GlobalSearch = () => {
     }
   };
 
-  // Switch between multiple records
   const handleSelectRecord = async (record, index) => {
     setSelectedIndex(index);
     if (activeType === 'driver' && record.id) {
@@ -351,11 +350,14 @@ const GlobalSearch = () => {
         const detailRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/driver/${record.id}`, {
           headers: { Authorization: token, 'Content-Type': 'application/json', 'x-device-id': deviceId }
         });
+
         const detailData = await detailRes.json();
+        
         if (detailData.success && detailData.data) {
           setActiveRecord({ ...record, ...detailData.data });
 
           return;
+
         }
       } catch (e) {
         console.warn(e);
@@ -364,7 +366,6 @@ const GlobalSearch = () => {
     setActiveRecord(record);
   };
 
-  // Open Edit DOB dialog
   const handleOpenDobDialog = () => {
     const currentDob = activeRecord?.date_of_birth || activeRecord?.dob || '';
     setEditingDob(currentDob ? new Date(currentDob).toISOString().split('T')[0] : '');

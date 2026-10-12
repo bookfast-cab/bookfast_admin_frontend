@@ -344,9 +344,11 @@ const DispatchPanel = () => {
                     const currentToken = localStorage.getItem('access_token') || '';
                     try {
                         const busyQuery = new URLSearchParams({ type: 'busy', searchText: driver.phone_number, lat: 0, lng: 0 });
+
                         const busyRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getActiveDrivers?${busyQuery.toString()}`, {
                             headers: { 'Authorization': `${currentToken}` }
                         });
+
                         const busyData = await busyRes.json();
                         const isBusy = busyData.data?.drivers?.some(d => d.id === driver.id);
                         
@@ -354,11 +356,15 @@ const DispatchPanel = () => {
                             setTabIndex(1);
                             setDriverSearchText(driver.phone_number);
                         } else {
+
                             const activeQuery = new URLSearchParams({ type: 'active', searchText: driver.phone_number, lat: 0, lng: 0 });
+
                             const activeRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getActiveDrivers?${activeQuery.toString()}`, {
                                 headers: { 'Authorization': `${currentToken}` }
                             });
+
                             const activeData = await activeRes.json();
+                            
                             const isActive = activeData.data?.drivers?.some(d => d.id === driver.id);
                             
                             if (isActive) {
