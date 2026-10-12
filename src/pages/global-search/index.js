@@ -39,7 +39,9 @@ const safeFormatDate = (dateStr, onlyDate = false) => {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return String(dateStr);
     if (onlyDate) {
+
       return d.toLocaleDateString('en-GB'); // DD/MM/YYYY
+
     }
 
     return d.toLocaleString('en-GB', {
@@ -52,6 +54,7 @@ const safeFormatDate = (dateStr, onlyDate = false) => {
       hour12: true
     });
   } catch {
+
     return String(dateStr);
   }
 };
@@ -75,6 +78,7 @@ const formatDisplayValue = (val) => {
 
       return json === '{}' ? '-' : json;
     } catch {
+
       return '-';
     }
   }
@@ -181,7 +185,9 @@ const GlobalSearch = () => {
 
   const getToken = () => {
     if (typeof window !== 'undefined') {
+
       return localStorage.getItem('access_token') || '';
+      
     }
 
     return '';
