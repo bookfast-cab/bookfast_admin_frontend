@@ -66,17 +66,20 @@ const handleChangePassword = async () => {
 
     if(!newPassword){
       setErrorMessage("New Password is required.");
-      return;
+      
+return;
     }
     
     if(!confirmPassword){
       setErrorMessage("Confirm Password is required.");
-      return;
+      
+return;
     }
     
     if(newPassword != confirmPassword){
       setErrorMessage("Passwords do not match.");
-      return;
+      
+return;
     }
 
     let token;
@@ -130,6 +133,7 @@ const handleChangePassword = async () => {
     }
     setAnchorEl(null)
   }
+
    const handleSubmit = async () => {
 
     let token;

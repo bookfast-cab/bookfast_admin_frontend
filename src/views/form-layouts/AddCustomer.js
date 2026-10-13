@@ -126,6 +126,7 @@ const AddCustomerDetails = () => {
     const file = e.target.files[0];
     setFormData({ ...formData, [fieldName]: file });
     setProfilePic(URL.createObjectURL(file));
+
     // Create an object URL for the preview
     // const objectUrl = URL.createObjectURL(file);
     // setImagePreviews({ ...imagePreviews, [fieldName]: objectUrl });

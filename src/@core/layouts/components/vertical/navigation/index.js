@@ -46,7 +46,8 @@ const Navigation = props => {
   const filteredNavItems = (props.verticalNavItems || []).filter(item => {
     if (!menuSearchText) return true;
     if (item.sectionTitle) return false; // Hide section titles during search
-    return item.title && item.title.toLowerCase().includes(menuSearchText.toLowerCase());
+    
+return item.title && item.title.toLowerCase().includes(menuSearchText.toLowerCase());
   })
 
   // ** Ref

@@ -78,7 +78,8 @@ const EditOutStation = () => {
         if (!response.ok) {
           throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
-        return response.json();
+        
+return response.json();
       })
       .then((result) => {
         let data = result.data;
@@ -144,6 +145,7 @@ const EditOutStation = () => {
       formIsValid = false;
       errors.vehicle_type = 'Vehicle type is required.';
     }
+
     // if (!formData.waiting_time_charges) {
     //   formIsValid = false;
     //   errors.waiting_time_charges = 'Waiting time charges is required.';

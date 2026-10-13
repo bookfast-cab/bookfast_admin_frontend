@@ -37,6 +37,7 @@ const RoundTripManagement = () => {
   const [fetching, setFetching] = useState(true);
   const [vehicleList, setVehicleList] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState('');
+
   const [thresholds, setThresholds] = useState({
     threshold1: { ...emptyThreshold },
     threshold2: { ...emptyThreshold },
@@ -99,7 +100,8 @@ const RoundTripManagement = () => {
   const fetchConfiguration = async () => {
     if (!selectedVehicle) {
       resetThresholds();
-      return;
+      
+return;
     }
 
     try {
@@ -116,6 +118,7 @@ const RoundTripManagement = () => {
 
       if (res.data.success && res.data.data) {
         const formattedData = {};
+
         // The backend returns threshold1, threshold2, threshold3
         ['threshold1', 'threshold2', 'threshold3'].forEach((key) => {
           if (res.data.data[key]) {
@@ -210,6 +213,7 @@ const RoundTripManagement = () => {
     '200/hr will be charged for additional hours',
     '10/km will be charged for extra km',
     '210/- driver allowance per 24 hours',
+
     // '250/- night time allowance (11 PM - 06 AM)',
   ];
 

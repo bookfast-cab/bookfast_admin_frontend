@@ -17,6 +17,7 @@ const AddOutStation = () => {
   const [loading, setLoading] = useState(false);
   const [vehicleList, setVehicleList] = useState([]);
   const [pickDropList, setPickDropList] = useState([]);
+
   const [formErrors, setFormErrors] = useState({
     name: '',
     pickup_location: '',
@@ -76,7 +77,8 @@ const AddOutStation = () => {
         if (!response.ok) {
           throw new Error(`Failed to fetch data. Status: ${response.status}`);
         }
-        return response.json();
+        
+return response.json();
       })
       .then((result) => {
         let data=result.data;
@@ -192,6 +194,7 @@ const AddOutStation = () => {
       Object.entries(formData).forEach(([key, value]) => {
         formParams.append(key, value);
       });
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/outstation-package`, {
         method: 'post',
         headers: {

@@ -22,7 +22,8 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 const stripHtml = (html) => {
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent || "N/A";
+  
+return doc.body.textContent || "N/A";
 };
 
 const BlogTable = ({ items = [], onDelete,totalRecords, totalPages, currentPage, perPage, onPageChange = () => {} }) => {
@@ -105,7 +106,8 @@ const BlogTable = ({ items = [], onDelete,totalRecords, totalPages, currentPage,
         </>
       );
     };
-    return (
+    
+return (
     <>
 
       <TableContainer component={Paper}>

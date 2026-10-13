@@ -12,8 +12,10 @@ const Pagination = theme => {
             transition: 'background-color 0.3s ease-in-out', // Smooth transition
             borderRadius: '50%', // Circular effect for items
           },
+
           // Add a border radius for smooth rounded corners
           borderRadius: '4px',
+
           // Default transition for hover
           transition: 'background-color 0.3s ease, transform 0.3s ease',
           '&:hover': {

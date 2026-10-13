@@ -104,8 +104,10 @@ const renderPageNumbers = () => {
       </>
     );
   };
+
 const formatTime = (time) => {
   const date = new Date(time);
+
   const formattedDate = date.toLocaleString("en-GB", {
     day: "2-digit",
     month: "2-digit",
@@ -114,7 +116,8 @@ const formatTime = (time) => {
     minute: "2-digit",
     hour12: false,
   });
-  return formattedDate;
+  
+return formattedDate;
 }
 
 const handleCurrency = (currency) => {

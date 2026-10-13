@@ -13,14 +13,16 @@ export const SocketProvider = ({ children }) => {
 
     if (!token) {
       console.warn("⚠️ No token found in localStorage");
-      return;
+      
+return;
     }
 
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
 
     if (!socketUrl) {
       console.error("❌ Missing NEXT_PUBLIC_SOCKET_URL in .env");
-      return;
+      
+return;
     }
 
 
@@ -64,4 +66,5 @@ export const SocketProvider = ({ children }) => {
 };
 
 export const useSocket = () => useContext(SocketContext);
+
 export const useSocketStatus = () => useContext(SocketStatusContext);

@@ -39,9 +39,9 @@ const PageForm = ({ hidefeatureImage }) => {
     // 1. Header Section
     let html = `<div class="row">
             <div class="col-lg-8 offset-lg-2 text-center mb-5">
-                <h3 id="faq-heading" class="features-title">
+                <h2 id="faq-heading" class="features-title">
                     Frequently Asked <span style="color: #1532d1;">Questions</span>
-                </h3>
+                </h2>
                 <p class="features-subtitle">
                     Find answers to common questions about BookFast outstation taxi services,
                     one-way and round-trip cab bookings, fares, vehicles and travel support.
@@ -74,7 +74,7 @@ const PageForm = ({ hidefeatureImage }) => {
       const parentId = isLeftColumn ? "faqLeft" : "faqRight";
       
       const itemHtml = `              <div class="accordion-item">
-                <span class="accordion-header" id="faqHeading${faqNum}">
+                <h3 class="accordion-header" id="faqHeading${faqNum}">
                   <button
                     class="${buttonClass}"
                     type="button"
@@ -84,7 +84,7 @@ const PageForm = ({ hidefeatureImage }) => {
                     aria-controls="faq${faqNum}">
                     ${faq.question}
                   </button>
-                </span>
+                </h3>
                 <div
                   id="faq${faqNum}"
                   class="${collapseClass}"

@@ -10,7 +10,8 @@ const getFingerprint = async () => {
         return result.visitorId;
     } catch(err){
         console.log(err);
-        return; null;
+        
+return; null;
     }
 };
 

@@ -27,6 +27,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import InfoIcon from '@mui/icons-material/Info';
 import DriverDrawer from 'src/pages/drivers/DriverDrawer';
 import { TrashCan } from 'mdi-material-ui';
+
 // Import your DriverDrawer component
 
 const DriversTable = ({
@@ -49,6 +50,7 @@ const DriversTable = ({
   // --- NEW: State for Delete Confirmation ---
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [driverToDelete, setDriverToDelete] = useState(null);
+
   // ------------------------------------------
 
   useEffect(() => {
@@ -176,6 +178,7 @@ const DriversTable = ({
     setDeleteDialogOpen(false);
     setDriverToDelete(null);
   };
+
   // -----------------------------------------------------------------------------
 
   const handlePageChange = (newPage) => {
@@ -212,6 +215,7 @@ const DriversTable = ({
           setSuccessMessage('Status updated successfully');
         } else {
           setErrorMessage(data.message || 'Failed to update status');
+
           // Revert state if API fails
           setRows((prevRows) =>
             prevRows.map((row) =>
@@ -449,6 +453,7 @@ const DriversTable = ({
           {(params?.row?.profileApproved == 0 || params?.row?.profileApproved == null) &&
           <Tooltip title="Delete" arrow>
             <IconButton
+
               // --- CHANGED: Trigger delete dialog instead of immediate delete ---
               onClick={() => handleDeleteClick(params.row.id)}
               sx={{
@@ -493,6 +498,7 @@ const DriversTable = ({
           pageSize={rowsPerPage}
           rowCount={totalRecords} // Ensure total count is provided for server pagination
           paginationMode="server"
+
           //paginationModel={{ page: currentPage, pageSize: rowsPerPage }} // ✅ Use this only
           paginationModel={paginationModel} // ✅ Controlled model
           onPaginationModelChange={(model) => {

@@ -30,6 +30,7 @@ const ThemeComponent = props => {
   theme = createTheme(theme, {
     components: {
       ...overrides(theme),
+
       // MuiButton: {
       //   styleOverrides: {
       //     root: {
@@ -118,6 +119,7 @@ const ThemeComponent = props => {
         color: '#777',
         fontFamily: "'Roboto', sans-serif",
       },
+
       // You can customize other typography types like h3, h4, etc.
     },
   });

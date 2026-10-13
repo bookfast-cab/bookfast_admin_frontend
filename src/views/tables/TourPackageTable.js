@@ -23,7 +23,8 @@ import { formatDate } from '../../utils/utils';
 
 const stripHtml = (html) => {
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent || "N/A";
+  
+return doc.body.textContent || "N/A";
 };
 
 const TourPackageTable = ({ items = [], onDelete,totalRecords, totalPages, currentPage, perPage, onPageChange = () => {} }) => {
@@ -106,7 +107,8 @@ const TourPackageTable = ({ items = [], onDelete,totalRecords, totalPages, curre
         </>
       );
     };
-    return (
+    
+return (
     <>
 
       <TableContainer component={Paper}>
