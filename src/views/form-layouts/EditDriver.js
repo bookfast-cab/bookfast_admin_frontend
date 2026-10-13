@@ -622,9 +622,11 @@ const EditDriverDetails = () => {
             src={previewUrl}
             alt={imageName}
             style={{ width: '150px', height: '100px', objectFit: 'contain' }}
+
             // onLoad={() => setImageExists((prev) => ({ ...prev, [imageName]: true }))}
             onError={(e) => {
                 e.target.src = '/image_not_found.png';
+
                 // setImageExists((prev) => ({ ...prev, [imageName]: false }));
             }}
             onClick={() => {

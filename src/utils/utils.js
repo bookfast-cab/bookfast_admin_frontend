@@ -17,6 +17,7 @@ export const getRemainingTime = (pickupDate) => {
 
   return `(${hours}h ${minutes}m remaining)`;
 };
+
 export const formatDate = (dateString) => {
 
   return format(new Date(dateString), ' dd-MM-yyyy hh:mm:ss a');
@@ -27,6 +28,8 @@ export const formatOnlyDate = (dateString) => {
 
   return format(new Date(dateString), 'dd-MM-yyyy');
 };
+
+
 // Function to decode buffer data and convert to coordinates
 export const decodePolygonBuffer = (bufferData) => {
   // Step 1: Decode the buffer into a string (UTF-8)

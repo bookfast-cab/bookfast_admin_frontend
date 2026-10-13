@@ -82,6 +82,7 @@ const TripLogsDetailsTable = ({ items = [], totalPages, currentPage, onPageChang
 
     const formatTime = (time) => {
       const date = new Date(time);
+
       const formattedDate = date.toLocaleString("en-GB", {
         day: "2-digit",
         month: "2-digit",
@@ -90,9 +91,11 @@ const TripLogsDetailsTable = ({ items = [], totalPages, currentPage, onPageChang
         minute: "2-digit",
         hour12: true,
       });
-      return formattedDate;
+      
+return formattedDate;
     }
-    return (
+    
+return (
     <>
 
       <TableContainer component={Paper}>

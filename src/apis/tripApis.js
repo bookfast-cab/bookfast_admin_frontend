@@ -28,7 +28,8 @@ export const getTrips = async ({ page = 0, perPage = 10, type, token ,customer_i
       };
     } catch (error) {
       console.error('Error fetching trips:', error);
-      return { success: false, error };
+      
+return { success: false, error };
     }
   };
   

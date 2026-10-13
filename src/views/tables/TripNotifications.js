@@ -55,6 +55,7 @@ const TableBasicPagesSetup = (props) => {
 
       if (data.success) {
         setSuccessMessage(data.message || 'Notification deleted successfully');
+
         // Optionally refresh the data here
          onPageChange(page); // Refresh current page
       } else {
@@ -151,7 +152,8 @@ const TableBasicPagesSetup = (props) => {
 
   const mapTypeToLabel = (type) => {
     const typeMap = { 1: 'Customer', 2: 'Driver' };
-    return typeMap[type] || 'Vendor';
+    
+return typeMap[type] || 'Vendor';
   };
 
   const handleCloseSnackbar = () => {

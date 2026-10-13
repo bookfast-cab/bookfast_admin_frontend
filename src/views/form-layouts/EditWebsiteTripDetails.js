@@ -38,11 +38,13 @@ const EditWebsiteTripDetails = () => {
       const maxSize = 5 * 1024 * 1024;
       if (!allowedTypes.includes(file.type)) {
         setErrorMessage("Only JPG, PNG, and GIF files are allowed.");
-        return;
+        
+return;
       }
       if (file.size > maxSize) {
         setErrorMessage("File size should not exceed 5MB.");
-        return;
+        
+return;
       }
       setFormData((prev) => ({ ...prev, featuredImage: file }));
       setErrorMessage("");
@@ -55,7 +57,8 @@ const EditWebsiteTripDetails = () => {
     e.preventDefault();
     if (!formData.title.trim() || !editorValue.trim()) {
       setErrorMessage("Title and content are required.");
-      return;
+      
+return;
     }
     const data = new FormData();
     data.append("title", formData.title);

@@ -28,8 +28,8 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import getFingerprint from 'src/utils/Fingerprint';
-import DriverDrawer from '../drivers/DriverDrawer';
-import CustomerDrawer from '../customers/CustomerDrawer';
+import DriverDetailsView from 'src/views/global-search/DriverDetailsView';
+import CustomerDetailsView from 'src/views/global-search/CustomerDetailsView';
 import TripDrawer from '../trips/TripDrawer';
 
 const safeFormatDate = (dateStr, onlyDate = false) => {
@@ -169,7 +169,6 @@ const GlobalSearch = () => {
 
   // Drawer states
   const [driverDrawerOpen, setDriverDrawerOpen] = useState(false);
-  const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
   const [tripDrawerOpen, setTripDrawerOpen] = useState(false);
 
   // Edit DOB states
@@ -219,8 +218,25 @@ const GlobalSearch = () => {
 
       if (list.length > 0) {
         setCustomerResults(list);
-        setActiveRecord(list[0]);
         setSelectedIndex(0);
+
+        let mainCustomer = list[0];
+        try {
+          const detailRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/customer/${mainCustomer.id}`, {
+            headers: {
+              Authorization: token,
+              'Content-Type': 'application/json'
+            }
+          });
+          const detailData = await detailRes.json();
+          if (detailData.success && detailData.data) {
+            mainCustomer = { ...mainCustomer, ...detailData.data };
+          }
+        } catch (detailErr) {
+          console.warn('Could not fetch full customer details', detailErr);
+        }
+
+        setActiveRecord(mainCustomer);
         setActiveType('user');
         showToast(`Found ${list.length} user record(s)`, 'success');
       } else {
@@ -358,6 +374,24 @@ const GlobalSearch = () => {
 
           return;
 
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+    } else if (activeType === 'user' && record.id) {
+      try {
+        const token = getToken();
+
+        const detailRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/customer/${record.id}`, {
+          headers: { Authorization: token, 'Content-Type': 'application/json' }
+        });
+
+        const detailData = await detailRes.json();
+
+        if (detailData.success && detailData.data) {
+          setActiveRecord({ ...record, ...detailData.data });
+
+          return;
         }
       } catch (e) {
         console.warn(e);
@@ -866,248 +900,52 @@ const GlobalSearch = () => {
             </Box>
           )}
 
-          {/* Bottom Results Panel (3-Column Detailed Key-Value Grid) */}
+          {/* Bottom Results Panel */}
           {activeRecord ? (
-            <Paper
-              elevation={0}
-              sx={{
-                backgroundColor: '#ffffff',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                p: { xs: 2.5, md: 4 },
-                boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-              }}
-            >
-              {/* Header: Title Centered with dark underline */}
-              <Box
+            activeType === 'driver' ? (
+              <DriverDetailsView
+                data={activeRecord}
+                onDriverUpdate={(updated) => setActiveRecord((prev) => ({ ...prev, ...updated }))}
+              />
+            ) : activeType === 'user' ? (
+              <CustomerDetailsView
+                data={activeRecord}
+                onCustomerUpdate={(updated) => setActiveRecord((prev) => ({ ...prev, ...updated }))}
+              />
+            ) : (
+              <Paper
+                elevation={0}
                 sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  position: 'relative',
-                  mb: 4
+                  backgroundColor: '#ffffff',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  p: { xs: 2.5, md: 4 },
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
                 }}
               >
-                <Typography
+                {/* Header: Title Centered with dark underline */}
+                <Box
                   sx={{
-                    fontSize: '17px',
-                    fontWeight: 700,
-                    color: '#111827',
-                    borderBottom: '2.5px solid #111827',
-                    pb: 0.5,
-                    letterSpacing: '0.2px'
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    position: 'relative',
+                    mb: 4
                   }}
                 >
-                  {activeType === 'driver'
-                    ? 'Driver Details'
-                    : activeType === 'user'
-                    ? 'User Details'
-                    : 'Ride Details'}
-                </Typography>
-
-                {/* Quick Link to open full drawer */}
-                {/* <Box sx={{ position: 'absolute', right: 0 }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => {
-                      if (activeType === 'driver') setDriverDrawerOpen(true);
-                      else if (activeType === 'user') setCustomerDrawerOpen(true);
-                      else setTripDrawerOpen(true);
-                    }}
+                  <Typography
                     sx={{
-                      textTransform: 'none',
-                      fontSize: '12px',
-                      color: '#475467',
-                      borderColor: '#d1d5db',
-                      '&:hover': { borderColor: '#9ca3af', backgroundColor: '#f9fafb' }
+                      fontSize: '17px',
+                      fontWeight: 700,
+                      color: '#111827',
+                      borderBottom: '2.5px solid #111827',
+                      pb: 0.5,
+                      letterSpacing: '0.2px'
                     }}
                   >
-                    Open Full Drawer
-                  </Button>
-                </Box> */}
-              </Box>
-
-              {/* ----------------- DRIVER DETAILS VIEW (Exact replica of screenshot) ----------------- */}
-             {activeType === 'driver' && (
-                <Grid container spacing={{ xs: 2, md: 4 }}>
-                  {/* Driver Column 1 */}
-                  <Grid item xs={12} md={4}>
-                    <KeyValueRow label="Driver ID" value={activeRecord.id} />
-                    <KeyValueRow
-                      label="Driver Name"
-                      value={activeRecord.driverName || '-'}
-                    />
-                    <KeyValueRow
-                      label="Status"
-                      value={driverStatusLabel}
-                      isGreen={driverStatusLabel === 'Active'}
-                    />
-                    <KeyValueRow
-                      label="Phone No."
-                      value={activeRecord.phone_number || '-'}
-                    />
-                    <KeyValueRow
-                      label="Email"
-                      value={activeRecord.email || '-'}
-                    />
-                    <KeyValueRow
-                      label="City"
-                      value={activeRecord.city?.name || activeRecord.cabAttachmentCity || '-'}
-                    />
-                    <KeyValueRow
-                      label="Joining Date"
-                      value={safeFormatDate(activeRecord.created_at, true)}
-                    />
-                    <KeyValueRow
-                      label="Vehicle No"
-                      value={activeRecord.vehicleRcNo || '-'}
-                    />
-                    <KeyValueRow
-                      label="Driving License"
-                      value={activeRecord.drivingLicenseNumber || '-'}
-                    />
-                  </Grid>
-
-                  {/* Driver Column 2 */}
-                  <Grid item xs={12} md={4}>
-                    <KeyValueRow
-                      label="Credit Wallet Balance"
-                      value={`₹${activeRecord.wallet ?? 0}`}
-                    />
-                    <KeyValueRow
-                      label="Commission Earning"
-                      value={`₹${activeRecord.commision_earning ?? 0}`}
-                    />
-                    <KeyValueRow
-                      label="Owner Name"
-                      value={activeRecord.ownerName || '-'}
-                    />
-                    <KeyValueRow
-                      label="Owner Mobile"
-                      value={activeRecord.ownerMobileNo || '-'}
-                    />
-                    <KeyValueRow
-                      label="Vehicle Type"
-                      value={
-                        activeRecord.vehicleCategory?.name || 
-                        activeRecord.vehicleCategory?.vehicle_type || 
-                        activeRecord.cabCategory || 
-                        '-'
-                      }
-                    />
-                    <KeyValueRow
-                      label="Docs Count"
-                      value={activeRecord.docsCount ?? 0}
-                    />
-                     <KeyValueRow
-                      label="Profile Approved"
-                      value={activeRecord.profileApproved === 1 ? 'Yes' : 'No'}
-                      isGreen={activeRecord.profileApproved === 1}
-                    />
-                  </Grid>
-
-                  {/* Driver Column 3 */}
-                  <Grid item xs={12} md={4}>
-                    <KeyValueRow
-                      label="Last Location Updated"
-                      value={safeFormatDate(activeRecord.lastLocationUpdateAt)}
-                    />
-                    <KeyValueRow
-                      label="Last Lat/Lng"
-                      value={driverLat && driverLng ? `${driverLat}, ${driverLng}` : '-'}
-                      isLink={driverMapUrl}
-                    />
-                    <KeyValueRow
-                      label="Local Booking Status"
-                      value={activeRecord.local_booking_status === 1 ? 'Active' : 'Inactive'}
-                    />
-                    <KeyValueRow
-                      label="Outstation Booking Status"
-                      value={activeRecord.outstation_booking_status === 1 ? 'Active' : 'Inactive'}
-                    />
-                    <KeyValueRow
-                      label="Withdraw Disabled"
-                      value={activeRecord.withdraw_disable === 1 ? 'Yes' : 'No'}
-                    />
-                    <KeyValueRow
-                      label="Blocked By Admin"
-                      value={activeRecord.block_by || '-'}
-                    />
-                  </Grid>
-                </Grid>
-              )}
-
-              {/* ----------------- USER / CUSTOMER DETAILS VIEW ----------------- */}
-              {activeType === 'user' && (
-                <Grid container spacing={{ xs: 2, md: 4 }}>
-                  {/* User Column 1 */}
-                  <Grid item xs={12} md={4}>
-                    <KeyValueRow label="User ID" value={activeRecord.id} />
-                    <KeyValueRow
-                      label="Customer Name"
-                      value={`${activeRecord.first_name || ''} ${activeRecord.last_name || ''}`.trim() || '-'}
-                    />
-                    <KeyValueRow
-                      label="Status"
-                      value={activeRecord.status === 1 ? 'Active' : 'Inactive'}
-                      isGreen={activeRecord.status === 1}
-                    />
-                    <KeyValueRow
-                      label="Phone No."
-                      value={activeRecord.phone_with_code || activeRecord.phone_number || '-'}
-                    />
-                    <KeyValueRow label="Email" value={activeRecord.email || '-'} />
-                    <KeyValueRow
-                      label="City"
-                      value={activeRecord.city || '-'}
-                    />
-                    <KeyValueRow
-                      label="Joining Date"
-                      value={safeFormatDate(activeRecord.created_at, true)}
-                    />
-                    <KeyValueRow label="Gender" value={activeRecord.gender || '-'} />
-                  </Grid>
-
-                  {/* User Column 2 */}
-                  <Grid item xs={12} md={4}>
-                    <KeyValueRow
-                      label="Wallet Balance"
-                      value={`₹${activeRecord.wallet ?? 0}`}
-                    />
-                    <KeyValueRow 
-                      label="Country Code" 
-                      value={activeRecord.country_code || '-'} 
-                    />
-                    <KeyValueRow 
-                      label="Referral Code" 
-                      value={activeRecord.referral_code || '-'} 
-                    />
-                    <KeyValueRow 
-                      label="Referred By" 
-                      value={activeRecord.refered_by || '-'} 
-                    />
-                  </Grid>
-
-                  {/* User Column 3 */}
-                  <Grid item xs={12} md={4}>
-                    <KeyValueRow
-                      label="Profile Picture"
-                      value={activeRecord.profile_picture ? 'Available' : 'Not Uploaded'}
-                      isLink={activeRecord.profile_picture}
-                    />
-                    <KeyValueRow
-                      label="Last Updated At"
-                      value={safeFormatDate(activeRecord.updated_at)}
-                    />
-                    <KeyValueRow
-                      label="FCM Token"
-                      value={activeRecord.fcm_token ? 'Available' : 'Missing'}
-                    />
-                  </Grid>
-                </Grid>
-              )}
+                    Ride Details
+                  </Typography>
+                </Box>
 
               {/* ----------------- RIDE / TRIP DETAILS VIEW ----------------- */}
               {activeType === 'ride' && (
@@ -1228,7 +1066,8 @@ const GlobalSearch = () => {
                 </Grid>
               )}
             </Paper>
-          ) : (
+          )
+        ) : (
 
             /* Clean Empty State */
             <Box
@@ -1254,24 +1093,7 @@ const GlobalSearch = () => {
         {/* Edit DOB Dialog */}
        
 
-        {/* Full Driver Drawer */}
-        {driverDrawerOpen && activeRecord && (
-          <DriverDrawer
-            open={driverDrawerOpen}
-            onClose={() => setDriverDrawerOpen(false)}
-            data={activeRecord}
-            onDriverUpdate={(updated) => setActiveRecord(updated)}
-          />
-        )}
 
-        {/* Full Customer Drawer */}
-        {customerDrawerOpen && activeRecord && (
-          <CustomerDrawer
-            open={customerDrawerOpen}
-            onClose={() => setCustomerDrawerOpen(false)}
-            data={activeRecord}
-          />
-        )}
 
         {/* Full Trip Drawer */}
         {tripDrawerOpen && activeRecord && (

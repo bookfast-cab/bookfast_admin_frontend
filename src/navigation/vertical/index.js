@@ -18,7 +18,8 @@ const getUserPrivilege = () => {
     }
   } catch (error) {
     console.error("Error parsing privileges:", error);
-    return [];
+    
+return [];
   }
 
   return [];
