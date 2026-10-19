@@ -14,6 +14,8 @@ import Superscript from "@tiptap/extension-superscript";
 import Subscript from "@tiptap/extension-subscript";
 import FontSize from 'tiptap-extension-font-size';
 import api from "src/@core/utils/api";
+import axios from 'axios';
+import getFingerprint from 'src/utils/Fingerprint';
 
 
 const PageForm = ({ hidefeatureImage }) => {
@@ -303,10 +305,9 @@ const PageForm = ({ hidefeatureImage }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setLoading] = useState(false);
-  const [galleryImages, setGalleryImages] = useState([]);
-  const [isGalleryLoading, setIsGalleryLoading] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [showGallery, setShowGallery] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState(null);
   const [loadedContent, setLoadedContent] = useState(null); // Track loaded content
 
   // File input reference
@@ -376,25 +377,56 @@ const PageForm = ({ hidefeatureImage }) => {
     input.click();
 
     input.onchange = async () => {
-      const file = input.files[0];
+      const file = input.files?.[0];
       if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+          setErrorMessage(`File "${file.name}" exceeds 5MB limit. Please select an image under 5MB.`);
+          alert(`File "${file.name}" exceeds 5MB limit. Please select an image under 5MB.`);
+
+          return;
+        }
         setIsUploading(true);
         try {
-          const imageUrl = await uploadToS3(file);
+          const formData = new FormData();
+          formData.append('images', file);
 
-          // Insert image into editor
-          editor?.chain().focus().setImage({ src: imageUrl }).run();
+          const device_id = await getFingerprint();
 
-          // Refresh gallery
-          loadGalleryImages();
+          const response = await axios.post(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/upload-blog-image`,
+            formData,
+            {
+              headers: {
+                authorization: localStorage.getItem("access_token"),
+                'x-device-id': device_id,
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          const result = response.data;
+          if (result.success && result.data && result.data[0]) {
+            const uploaded = result.data[0];
+            editor?.chain().focus().setImage({ src: uploaded.url }).run();
+            setUploadedImages((prev) => [
+              {
+                url: uploaded.url,
+                name: uploaded.originalName || file.name,
+                format: uploaded.format || "webp",
+                size: uploaded.size,
+              },
+              ...prev,
+            ]);
+          }
         } catch (error) {
-          setErrorMessage("Failed to upload image: " + error.message);
+          const errMsg = "Failed to upload image: " + (error.response?.data?.message || error.message);
+          setErrorMessage(errMsg);
         } finally {
           setIsUploading(false);
         }
       }
     };
-  }, []);
+  }, [editor]);
 
   // Tiptap editor configuration
   const editor = useEditor({
@@ -475,41 +507,6 @@ const PageForm = ({ hidefeatureImage }) => {
   }, [editor, id, loadedContent, initialContent]);
 
 
-  // Load gallery images from AWS S3
-  const loadGalleryImages = async () => {
-    setIsGalleryLoading(true);
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/getWebGalleryRaw`,
-        {
-          method: "GET",
-          headers: {
-            authorization: localStorage.getItem("access_token"),
-          },
-        }
-      );
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-
-          const baseUrl = process.env.NEXT_PUBLIC_CLOUDFRONT_DOMAIN;
-
-          const imageUrls = result.data
-            .filter((item) => item !== "webImages/")
-            .map((path) => ({
-              url: baseUrl + path,
-            }));
-          setGalleryImages(imageUrls);
-        }
-      }
-    } catch (error) {
-      console.error("Error loading gallery images:", error);
-    } finally {
-      setIsGalleryLoading(false);
-    }
-  };
-
   // Insert image from gallery into editor
   const insertImageFromGallery = (imageUrl) => {
     if (editor) {
@@ -517,36 +514,62 @@ const PageForm = ({ hidefeatureImage }) => {
     }
   };
 
-  // Toggle image gallery visibility and load images if needed
-  const handleToggleGallery = () => {
-    if (!showGallery) {
-      setShowGallery(true);
-      if (galleryImages.length === 0) {
-        loadGalleryImages();
-      }
-    } else {
-      setShowGallery(false);
-    }
-  };
-
-  // Handle gallery image upload
+  // Handle image upload with WebP compression
   const handleGalleryUpload = async (e) => {
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+
+    const MAX_SIZE = 5 * 1024 * 1024;
+    const oversizedFiles = files.filter((f) => f.size > MAX_SIZE);
+    if (oversizedFiles.length > 0) {
+      const msg = `File size exceeds 5MB limit (${oversizedFiles.map((f) => f.name).join(", ")}). Please select images under 5MB.`;
+      setErrorMessage(msg);
+      alert(msg);
+      if (galleryFileInput.current) {
+        galleryFileInput.current.value = "";
+      }
+
+      return;
+    }
 
     setIsUploading(true);
     try {
-      const uploadPromises = files.map(file => uploadToS3(file));
-      await Promise.all(uploadPromises);
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append("images", file);
+      });
 
-      await loadGalleryImages();
-      setSuccessMessage("Images uploaded successfully!");
+      const device_id = await getFingerprint();
+
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/upload-blog-image`,
+        formData,
+        {
+          headers: {
+            authorization: localStorage.getItem("access_token"),
+            'x-device-id': device_id,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const result = response.data;
+      if (result.success && result.data) {
+        const newItems = result.data.map((item) => ({
+          url: item.url,
+          name: item.originalName || "Uploaded Image",
+          format: item.format || "webp",
+          size: item.size,
+        }));
+        setUploadedImages((prev) => [...newItems, ...prev]);
+        setSuccessMessage("Image uploaded successfully!");
+      }
     } catch (error) {
-      setErrorMessage("Failed to upload images: " + error.message);
+      setErrorMessage("Failed to upload images: " + (error.response?.data?.message || error.message));
     } finally {
       setIsUploading(false);
       if (galleryFileInput.current) {
-        galleryFileInput.current.value = '';
+        galleryFileInput.current.value = "";
       }
     }
   };
@@ -1686,165 +1709,205 @@ const PageForm = ({ hidefeatureImage }) => {
           </form>
         </div>
       <div style={{ flex: "1", minWidth: 0, width: "100%", maxWidth: "100%" }}>
-        {/* Image Gallery Sidebar */}
+        {/* Upload Image Section */}
         <div style={{
-          backgroundColor: "#f8f9fa",
+          backgroundColor: "#ffffff",
           padding: "20px",
           borderRadius: "8px",
-          maxHeight: showGallery ? "80vh" : "auto",
-          overflowY: showGallery ? "auto" : "visible",
-          border: "1px solid #e9ecef",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
           boxSizing: "border-box",
-          width: "100%"
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px"
         }}>
-          <h3 style={{ margin: "0 0 12px 0" }}>Image Gallery</h3>
-          <button
-            type="button"
-            onClick={handleToggleGallery}
-            style={{
-              width: "100%",
-              padding: "10px",
-              backgroundColor: showGallery ? "#6c757d" : "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
-              transition: "background-color 0.2s"
-            }}
-            onMouseOver={(e) => {
-              e.target.style.backgroundColor = showGallery ? "#5a6268" : "#0056b3";
-            }}
-            onMouseOut={(e) => {
-              e.target.style.backgroundColor = showGallery ? "#6c757d" : "#007bff";
-            }}
-          >
-            {showGallery ? "Hide Gallery" : "Show Gallery"}
-          </button>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h3 style={{ margin: "0", fontSize: "16px", fontWeight: "600", color: "#0f172a" }}>
+                Upload Images
+              </h3>
+            </div>
+          </div>
 
-          {showGallery && (
-            <>
-              {/* Upload new images */}
-              <div style={{ marginBottom: "20px", marginTop: "15px" }}>
-                <input
-                  type="file"
-                  ref={galleryFileInput}
-                  multiple
-                  accept="image/*"
-                  onChange={handleGalleryUpload}
-                  style={{ display: "none" }}
-                />
+          {/* Upload Button */}
+          <div>
+            <input
+              type="file"
+              ref={galleryFileInput}
+              multiple
+              accept="image/*"
+              onChange={handleGalleryUpload}
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              onClick={() => galleryFileInput.current?.click()}
+              disabled={isUploading}
+              style={{
+                width: "100%",
+                padding: "12px",
+                backgroundColor: isUploading ? "#94a3b8" : "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: isUploading ? "not-allowed" : "pointer",
+                fontWeight: "600",
+                fontSize: "14px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                transition: "background-color 0.2s"
+              }}
+            >
+              {isUploading ? "Uploading & Compressing..." : "📤 Upload Images"}
+            </button>
+          </div>
+
+          {/* Uploaded Images List - immediately displayed */}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+              <span style={{ fontSize: "13px", fontWeight: "600", color: "#334155" }}>
+                Uploaded Images ({uploadedImages.length})
+              </span>
+              {uploadedImages.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => galleryFileInput.current?.click()}
-                  disabled={isUploading}
+                  onClick={() => setUploadedImages([])}
                   style={{
-                    width: "100%",
-                    padding: "10px",
-                    backgroundColor: "#28a745",
-                    color: "white",
+                    background: "none",
                     border: "none",
-                    borderRadius: "4px",
+                    color: "#94a3b8",
+                    fontSize: "11px",
                     cursor: "pointer",
-                    fontWeight: "500"
+                    textDecoration: "underline"
                   }}
                 >
-                  {isUploading ? "Uploading..." : "Upload Images"}
+                  Clear list
                 </button>
+              )}
+            </div>
+
+            {uploadedImages.length === 0 ? (
+              <div style={{
+                textAlign: "center",
+                padding: "24px 12px",
+                backgroundColor: "#f8fafc",
+                borderRadius: "6px",
+                border: "1px dashed #cbd5e1",
+                color: "#64748b",
+                fontSize: "12px"
+              }}>
+                No images uploaded yet.<br/>
+                Upload an image to preview and insert it here.
               </div>
-
-              {/* Gallery Images */}
-              {isGalleryLoading ? (
-                <div style={{ textAlign: "center", padding: "20px 0", color: "#666" }}>
-                  Loading gallery...
-                </div>
-              ) : (
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-                  gap: "8px"
-                }}>
-                  {galleryImages.map((image, index) => {
-                    // Extract file name from AWS URL
-                    let fileName = image.url.split("/").pop();
-
-                    // Remove numbers from file name
-                    fileName = fileName.replace(/[0-9]/g, "");
-                    fileName = fileName.replace(/^trip-web-/, "");
-
-                    return (
-                      <div key={index} style={{ position: "relative", overflow: "hidden", borderRadius: "4px" }}>
-                        <img
-                          src={image.url}
-                          alt={`Gallery ${index}`}
-                          style={{
-                            width: "100%",
-                            height: "70px",
-                            objectFit: "cover",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            border: "2px solid transparent",
-                            display: "block"
-                          }}
-                          onClick={() => insertImageFromGallery(image.url)}
-                          onMouseEnter={(e) => {
-                            e.target.style.border = "2px solid #007BFF";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.target.style.border = "2px solid transparent";
-                          }}
-                        />
-                        {/* File name */}
-                        <div style={{
-                          position: "absolute",
-                          top: "0",
-                          left: "0",
-                          right: "0",
-                          backgroundColor: "rgba(0, 0, 0, 0.6)",
-                          color: "white",
-                          padding: "2px 4px",
-                          fontSize: "10px",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          borderTopLeftRadius: "4px",
-                          borderTopRightRadius: "4px",
-                        }}>
-                        </div>
-
-                        {/* Footer label */}
-                        <div style={{
-                          position: "absolute",
-                          bottom: "0",
-                          left: "0",
-                          right: "0",
-                          backgroundColor: "rgba(0, 0, 0, 0.7)",
-                          color: "white",
-                          padding: "2px 4px",
-                          fontSize: "9px",
-                          borderBottomLeftRadius: "4px",
-                          borderBottomRightRadius: "4px",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          textAlign: "center"
-                        }}>
-                          {fileName}
-                        </div>
+            ) : (
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: "10px",
+                maxHeight: "55vh",
+                overflowY: "auto",
+                paddingRight: "2px"
+              }}>
+                {uploadedImages.map((image, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      padding: "8px",
+                      backgroundColor: "#f8fafc",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                      alignItems: "center"
+                    }}
+                  >
+                    <img
+                      src={image.url}
+                      alt={`Uploaded ${index}`}
+                      style={{
+                        width: "60px",
+                        height: "60px",
+                        objectFit: "cover",
+                        borderRadius: "4px",
+                        border: "1px solid #cbd5e1",
+                        flexShrink: 0
+                      }}
+                    />
+                    <div style={{ flex: "1", minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <div style={{
+                        fontSize: "12px",
+                        fontWeight: "500",
+                        color: "#1e293b",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap"
+                      }} title={image.name}>
+                        {image.name || `Image ${index + 1}`}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {galleryImages.length === 0 && !isGalleryLoading && (
-                <div style={{ textAlign: "center", color: "#666", marginTop: "20px" }}>
-                  No images in gallery
-                </div>
-              )}
-            </>
-          )}
+                      <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                        <span style={{
+                          fontSize: "10px",
+                          backgroundColor: "#dcfce7",
+                          color: "#166534",
+                          padding: "1px 5px",
+                          borderRadius: "4px",
+                          fontWeight: "600"
+                        }}>
+                          WEBP
+                        </span>
+                        {image.size && (
+                          <span style={{ fontSize: "10px", color: "#64748b" }}>
+                            {(image.size / 1024).toFixed(1)} KB
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", gap: "6px", marginTop: "2px" }}>
+                        <button
+                          type="button"
+                          onClick={() => insertImageFromGallery(image.url)}
+                          style={{
+                            padding: "3px 8px",
+                            backgroundColor: "#007bff",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            fontSize: "11px",
+                            fontWeight: "500",
+                            cursor: "pointer"
+                          }}
+                        >
+                          + Insert
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(image.url);
+                            setCopiedIndex(index);
+                            setTimeout(() => setCopiedIndex(null), 2000);
+                          }}
+                          style={{
+                            padding: "3px 8px",
+                            backgroundColor: copiedIndex === index ? "#28a745" : "#e2e8f0",
+                            color: copiedIndex === index ? "white" : "#334155",
+                            border: "none",
+                            borderRadius: "4px",
+                            fontSize: "11px",
+                            cursor: "pointer",
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          {copiedIndex === index ? "✓ Copied" : "Copy URL"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{
