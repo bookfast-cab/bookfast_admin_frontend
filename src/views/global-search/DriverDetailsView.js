@@ -317,6 +317,11 @@ const DriverDetailsView = ({ data = {}, onDriverUpdate }) => {
       });
   };
 
+  const getDaysCount = (start, end) => {
+    const diff = new Date(end) - new Date(start);
+    return Math.round(diff / (1000 * 60 * 60 * 24));
+  };
+
   const getInitials = (name) => {
 
     return name ? name.split(' ').map(word => word[0]).join('').toUpperCase() : 'DR';
@@ -541,6 +546,13 @@ const DriverDetailsView = ({ data = {}, onDriverUpdate }) => {
                     <Typography variant="h6" fontWeight={600} color={BRAND_COLORS.textPrimary} mb={2}>
                       Personal Information
                     </Typography>
+
+                    <InfoRow
+                      label="Driver ID"
+                      value={data.id}
+                      icon={<PersonIcon sx={{ fontSize: 16, color: BRAND_COLORS.primary }} />}
+                    />
+
                     <InfoRow
                       label="Full Name"
                       value={data.driverName}
@@ -589,8 +601,9 @@ const DriverDetailsView = ({ data = {}, onDriverUpdate }) => {
                     <InfoRow label="Owner Mobile" value={data.ownerMobileNo} />
                     <InfoRow
                       label="Cab Category"
-                      value={data.vehicleCategory?.name || data.vehicleCategory?.vehicle_type || data.cabCategory}
+                      value={data.vehicleCategory?.vehicle_type}
                     />
+
                     <InfoRow label="Documents Count" value={`${data.docsCount ?? 0} documents`} />
                     <InfoRow label="Remarks" value={data.remarks} />
                   </CardContent>
@@ -814,7 +827,13 @@ const DriverDetailsView = ({ data = {}, onDriverUpdate }) => {
                           secondary={
                             <Box sx={{ mt: 0.5 }}>
                               <Typography variant="body2" color={BRAND_COLORS.textSecondary}>
-                                Duration: {new Date(membership.start_date).toLocaleDateString()} - {new Date(membership.end_date).toLocaleDateString()}
+                                Start Date: {new Date(membership.start_date).toLocaleDateString()}
+                              </Typography>
+                              <Typography variant="body2" color={BRAND_COLORS.textSecondary}>
+                                End Date: {new Date(membership.end_date).toLocaleDateString()}
+                              </Typography>
+                              <Typography variant="body2" color={BRAND_COLORS.textSecondary}>
+                                Remaining Days: {getDaysCount(new Date(), membership.end_date)}
                               </Typography>
                               <Typography variant="body2" color={BRAND_COLORS.textSecondary}>
                                 Price: ₹{membership.price}
