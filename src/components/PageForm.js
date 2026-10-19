@@ -369,6 +369,58 @@ const PageForm = ({ hidefeatureImage }) => {
     }
   };
 
+  // Tiptap editor configuration
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        // Disable built-in table nodes so they don't conflict
+        table: false,
+      }),
+
+
+      Image.configure({
+        HTMLAttributes: {
+          class: 'editor-image',
+        },
+      }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'editor-link',
+        },
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'editor-table',
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      CodeBlock,
+      Color,
+      TextStyle,
+      Highlight.configure({ multicolor: true }),
+      Underline,
+      Superscript,
+      Subscript,
+      FontSize.configure({
+        types: ['textStyle'],
+      }),
+    ],
+    content: editorContent,
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[300px] p-4 border border-gray-300 rounded-md',
+      },
+    },
+    immediatelyRender: false,
+  });
+
   // Custom image handler for Tiptap
   const addImage = useCallback(async () => {
     const input = document.createElement('input');
@@ -427,58 +479,6 @@ const PageForm = ({ hidefeatureImage }) => {
       }
     };
   }, [editor]);
-
-  // Tiptap editor configuration
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        // Disable built-in table nodes so they don't conflict
-        table: false,
-      }),
-
-
-      Image.configure({
-        HTMLAttributes: {
-          class: 'editor-image',
-        },
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'editor-link',
-        },
-      }),
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      Table.configure({
-        resizable: true,
-        HTMLAttributes: {
-          class: 'editor-table',
-        },
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      CodeBlock,
-      Color,
-      TextStyle,
-      Highlight.configure({ multicolor: true }),
-      Underline,
-      Superscript,
-      Subscript,
-      FontSize.configure({
-        types: ['textStyle'],
-      }),
-    ],
-    content: editorContent,
-    editorProps: {
-      attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[300px] p-4 border border-gray-300 rounded-md',
-      },
-    },
-    immediatelyRender: false,
-  });
 
   // Ensuring the component is rendered only on the client side
   useEffect(() => {
