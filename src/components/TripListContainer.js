@@ -1,7 +1,7 @@
 import Grid from '@mui/material/Grid'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
-import { Button, FormControl, IconButton, InputLabel, Menu, MenuItem, Select, SvgIcon } from '@mui/material'
+import { Button, FormControl, IconButton, InputLabel, Menu, MenuItem, Select, SvgIcon, Dialog, DialogTitle, DialogContent, DialogActions, Box, CircularProgress } from '@mui/material'
 import TextField from '@mui/material/TextField';
 import PlusIcon from '@heroicons/react/24/solid/PlusIcon'
 import Snackbar from '@mui/material/Snackbar'
@@ -12,11 +12,15 @@ import { useRouter } from 'next/router'
 import CommonDataTable from 'src/components/CommonDataTable';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DownloadIcon from '@mui/icons-material/Download';
+import CloseIcon from '@mui/icons-material/Close';
+import SearchIcon from '@mui/icons-material/Search';
 import { formatDate } from 'src/utils/utils';
 import TripDrawer from '../pages/trips/TripDrawer'; // Adjusted import path
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Info } from '@mui/icons-material';
 import ExportButton from './export';
+import { Map } from 'mdi-material-ui';
 
 const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
 
@@ -31,6 +35,14 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
 
     const [loadingExport, setLoadingExport] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState(null);
+
+    const [mapModalOpen, setMapModalOpen] = useState(false);
+    const [mapImage, setMapImage] = useState('');
+    const [loadingMapTripId, setLoadingMapTripId] = useState(null);
+    const [selectedTripForMap, setSelectedTripForMap] = useState(null);
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
 
 
     let token
@@ -79,6 +91,66 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
             });
     };
 
+    const genrateMapRoute = (id, tripCode = '') => {
+        setLoadingMapTripId(id);
+        fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/genratemaproute/${id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: token,
+            },
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data. Status: ${response.status}`);
+                }
+
+                return response.json();
+            })
+            .then((result) => {
+                console.log('genrateMapRoute result:', result);
+                let imgData = result?.data?.image || result?.data;
+                if (imgData && typeof imgData === 'object') {
+                    imgData = imgData.base64 || imgData.image || imgData.data || '';
+                }
+
+                if (typeof imgData === 'string' && imgData.trim().length > 0) {
+                    const formattedSrc = imgData.startsWith('data:image/')
+                        ? imgData
+                        : `data:image/png;base64,${imgData}`;
+
+                    setMapImage(formattedSrc);
+                    setSelectedTripForMap(tripCode || id);
+                    setMapModalOpen(true);
+                } else {
+                    setErrorMessage('Route map image not found in response.');
+                }
+            })
+            .catch((error) => {
+                setErrorMessage('Failed to generate route map.');
+                console.error(error);
+            })
+            .finally(() => {
+                setLoadingMapTripId(null);
+            });
+    };
+
+    const handleDownloadMap = () => {
+        if (!mapImage) return;
+        const safeTripName = String(selectedTripForMap || 'map').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const link = document.createElement('a');
+        link.href = mapImage;
+        link.download = `trip-route-${safeTripName}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleCloseMapModal = () => {
+        setMapModalOpen(false);
+        setMapImage('');
+        setSelectedTripForMap(null);
+    };
 
 
     const getTrips = async (page_num, perPage = 10) => {
@@ -130,31 +202,56 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
 
 
 
-    const searchTrips = async (searchdata) => {
-        let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/trip-search?search=${searchdata}`;
-        if (type) url += `&type=${type}`;
-        if (date_type) url += `&date_type=${date_type}`;
-        if (typeof isFromAdmin === 'boolean') url += `&isFromAdmin=${isFromAdmin}`; // Assuming search also needs this filter
+    const handleSearch = async () => {
+        const query = searchTerm.trim();
+        if (!query) {
+            getTrips(0);
 
-        fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `${token}`
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/ride-search/${encodeURIComponent(query)}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to search. Status: ${response.status}`);
             }
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                setData(data.data);
-                setTotalRecords(data.totalRecords);
-                setTotalPages(data.totalPages);
-                setCurrentPage(data.currentPage);
-                setPerPage(data.perPage);
-            })
-            .catch((err) => {
-                console.log(err)
-            })
-    }
+
+            const resData = await response.json();
+            const trip = resData.data;
+
+            if (trip) {
+                const tripArray = Array.isArray(trip) ? trip : [trip];
+                setData(tripArray);
+                setTotalRecords(tripArray.length);
+                setTotalPages(1);
+                setCurrentPage(1);
+                setSuccessMessage('Trip found successfully!');
+            } else {
+                setData([]);
+                setTotalRecords(0);
+                setTotalPages(0);
+                setErrorMessage('No trip found with this Trip ID.');
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            setErrorMessage('Failed to search trip.');
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleClearSearch = () => {
+        setSearchTerm('');
+        getTrips(0);
+    };
 
 
     const handleDelete = async (idToDelete) => {
@@ -184,10 +281,6 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
         setData(data.map(notification =>
             notification.id === id ? { ...notification, status: newStatus } : notification
         ))
-    }
-
-    const handleSearchMethod = (searchdata) => {
-        searchTrips(searchdata)
     }
 
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -366,6 +459,20 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
                     >
                         <VisibilityIcon />
                     </IconButton>
+                    
+                    <IconButton
+                        aria-label="view map route"
+                        color="info"
+                        title="Generate Route Map"
+                        disabled={loadingMapTripId === params.row.id}
+                        onClick={() => genrateMapRoute(params.row.id, params.row.trip_id)}
+                    >
+                        {loadingMapTripId === params.row.id ? (
+                            <CircularProgress size={20} color="inherit" />
+                        ) : (
+                            <Map />
+                        )}
+                    </IconButton>
                 </>
             )
 
@@ -387,61 +494,77 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-
+                    flexWrap: 'wrap',
+                    gap: '12px'
                 }}
             >
-                <FormControl size="small" sx={{ minWidth: 200 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <FormControl size="small" sx={{ minWidth: 180 }}>
+                        <Select
+                            value={selectedStatus}
+                            onChange={(e) => handleStatusChange(e.target.value)}
+                        >
+                            <MenuItem value={null}>All Status</MenuItem>
+                            <MenuItem value={0}>New Trip</MenuItem>
+                            <MenuItem value={1}>Accepted by Driver</MenuItem>
+                            <MenuItem value={3}>Trip Started</MenuItem>
+                            <MenuItem value={7}>On the Way</MenuItem>
+                            <MenuItem value={8}>Arrived at Pickup</MenuItem>
+                            <MenuItem value={6}>Advance Booking</MenuItem>
+                            <MenuItem value={4}>Completed</MenuItem>
+                            <MenuItem value={5}>Cancelled</MenuItem>
+                            <MenuItem value={9}>Missed Trip</MenuItem>
+                            <MenuItem value={'ongoing'}>On Going</MenuItem>
+                        </Select>
+                    </FormControl>
 
-                    <Select
-                        value={selectedStatus}
-
-                        onChange={(e) => handleStatusChange(e.target.value)}
+                    <TextField
+                        size="small"
+                        placeholder="Search by Trip ID..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                handleSearch();
+                            }
+                        }}
+                        sx={{ minWidth: 220 }}
+                    />
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={isSearching ? <CircularProgress size={18} color="inherit" /> : <SearchIcon />}
+                        onClick={handleSearch}
+                        disabled={isSearching}
                     >
-                        <MenuItem value={null}>All Status</MenuItem>
-                        <MenuItem value={0}>New Trip</MenuItem>
-                        <MenuItem value={1}>Accepted by Driver</MenuItem>
-                        <MenuItem value={3}>Trip Started</MenuItem>
-                        <MenuItem value={7}>On the Way</MenuItem>
-                        <MenuItem value={8}>Arrived at Pickup</MenuItem>
-                        <MenuItem value={6}>Advance Booking</MenuItem>
-                        <MenuItem value={4}>Completed</MenuItem>
-                        <MenuItem value={5}>Cancelled</MenuItem>
-                        <MenuItem value={9}>Missed Trip</MenuItem>
-                        <MenuItem value={'ongoing'}>On Going</MenuItem>
-                    </Select>
-                </FormControl>
+                        Search
+                    </Button>
+                    {searchTerm && (
+                        <Button
+                            variant="outlined"
+                            color="secondary"
+                            onClick={handleClearSearch}
+                        >
+                            Clear
+                        </Button>
+                    )}
+                </div>
 
-                <div style={{ 'display': 'flex', 'gap': '10px' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
                     {showAddButton && (
                         <Button
                             startIcon={(
                                 <SvgIcon fontSize="small">
                                     <PlusIcon />
-                            </SvgIcon>
-                        )}
-                        variant="contained"
-                        onClick={() => router.push('/trips/add')}
-                    >
-                        Add
-                    </Button>
-                )}
-                <ExportButton columns={columns} url={`trips`} />
-
-                </div>
-            </Grid>
-
-            <Grid
-                item
-                xs={12}
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '5px',
-                }}
-            >
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    {/* Export buttons usually go here */}
+                                </SvgIcon>
+                            )}
+                            variant="contained"
+                            onClick={() => router.push('/trips/add')}
+                        >
+                            Add
+                        </Button>
+                    )}
+                    <ExportButton columns={columns} url={`trips`} />
                 </div>
             </Grid>
 
@@ -505,6 +628,91 @@ const TripListContainer = ({ isFromAdmin, showAddButton, title = "Trips" }) => {
                 data={selectedRowData}
                 vehicleList={vehicleList}
             />
+
+            {/* Route Map Modal */}
+            <Dialog
+                open={mapModalOpen}
+                onClose={handleCloseMapModal}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        overflow: 'hidden'
+                    }
+                }}
+            >
+                <DialogTitle
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        py: 2,
+                        px: 3,
+                        bgcolor: '#f5f5f7'
+                    }}
+                >
+                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                        Trip Route Map {selectedTripForMap ? `(#${selectedTripForMap})` : ''}
+                    </Typography>
+                    <IconButton
+                        aria-label="close"
+                        onClick={handleCloseMapModal}
+                        size="small"
+                        sx={{ color: 'grey.600' }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+
+                <DialogContent
+                    dividers
+                    sx={{
+                        p: 2,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        minHeight: 300,
+                        bgcolor: '#fafafa'
+                    }}
+                >
+                    {mapImage ? (
+                        <Box
+                            component="img"
+                            src={mapImage}
+                            alt="Trip Route Map"
+                            sx={{
+                                maxWidth: '100%',
+                                maxHeight: '70vh',
+                                objectFit: 'contain',
+                                borderRadius: 1,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                            }}
+                        />
+                    ) : (
+                        <CircularProgress />
+                    )}
+                </DialogContent>
+
+                <DialogActions sx={{ px: 3, py: 2, justifyContent: 'space-between' }}>
+                    <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={handleCloseMapModal}
+                    >
+                        Close
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<DownloadIcon />}
+                        onClick={handleDownloadMap}
+                        disabled={!mapImage}
+                    >
+                        Download Map
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Grid>
     )
 }

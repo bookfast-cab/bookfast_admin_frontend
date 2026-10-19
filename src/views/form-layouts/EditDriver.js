@@ -594,12 +594,12 @@ const EditDriverDetails = () => {
             </TableRow>
         </TableHead>
         <TableBody>
-            {console.log(documents)}
+
             {documents?.map((data, index) => {
                 let imageName = Object.keys(data)?.[0] ?? '';
                 let imageUrl = data?.[imageName] ?? '';
 
-                const cacheBustedUrl = imageUrl ? `${imageUrl}?t=${Date.now()}` : '';
+                const cacheBustedUrl = imageUrl ? `${imageUrl}` : '';
 
                 const file = selectedFiles[imageName];
                 const previewUrl = file ? URL.createObjectURL(file) : cacheBustedUrl;

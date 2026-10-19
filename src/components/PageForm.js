@@ -306,6 +306,7 @@ const PageForm = ({ hidefeatureImage }) => {
   const [galleryImages, setGalleryImages] = useState([]);
   const [isGalleryLoading, setIsGalleryLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
   const [loadedContent, setLoadedContent] = useState(null); // Track loaded content
 
   // File input reference
@@ -450,7 +451,6 @@ const PageForm = ({ hidefeatureImage }) => {
   // Ensuring the component is rendered only on the client side
   useEffect(() => {
     setIsBrowser(true);
-    loadGalleryImages();
   }, []);
 
   useEffect(() => {
@@ -514,6 +514,18 @@ const PageForm = ({ hidefeatureImage }) => {
   const insertImageFromGallery = (imageUrl) => {
     if (editor) {
       editor.chain().focus().setImage({ src: imageUrl }).run();
+    }
+  };
+
+  // Toggle image gallery visibility and load images if needed
+  const handleToggleGallery = () => {
+    if (!showGallery) {
+      setShowGallery(true);
+      if (galleryImages.length === 0) {
+        loadGalleryImages();
+      }
+    } else {
+      setShowGallery(false);
     }
   };
 
@@ -1673,129 +1685,165 @@ const PageForm = ({ hidefeatureImage }) => {
             </button>
           </form>
         </div>
-      <div style={{ flex: "1" }}>
+      <div style={{ flex: "1", minWidth: 0, width: "100%", maxWidth: "100%" }}>
         {/* Image Gallery Sidebar */}
         <div style={{
-          flex: "1",
           backgroundColor: "#f8f9fa",
           padding: "20px",
           borderRadius: "8px",
-          maxHeight: "80vh",
-          overflowY: "auto"
+          maxHeight: showGallery ? "80vh" : "auto",
+          overflowY: showGallery ? "auto" : "visible",
+          border: "1px solid #e9ecef",
+          boxSizing: "border-box",
+          width: "100%"
         }}>
-          <h3 style={{ marginTop: "0", marginBottom: "20px" }}>Image Gallery</h3>
+          <h3 style={{ margin: "0 0 12px 0" }}>Image Gallery</h3>
+          <button
+            type="button"
+            onClick={handleToggleGallery}
+            style={{
+              width: "100%",
+              padding: "10px",
+              backgroundColor: showGallery ? "#6c757d" : "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "500",
+              transition: "background-color 0.2s"
+            }}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = showGallery ? "#5a6268" : "#0056b3";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = showGallery ? "#6c757d" : "#007bff";
+            }}
+          >
+            {showGallery ? "Hide Gallery" : "Show Gallery"}
+          </button>
 
-          {/* Upload new images */}
-          <div style={{ marginBottom: "20px" }}>
-            <input
-              type="file"
-              ref={galleryFileInput}
-              multiple
-              accept="image/*"
-              onChange={handleGalleryUpload}
-              style={{ display: "none" }}
-            />
-            <button
-              type="button"
-              onClick={() => galleryFileInput.current?.click()}
-              disabled={isUploading}
-              style={{
-                width: "100%",
-                padding: "10px",
-                backgroundColor: "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              {isUploading ? "Uploading..." : "Upload Images"}
-            </button>
-          </div>
+          {showGallery && (
+            <>
+              {/* Upload new images */}
+              <div style={{ marginBottom: "20px", marginTop: "15px" }}>
+                <input
+                  type="file"
+                  ref={galleryFileInput}
+                  multiple
+                  accept="image/*"
+                  onChange={handleGalleryUpload}
+                  style={{ display: "none" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => galleryFileInput.current?.click()}
+                  disabled={isUploading}
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    backgroundColor: "#28a745",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontWeight: "500"
+                  }}
+                >
+                  {isUploading ? "Uploading..." : "Upload Images"}
+                </button>
+              </div>
 
-          {/* Gallery Images */}
-          {isGalleryLoading ? (
-            <div>Loading gallery...</div>
-          ) : (
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
-              gap: "10px"
-            }}>
-             {galleryImages.map((image, index) => {
-  // Extract file name from AWS URL
- let fileName = image.url.split("/").pop();
+              {/* Gallery Images */}
+              {isGalleryLoading ? (
+                <div style={{ textAlign: "center", padding: "20px 0", color: "#666" }}>
+                  Loading gallery...
+                </div>
+              ) : (
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                  gap: "8px"
+                }}>
+                  {galleryImages.map((image, index) => {
+                    // Extract file name from AWS URL
+                    let fileName = image.url.split("/").pop();
 
-  // Remove numbers from file name
-    fileName = fileName.replace(/[0-9]/g, "");
- fileName = fileName.replace(/^trip-web-/, "");
+                    // Remove numbers from file name
+                    fileName = fileName.replace(/[0-9]/g, "");
+                    fileName = fileName.replace(/^trip-web-/, "");
 
-  return (
-    <div key={index} style={{ position: "relative" }}>
-      <img
-        src={image.url}
-        alt={`Gallery ${index}`}
-        style={{
-          width: "100%",
-          height: "80px",
-          objectFit: "cover",
-          borderRadius: "4px",
-          cursor: "pointer",
-          border: "2px solid transparent",
-        }}
-        onClick={() => insertImageFromGallery(image.url)}
-        onMouseEnter={(e) => {
-          e.target.style.border = "2px solid #007BFF";
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.border = "2px solid transparent";
-        }}
-      />
-      {/* File name */}
-      <div style={{
-        position: "absolute",
-        top: "0",
-        left: "0",
-        right: "0",
-        backgroundColor: "rgba(0, 0, 0, 0.6)",
-        color: "white",
-        padding: "2px 4px",
-        fontSize: "10px",
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        borderTopLeftRadius: "4px",
-        borderTopRightRadius: "4px",
-      }}>
-      
-      </div>
+                    return (
+                      <div key={index} style={{ position: "relative", overflow: "hidden", borderRadius: "4px" }}>
+                        <img
+                          src={image.url}
+                          alt={`Gallery ${index}`}
+                          style={{
+                            width: "100%",
+                            height: "70px",
+                            objectFit: "cover",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            border: "2px solid transparent",
+                            display: "block"
+                          }}
+                          onClick={() => insertImageFromGallery(image.url)}
+                          onMouseEnter={(e) => {
+                            e.target.style.border = "2px solid #007BFF";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.border = "2px solid transparent";
+                          }}
+                        />
+                        {/* File name */}
+                        <div style={{
+                          position: "absolute",
+                          top: "0",
+                          left: "0",
+                          right: "0",
+                          backgroundColor: "rgba(0, 0, 0, 0.6)",
+                          color: "white",
+                          padding: "2px 4px",
+                          fontSize: "10px",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          borderTopLeftRadius: "4px",
+                          borderTopRightRadius: "4px",
+                        }}>
+                        </div>
 
-      {/* Footer label */}
-      <div style={{
-        position: "absolute",
-        bottom: "0",
-        left: "0",
-        right: "0",
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
-        color: "white",
-        padding: "2px 4px",
-        fontSize: "10px",
-        borderBottomLeftRadius: "4px",
-        borderBottomRightRadius: "4px",
-      }}>
-          {fileName}
-      </div>
-    </div>
-  );
-})}
+                        {/* Footer label */}
+                        <div style={{
+                          position: "absolute",
+                          bottom: "0",
+                          left: "0",
+                          right: "0",
+                          backgroundColor: "rgba(0, 0, 0, 0.7)",
+                          color: "white",
+                          padding: "2px 4px",
+                          fontSize: "9px",
+                          borderBottomLeftRadius: "4px",
+                          borderBottomRightRadius: "4px",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          textAlign: "center"
+                        }}>
+                          {fileName}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
-            </div>
-          )}
-
-          {galleryImages.length === 0 && !isGalleryLoading && (
-            <div style={{ textAlign: "center", color: "#666", marginTop: "20px" }}>
-              No images in gallery
-            </div>
+              {galleryImages.length === 0 && !isGalleryLoading && (
+                <div style={{ textAlign: "center", color: "#666", marginTop: "20px" }}>
+                  No images in gallery
+                </div>
+              )}
+            </>
           )}
         </div>
 

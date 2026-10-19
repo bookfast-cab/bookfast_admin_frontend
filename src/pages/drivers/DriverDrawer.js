@@ -747,7 +747,7 @@ const submitVehicleAction = async (id, status, reason) => {
                             />
                             <InfoRow
                               label="Cab Category"
-                              value={data.cabCategory}
+                              value={data.vehicleCategory?.vehicle_type}
                             />
                             <InfoRow
                               label="Documents Count"
