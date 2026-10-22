@@ -66,21 +66,36 @@ const App = props => {
   }, []);
 
   
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && !window.__fetchIntercepted) {
+    window.__fetchIntercepted = true;
     const originalFetch = window.fetch;
     window.fetch = async (url, options = {}) => {
-      const device_id = await getFingerprint()
-      options.headers = {
-        'Content-Type': 'application/json',
+      const device_id = await getFingerprint();
+      const existingHeaders = options.headers || {};
+      
+      const newHeaders = {
         'x-device-id': device_id,
-        ...options.headers,
+        ...(existingHeaders instanceof Headers ? Object.fromEntries(existingHeaders.entries()) : existingHeaders)
       };
+
+      if (!(options.body instanceof FormData) && !newHeaders['Content-Type']) {
+        newHeaders['Content-Type'] = 'application/json';
+      }
+
+      options.headers = newHeaders;
 
       const response = await originalFetch(url, options);
       if (response.status === 401) {
-        localStorage.clear();
-        router.push('/pages/login');
-        
+        // Only redirect if not already on the login page
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/pages/login')) {
+          console.warn('⚠️ 401 Unauthorized received on', url, '- session expired or logged in from another device.');
+          const deviceId = localStorage.getItem('admin_device_id');
+          localStorage.clear();
+          if (deviceId) {
+            localStorage.setItem('admin_device_id', deviceId);
+          }
+          router.push('/pages/login');
+        }
         return response;
       }
 
