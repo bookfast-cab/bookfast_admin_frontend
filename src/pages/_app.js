@@ -96,7 +96,9 @@ const App = props => {
           }
           router.push('/pages/login');
         }
+
         return response;
+        
       }
 
       return response;
