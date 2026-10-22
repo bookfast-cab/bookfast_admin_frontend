@@ -11,6 +11,7 @@ import { useRouter } from 'next/router';
 import React, { useState } from 'react';
 import io from 'socket.io-client';
 import { Snackbar, Alert } from '@mui/material';
+import SosEmergencyBanner from 'src/@core/layouts/components/shared-components/SosEmergencyBanner';
 
 const UserLayout = ({ children }) => {
   const router = useRouter();
@@ -62,6 +63,7 @@ const UserLayout = ({ children }) => {
 
   return (
     <>
+    <SosEmergencyBanner />
     <Snackbar
       open={openSnackbar}
       autoHideDuration={6000}

@@ -33,6 +33,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useRouter } from 'next/router';
 import { SocketProvider } from 'src/contexts/SocketContext'
+import { SosProvider } from 'src/contexts/SosContext'
 
 import '../styles/tiptap-editor.css'; // ✅ Global CSS import
 
@@ -99,13 +100,15 @@ const App = props => {
         <meta name='viewport' content='initial-scale=1, width=device-width' />
       </Head>
       <SocketProvider> 
-      <SettingsProvider>
-        <SettingsConsumer>
-          {({ settings }) => {
-            return <ThemeComponent settings={settings}>{getLayout(<Component {...pageProps} />)}</ThemeComponent>
-          }}
-        </SettingsConsumer>
-      </SettingsProvider>
+        <SosProvider>
+          <SettingsProvider>
+            <SettingsConsumer>
+              {({ settings }) => {
+                return <ThemeComponent settings={settings}>{getLayout(<Component {...pageProps} />)}</ThemeComponent>
+              }}
+            </SettingsConsumer>
+          </SettingsProvider>
+        </SosProvider>
       </SocketProvider>
       <ToastContainer position="top-right" autoClose={6000} />
     </CacheProvider>

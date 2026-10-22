@@ -1,5 +1,6 @@
 // ** Icons
 import HomeOutline from 'mdi-material-ui/HomeOutline'
+import AlertOctagon from 'mdi-material-ui/AlertOctagon'
 import AccountGroup from 'mdi-material-ui/AccountGroup'
 import Car from 'mdi-material-ui/Car'
 import CurrencyUsd from 'mdi-material-ui/CurrencyUsd'
@@ -29,6 +30,7 @@ import { Bank, Cog, Wallet } from 'mdi-material-ui'
 export const getAllMenuItems = (notificationCount = 0) => [
   { privilege: ['dashboard'], title: 'Dashboard', icon: HomeOutline, path: '/', roles: ['admin', 'staff'] },
   { privilege: ['dispatch'], title: 'Dispatch', icon: MapSearch, path: '/dispatchPanel', roles: ['admin', 'staff'] },
+  { privilege: ['sos', 'dashboard'], title: 'SOS Alerts', icon: AlertOctagon, path: '/sos', roles: ['admin', 'staff'] },
   { privilege: ['global-search'], title: 'Global Search', icon: MapSearch, path: '/global-search', roles: ['admin', 'staff'] },
 
   { privilege: ['customers', 'promo-coupon'], sectionTitle: 'Customers Management', icon: AccountGroup, roles: ['admin', 'staff'] },

@@ -13,6 +13,7 @@ import Magnify from 'mdi-material-ui/Magnify'
 import ModeToggler from 'src/@core/layouts/components/shared-components/ModeToggler'
 import UserDropdown from 'src/@core/layouts/components/shared-components/UserDropdown'
 import NotificationDropdown from 'src/@core/layouts/components/shared-components/NotificationDropdown'
+import SosHeaderDropdown from 'src/@core/layouts/components/shared-components/SosHeaderDropdown'
 import { useEffect, useState } from 'react'; // Import useState
 import VolumeOff from 'mdi-material-ui/VolumeOff'
 import VolumeUp from 'mdi-material-ui/VolumeHigh'
@@ -93,6 +94,7 @@ const AppBarContent = props => {
         </IconButton> */}
 
 
+        <SosHeaderDropdown />
         <NotificationDropdown />
         <UserDropdown />
       </Box>
