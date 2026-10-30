@@ -28,6 +28,9 @@ const PageForm = ({ hidefeatureImage }) => {
     featuredImage: null,
     metaTitle: "",
     metaDescription: "",
+    metaKeywords: "",
+    schemaMarkup: "",
+    customHeadTags: "",
   });
 
   const [faqList, setFaqList] = useState([]);
@@ -605,6 +608,9 @@ const PageForm = ({ hidefeatureImage }) => {
           featuredImage: result.data.featuredImage,
           metaTitle: result.data.metaTitle || "",
           metaDescription: result.data.metaDescription || "",
+          metaKeywords: result.data.metaKeywords || result.data.meta_keywords || "",
+          schemaMarkup: result.data.schemaMarkup || result.data.schema_markup || result.data.schema || "",
+          customHeadTags: result.data.customHeadTags || result.data.custom_head_tags || result.data.head_tags || "",
         });
 
         let content = result.data.content || "";
@@ -730,8 +736,11 @@ const PageForm = ({ hidefeatureImage }) => {
     if (formData.featuredImage) {
       data.append("featuredImage", formData.featuredImage);
     }
-    data.append("metaTitle", formData.metaTitle);
-    data.append("metaDescription", formData.metaDescription);
+    data.append("metaTitle", formData.metaTitle || "");
+    data.append("metaDescription", formData.metaDescription || "");
+    data.append("metaKeywords", formData.metaKeywords || "");
+    data.append("schemaMarkup", formData.schemaMarkup || "");
+    data.append("customHeadTags", formData.customHeadTags || "");
 
     try {
       const endpoint = id ? `website-trip/${id}` : "save-website-form";
@@ -751,6 +760,9 @@ const PageForm = ({ hidefeatureImage }) => {
             title: "",
             metaTitle: "",
             metaDescription: "",
+            metaKeywords: "",
+            schemaMarkup: "",
+            customHeadTags: "",
             featuredImage: null,
           });
           editor?.commands.setContent('');
@@ -779,6 +791,9 @@ const PageForm = ({ hidefeatureImage }) => {
             featuredImage: null,
             metaTitle: "",
             metaDescription: "",
+            metaKeywords: "",
+            schemaMarkup: "",
+            customHeadTags: "",
           });
           editor?.commands.setContent('');
           if (fileInput.current) fileInput.current.value = "";
@@ -1589,36 +1604,173 @@ const PageForm = ({ hidefeatureImage }) => {
               />
             </div>
 
-            {/* Meta Title Field */}
-            <div style={{ marginBottom: "20px" }}>
-              <label htmlFor="metaTitle" style={{ display: "block", fontWeight: "bold" }}>
-                Meta Title
-              </label>
-              <input
-                type="text"
-                id="metaTitle"
-                name="metaTitle"
-                value={formData.metaTitle}
-                onChange={handleInputChange}
-                placeholder="Enter meta title"
-                style={{ width: "100%", padding: "10px", marginTop: "5px" }}
-              />
-            </div>
+            {/* SEO & Meta Tags Card Section */}
+            <div style={{
+              margin: "25px 0",
+              padding: "20px",
+              backgroundColor: "#f8fafc",
+              borderRadius: "10px",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
+            }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "18px",
+                paddingBottom: "12px",
+                borderBottom: "1px solid #e2e8f0"
+              }}>
+                <div>
+                  <h3 style={{ margin: "0", fontSize: "17px", fontWeight: "600", color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span>🏷️</span> SEO & Meta Configuration
+                  </h3>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#64748b" }}>
+                    Configure search engine meta tags, structured schema markup, and custom head scripts for this trip page.
+                  </p>
+                </div>
+              </div>
 
-            {/* Meta Description Field */}
-            <div style={{ marginBottom: "20px" }}>
-              <label htmlFor="metaDescription" style={{ display: "block", fontWeight: "bold" }}>
-                Meta Description
-              </label>
-              <textarea
-                id="metaDescription"
-                name="metaDescription"
-                value={formData.metaDescription}
-                onChange={handleInputChange}
-                placeholder="Enter meta description"
-                rows={3}
-                style={{ width: "100%", padding: "10px", marginTop: "5px" }}
-              />
+              {/* Meta Title */}
+              <div style={{ marginBottom: "18px" }}>
+                <label htmlFor="metaTitle" style={{ display: "block", fontWeight: "600", fontSize: "14px", color: "#334155", marginBottom: "6px" }}>
+                  Meta Title
+                </label>
+                <input
+                  type="text"
+                  id="metaTitle"
+                  name="metaTitle"
+                  value={formData.metaTitle}
+                  onChange={handleInputChange}
+                  placeholder="Enter SEO meta title"
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "14px",
+                    boxSizing: "border-box"
+                  }}
+                />
+              </div>
+
+              {/* Meta Description */}
+              <div style={{ marginBottom: "18px" }}>
+                <label htmlFor="metaDescription" style={{ display: "block", fontWeight: "600", fontSize: "14px", color: "#334155", marginBottom: "6px" }}>
+                  Meta Description
+                </label>
+                <textarea
+                  id="metaDescription"
+                  name="metaDescription"
+                  value={formData.metaDescription}
+                  onChange={handleInputChange}
+                  placeholder="Enter SEO meta description (recommended 150-160 characters)"
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    fontFamily: "inherit"
+                  }}
+                />
+              </div>
+
+              {/* Meta Keywords */}
+              <div style={{ marginBottom: "18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
+                  <label htmlFor="metaKeywords" style={{ fontWeight: "600", fontSize: "14px", color: "#334155" }}>
+                    Meta Keywords
+                  </label>
+                  <span style={{ fontSize: "12px", color: "#64748b" }}>Comma separated</span>
+                </div>
+                <textarea
+                  id="metaKeywords"
+                  name="metaKeywords"
+                  value={formData.metaKeywords || ""}
+                  onChange={handleInputChange}
+                  placeholder="e.g. chandigarh to delhi taxi, one way cab chandigarh to delhi, outstation taxi booking"
+                  rows={2}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    fontFamily: "inherit"
+                  }}
+                />
+                <small style={{ display: "block", marginTop: "4px", color: "#64748b", fontSize: "12px" }}>
+                  Enter keywords separated by commas for search engines.
+                </small>
+              </div>
+
+              {/* Schema Markup (JSON-LD) */}
+              <div style={{ marginBottom: "18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
+                  <label htmlFor="schemaMarkup" style={{ fontWeight: "600", fontSize: "14px", color: "#334155" }}>
+                    Schema Markup (JSON-LD)
+                  </label>
+                  <span style={{ fontSize: "12px", color: "#0070f3", fontFamily: "monospace" }}>&lt;script type="application/ld+json"&gt;</span>
+                </div>
+                <textarea
+                  id="schemaMarkup"
+                  name="schemaMarkup"
+                  value={formData.schemaMarkup || ""}
+                  onChange={handleInputChange}
+                  placeholder={`<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "TaxiService",\n  "name": "...",\n  "provider": "..."\n}\n</script>`}
+                  rows={6}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "13px",
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    backgroundColor: "#ffffff",
+                    boxSizing: "border-box",
+                    lineHeight: "1.5"
+                  }}
+                />
+                <small style={{ display: "block", marginTop: "4px", color: "#64748b", fontSize: "12px" }}>
+                  Paste structured data script or raw JSON-LD for rich snippets (TaxiService, WebPage, FAQs, Breadcrumbs).
+                </small>
+              </div>
+
+              {/* Custom Meta Head Tags */}
+              <div style={{ marginBottom: "8px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
+                  <label htmlFor="customHeadTags" style={{ fontWeight: "600", fontSize: "14px", color: "#334155" }}>
+                    Custom Meta Head Tags
+                  </label>
+                  <span style={{ fontSize: "12px", color: "#64748b", fontFamily: "monospace" }}>&lt;head&gt; tags</span>
+                </div>
+                <textarea
+                  id="customHeadTags"
+                  name="customHeadTags"
+                  value={formData.customHeadTags || ""}
+                  onChange={handleInputChange}
+                  placeholder={`<meta name="robots" content="index, follow" />\n<link rel="canonical" href="https://bookfast.in/cab/chandigarh-to-delhi" />\n<meta property="og:type" content="website" />`}
+                  rows={5}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "13px",
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    backgroundColor: "#ffffff",
+                    boxSizing: "border-box",
+                    lineHeight: "1.5"
+                  }}
+                />
+                <small style={{ display: "block", marginTop: "4px", color: "#64748b", fontSize: "12px" }}>
+                  Add custom HTML tags to inject into the &lt;head&gt; element (e.g. custom canonical links, Open Graph tags, robots meta tags, Twitter cards).
+                </small>
+              </div>
             </div>
 
             {/* Featured Image Field */}
