@@ -36,7 +36,7 @@ const BlogsList = () => {
     const queryParams = new URLSearchParams({
       page: page_num,
       perPage,
-      search:search
+      search: search
     }).toString();
 
     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/get-blog-list?${queryParams}`, {

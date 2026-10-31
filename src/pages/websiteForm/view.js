@@ -36,7 +36,7 @@ const MUITable = () => {
   const exportToExcel = () => {
     setLoadingExport(true);
     try {
-      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-trips`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-trips?page_type=main`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -48,7 +48,7 @@ const MUITable = () => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'websiteTrips.csv';
+        a.download = 'oneWayTrips.csv';
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -68,7 +68,7 @@ const MUITable = () => {
     const queryParams = new URLSearchParams({
       page: page_num,
       perPage,
-      type
+      page_type: 'main'
     }).toString();
     
     // console.log('Fetching data from:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/website-trips?${queryParams}`);
@@ -83,11 +83,11 @@ const MUITable = () => {
     })
       .then((response) => response.json())
       .then((data) => {
-        setData(data.data);
-        setTotalRecords(data.totalRecords);
-        setTotalPages(data.totalPages);
-        setCurrentPage(data.currentPage);
-        setPerPage(data.perPage);
+        setData(data.data || []);
+        setTotalRecords(data.totalRecords || 0);
+        setTotalPages(data.totalPages || 0);
+        setCurrentPage(data.currentPage || 1);
+        setPerPage(data.perPage || perPage);
       })
       .catch((err) => {
         console.log(err)
@@ -100,7 +100,7 @@ const MUITable = () => {
 
 
   const searchTrips = async (searchdata) => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/trip-search?search=${searchdata}&type=${type}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/trip-search?search=${encodeURIComponent(searchdata)}&page_type=main`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -109,11 +109,11 @@ const MUITable = () => {
     })
       .then((response) => response.json())
       .then((data) => {
-        setData(data.data);
-        setTotalRecords(data.totalRecords);
-        setTotalPages(data.totalPages);
-        setCurrentPage(data.currentPage);
-        setPerPage(data.perPage);
+        setData(data.data || []);
+        setTotalRecords(data.totalRecords || (data.data ? data.data.length : 0));
+        setTotalPages(data.totalPages || 1);
+        setCurrentPage(data.currentPage || 1);
+        setPerPage(data.perPage || 10);
       })
       .catch((err) => {
         console.log(err)
@@ -133,7 +133,7 @@ const MUITable = () => {
       .then(data => {
         if (data.success) {
           setSuccessMessage('Trip deleted successfully!')
-          getDrivers(1)
+          getWebsiteTrips(1)
         } else {
           setErrorMessage(data.message)
         }
@@ -151,14 +151,18 @@ const MUITable = () => {
   }
 
   const handleSearchMethod=(searchdata)=>{
-    searchTrips(searchdata)
+    if (!searchdata) {
+      getWebsiteTrips(1);
+    } else {
+      searchTrips(searchdata);
+    }
   }
 
   return (
     <Grid container spacing={6}>
       <Grid item xs={6}>
         <Typography variant='h5'>
-          Website Trips {type=='active' ? '(Active)' : ''}
+          One Way Trips (Main Page)
         </Typography>
       </Grid>
 
@@ -187,24 +191,18 @@ const MUITable = () => {
 
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '10px' }}>
-        <Button
-              variant="contained"
-              
-              // onClick={() => downloadCSV(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-drivers`, 'drivers.csv')}
-              onClick={() => exportToExcel() }
-            >
+          <Button
+            variant="contained"
+            onClick={() => router.push('/websiteForm?page_type=main')}
+          >
+            Add One Way Trip
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => exportToExcel()}
+          >
             {loadingExport ? 'Processing...' : 'Export'}
           </Button>
-          {/* <Button startIcon={(
-            <SvgIcon fontSize="small">
-            <PlusIcon />
-            </SvgIcon>
-        )}
-            variant="contained"
-            onClick={() => router.push('/trips/add')}
-          >
-            Add 
-          </Button> */}
         </div>
       </Grid>
 

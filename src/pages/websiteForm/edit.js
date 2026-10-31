@@ -13,7 +13,7 @@ const WebsiteForm = () => {
       <Grid item xs={12} sm={12} md={12} lg={12}>
         <Paper elevation={3} style={{ padding: "20px", borderRadius: "10px" }}>
           <Typography variant="h5" align="center" gutterBottom>
-            Edit One Way Trip
+            Edit Trip / Page
           </Typography>
           <PageForm hidefeatureImage={true}/>
         </Paper>

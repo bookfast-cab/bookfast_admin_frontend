@@ -110,6 +110,7 @@ return (
             <TableRow>
               <TableCell>Id</TableCell>            
               <TableCell>Title</TableCell>              
+              <TableCell>Type</TableCell>              
               <TableCell>Meta Title</TableCell>
               <TableCell>Description</TableCell>
               <TableCell>Slug</TableCell>
@@ -122,6 +123,14 @@ return (
               <TableRow key={item.id}>
                 <TableCell>{item.id || 'N/A'}</TableCell>
                 <TableCell>{item.title || 'N/A'}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={item.page_type === 'landing' ? 'Landing Page' : 'Main Page'}
+                    color={item.page_type === 'landing' ? 'secondary' : 'primary'}
+                    size="small"
+                    variant="outlined"
+                  />
+                </TableCell>
                 <TableCell>{item.metaTitle || 'N/A'}</TableCell>
                 <TableCell>{item.metaDescription || 'N/A'}</TableCell>
                 <TableCell>{item.page_slug || 'N/A'}</TableCell>

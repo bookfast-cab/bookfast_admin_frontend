@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
+import Heading from '@tiptap/extension-heading';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import CodeBlock from '@tiptap/extension-code-block';
@@ -14,6 +15,39 @@ import Subscript from "@tiptap/extension-subscript";
 import FontSize from 'tiptap-extension-font-size';
 import axios from 'axios';
 import getFingerprint from 'src/utils/Fingerprint';
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+
+// Custom Heading extension to automatically revert to paragraph on new line (Enter key)
+const CustomHeading = Heading.extend({
+  addKeyboardShortcuts() {
+    return {
+      ...this.parent?.(),
+      Enter: ({ editor }) => {
+        const { state } = editor;
+        const { selection } = state;
+        const { $from } = selection;
+
+        if ($from.parent.type.name === this.name) {
+          if ($from.parent.content.size === 0) {
+            return editor.commands.setParagraph();
+          }
+
+          return editor.chain()
+            .splitBlock()
+            .setParagraph()
+            .run();
+        }
+
+        return false;
+      },
+    };
+  },
+});
 
 const TourPackageForm = (params) => {
   const [formData, setFormData] = useState({
@@ -41,6 +75,53 @@ const TourPackageForm = (params) => {
   const [isUploading, setIsUploading] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [loadedContent, setLoadedContent] = useState(null);
+
+  // Image Alt Modal State
+  const [altModalOpen, setAltModalOpen] = useState(false);
+  const [altModalImageSrc, setAltModalImageSrc] = useState("");
+  const [altModalAltText, setAltModalAltText] = useState("");
+  const [altModalIsNewInsert, setAltModalIsNewInsert] = useState(false);
+
+  const handleConfirmAltModal = () => {
+    if (!editor) return;
+    if (altModalIsNewInsert) {
+      editor.chain().focus().setImage({
+        src: altModalImageSrc,
+        alt: altModalAltText.trim(),
+      }).run();
+    } else {
+      editor.chain().focus().updateAttributes('image', {
+        alt: altModalAltText.trim(),
+      }).run();
+    }
+    setAltModalOpen(false);
+    setAltModalImageSrc("");
+    setAltModalAltText("");
+  };
+
+  const handleOpenEditAltForSelectedImage = () => {
+    if (!editor) return;
+    const attrs = editor.getAttributes('image');
+    if (attrs?.src) {
+      setAltModalImageSrc(attrs.src);
+      setAltModalAltText(attrs.alt || "");
+      setAltModalIsNewInsert(false);
+      setAltModalOpen(true);
+    } else {
+      alert("Please click or select an image in the editor first to edit its alt text, or double-click the image.");
+    }
+  };
+
+  const handleEditorDoubleClick = (e) => {
+    if (e.target && e.target.tagName === 'IMG') {
+      const src = e.target.getAttribute('src') || '';
+      const alt = e.target.getAttribute('alt') || '';
+      setAltModalImageSrc(src);
+      setAltModalAltText(alt);
+      setAltModalIsNewInsert(false);
+      setAltModalOpen(true);
+    }
+  };
   
   const fileInput = useRef(null);
   const galleryFileInput = useRef(null);
@@ -98,8 +179,12 @@ const TourPackageForm = (params) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        // Disable built-in table nodes so they don't conflict
+        // Disable built-in table and heading nodes so our custom ones take effect
         table: false,
+        heading: false,
+      }),
+      CustomHeading.configure({
+        levels: [1, 2, 3, 4, 5, 6],
       }),
 
 
@@ -183,7 +268,6 @@ const TourPackageForm = (params) => {
           const result = response.data;
           if (result.success && result.data && result.data[0]) {
             const uploaded = result.data[0];
-            editor?.chain().focus().setImage({ src: uploaded.url }).run();
             setUploadedImages((prev) => [
               {
                 url: uploaded.url,
@@ -193,6 +277,11 @@ const TourPackageForm = (params) => {
               },
               ...prev,
             ]);
+            const defaultAlt = file.name ? file.name.replace(/\.[^/.]+$/, "") : "";
+            setAltModalImageSrc(uploaded.url);
+            setAltModalAltText(defaultAlt);
+            setAltModalIsNewInsert(true);
+            setAltModalOpen(true);
           }
         } catch (error) {
           alert("Failed to upload image: " + (error.response?.data?.message || error.message));
@@ -210,7 +299,10 @@ const TourPackageForm = (params) => {
   // Insert image from gallery into editor
   const insertImageFromGallery = (imageUrl) => {
     if (editor) {
-      editor.chain().focus().setImage({ src: imageUrl }).run();
+      setAltModalImageSrc(imageUrl);
+      setAltModalAltText("");
+      setAltModalIsNewInsert(true);
+      setAltModalOpen(true);
     }
   };
 
@@ -568,14 +660,18 @@ const TourPackageForm = (params) => {
 
     return (
       <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
         display: 'flex',
         flexWrap: 'wrap',
         gap: '8px',
         padding: '12px',
         backgroundColor: '#f8f9fa',
         border: '1px solid #dee2e6',
-        borderBottom: 'none',
+        borderBottom: '2px solid #ced4da',
         borderRadius: '6px 6px 0 0',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
       }}>
         {/* Text Formatting */}
         <button
@@ -768,10 +864,18 @@ const TourPackageForm = (params) => {
 
         {/* Headings */}
         <select
+          value={
+            editor.isActive('heading', { level: 1 }) ? "1" :
+            editor.isActive('heading', { level: 2 }) ? "2" :
+            editor.isActive('heading', { level: 3 }) ? "3" :
+            editor.isActive('heading', { level: 4 }) ? "4" :
+            editor.isActive('heading', { level: 5 }) ? "5" :
+            editor.isActive('heading', { level: 6 }) ? "6" : ""
+          }
           onChange={(e) => {
             const level = parseInt(e.target.value);
             if (level) {
-              editor.chain().focus().toggleHeading({ level }).run();
+              editor.chain().focus().setHeading({ level }).run();
             } else {
               editor.chain().focus().setParagraph().run();
             }
@@ -997,6 +1101,26 @@ const TourPackageForm = (params) => {
           title="Insert Image"
         >
           {isUploading ? '⏳' : '🖼️'}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleOpenEditAltForSelectedImage}
+          style={{
+            padding: '6px 10px',
+            border: '1px solid #ccc',
+            backgroundColor: editor.isActive('image') ? '#007BFF' : '#fff',
+            color: editor.isActive('image') ? '#fff' : '#000',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+          title="Set / Edit Alt Text for image (Select or double-click image)"
+        >
+          🏷️ Alt
         </button>
 
         {/* Table Buttons */}
@@ -1403,7 +1527,7 @@ const TourPackageForm = (params) => {
                 </div>
               )}
               {isBrowser && editor && (
-                <div>
+                <div onDoubleClick={handleEditorDoubleClick}>
                   <EditorToolbar />
                   <EditorContent 
                     editor={editor} 
@@ -1718,6 +1842,69 @@ const TourPackageForm = (params) => {
           </div>
         </div>
       </div>
+
+      {/* Image Alt Text Dialog */}
+      <Dialog
+        open={altModalOpen}
+        onClose={() => setAltModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        style={{ zIndex: 9999 }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, color: "#1976d2", pb: 1, display: "flex", alignItems: "center", gap: 1 }}>
+          {altModalIsNewInsert ? "🖼️ Add Image Alt Text (SEO)" : "✏️ Edit Image Alt Text"}
+        </DialogTitle>
+        <DialogContent dividers>
+          {altModalImageSrc && (
+            <div style={{ textAlign: "center", marginBottom: "16px", backgroundColor: "#f8f9fa", padding: "12px", borderRadius: "8px", border: "1px solid #e9ecef" }}>
+              <img
+                src={altModalImageSrc}
+                alt="Preview"
+                style={{ maxWidth: "100%", maxHeight: "160px", objectFit: "contain", borderRadius: "4px" }}
+              />
+            </div>
+          )}
+          <TextField
+            autoFocus
+            label="Image Alt Text (SEO Description)"
+            placeholder="e.g. Chandigarh to Delhi cab service"
+            fullWidth
+            variant="outlined"
+            value={altModalAltText}
+            onChange={(e) => setAltModalAltText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleConfirmAltModal();
+              }
+            }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setAltModalOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          {altModalIsNewInsert && (
+            <Button
+              onClick={() => {
+                editor?.chain().focus().setImage({ src: altModalImageSrc, alt: "" }).run();
+                setAltModalOpen(false);
+              }}
+              color="secondary"
+            >
+              Skip Alt
+            </Button>
+          )}
+          <Button
+            onClick={handleConfirmAltModal}
+            variant="contained"
+            color="primary"
+          >
+            {altModalIsNewInsert ? "Insert Image" : "Save Alt Text"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

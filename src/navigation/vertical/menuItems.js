@@ -93,6 +93,7 @@ export const getAllMenuItems = (notificationCount = 0) => [
 
   { privilege: ['cities-setup', 'whatsapp-setup', 'force-app-update', 'helpline-numbers', 'whatsapp-keywords', 'support-numbers'], sectionTitle: 'Settings', icon: SettingsOutline, roles: ['admin', 'staff'] },
   { privilege: ['cities-setup'], title: 'Cities Setup', icon: MapMarkerRadius, path: '/cities-management', roles: ['admin', 'staff'] },
+  { privilege: ['cities-setup'], title: 'City Master List', icon: MapMarkerRadius, path: '/city-masterlist', roles: ['admin', 'staff'] },
   { privilege: ['whatsapp-setup'], title: 'WhatsApp Setup', icon: MessageText, path: '/whatsapp-con', roles: ['admin', 'staff'] },
   { privilege: ['force-app-update'], title: 'Force App Update', icon: AccountCog, path: '/app-versions', roles: ['admin', 'staff'] },
   { privilege: ['settings'], title: 'Settings', icon: Cog, path: '/settings', roles: ['admin', 'staff'] },
@@ -113,7 +114,8 @@ export const getAllMenuItems = (notificationCount = 0) => [
   { privilege: ['view-bookings', 'add-one-way-trip', 'view-trips', 'add-package', 'view-package'], sectionTitle: 'Website Pages', icon: Web, roles: ['admin', 'staff', 'seo'] },
   { privilege: ['view-bookings'], title: 'View Bookings', icon: ViewList, path: '/websiteForm/viewBooking', roles: ['admin', 'staff'] },
   { privilege: ['add-one-way-trip'], title: 'Add One Way Trip', icon: FilePlus, path: '/websiteForm', roles: ['admin', 'staff', 'seo'] },
-  { privilege: ['view-trips'], title: 'View Trips', icon: FormatListBulleted, path: '/websiteForm/view', roles: ['admin', 'staff', 'seo'] },
+  { privilege: ['view-trips'], title: 'One Way Trips', icon: FormatListBulleted, path: '/websiteForm/view', roles: ['admin', 'staff', 'seo'] },
+  { privilege: ['view-trips'], title: 'Landing Pages', icon: Web, path: '/websiteForm/landing', roles: ['admin', 'staff', 'seo'] },
   { privilege: ['add-package'], title: 'Add Package', icon: ViewGridPlusOutline, path: '/tourPackages', roles: ['admin', 'staff', 'seo'] },
   { privilege: ['view-package'], title: 'View Package', icon: FileDocumentEdit, path: '/tourPackages/view', roles: ['admin', 'staff', 'seo'] },
 
