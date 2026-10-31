@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
+import Heading from '@tiptap/extension-heading';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import CodeBlock from '@tiptap/extension-code-block';
@@ -16,15 +17,51 @@ import FontSize from 'tiptap-extension-font-size';
 import api from "src/@core/utils/api";
 import axios from 'axios';
 import getFingerprint from 'src/utils/Fingerprint';
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+
+// Custom Heading extension to automatically revert to paragraph on new line (Enter key)
+const CustomHeading = Heading.extend({
+  addKeyboardShortcuts() {
+    return {
+      ...this.parent?.(),
+      Enter: ({ editor }) => {
+        const { state } = editor;
+        const { selection } = state;
+        const { $from } = selection;
+
+        if ($from.parent.type.name === this.name) {
+          // If heading is completely empty, convert it to paragraph
+          if ($from.parent.content.size === 0) {
+            return editor.commands.setParagraph();
+          }
+
+          // At the end or within heading: split block and convert the newly created second block to paragraph
+          return editor.chain()
+            .splitBlock()
+            .setParagraph()
+            .run();
+        }
+
+        return false;
+      },
+    };
+  },
+});
 
 
 const PageForm = ({ hidefeatureImage }) => {
   const Router = useRouter();
-  const { id } = Router.query;
+  const { id, page_type: queryPageType } = Router.query;
 
 
   const [formData, setFormData] = useState({
     title: "",
+    page_type: queryPageType || "main",
     featuredImage: null,
     metaTitle: "",
     metaDescription: "",
@@ -33,9 +70,50 @@ const PageForm = ({ hidefeatureImage }) => {
     customHeadTags: "",
   });
 
+  useEffect(() => {
+    if (!id && queryPageType) {
+      setFormData((prev) => ({
+        ...prev,
+        page_type: queryPageType,
+      }));
+    }
+  }, [id, queryPageType]);
+
   const [faqList, setFaqList] = useState([]);
   const [faqQuestion, setFaqQuestion] = useState("");
   const [faqAnswer, setFaqAnswer] = useState("");
+  const [editingFaqIndex, setEditingFaqIndex] = useState(null);
+  const [editFaqQuestion, setEditFaqQuestion] = useState("");
+  const [editFaqAnswer, setEditFaqAnswer] = useState("");
+  const [draggedFaqIndex, setDraggedFaqIndex] = useState(null);
+
+  const handleStartEditFaq = (index) => {
+    setEditingFaqIndex(index);
+    setEditFaqQuestion(faqList[index]?.question || "");
+    setEditFaqAnswer(faqList[index]?.answer || "");
+  };
+
+  const handleSaveEditFaq = (index) => {
+    if (!editFaqQuestion.trim() || !editFaqAnswer.trim()) {
+      alert("Both Question and Answer are required.");
+      return;
+    }
+    const updated = [...faqList];
+    updated[index] = {
+      question: editFaqQuestion.trim(),
+      answer: editFaqAnswer.trim(),
+    };
+    setFaqList(updated);
+    setEditingFaqIndex(null);
+    setEditFaqQuestion("");
+    setEditFaqAnswer("");
+  };
+
+  const handleCancelEditFaq = () => {
+    setEditingFaqIndex(null);
+    setEditFaqQuestion("");
+    setEditFaqAnswer("");
+  };
 
   const generateFaqHTML = () => {
 
@@ -313,6 +391,53 @@ const PageForm = ({ hidefeatureImage }) => {
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [loadedContent, setLoadedContent] = useState(null); // Track loaded content
 
+  // Image Alt Modal State
+  const [altModalOpen, setAltModalOpen] = useState(false);
+  const [altModalImageSrc, setAltModalImageSrc] = useState("");
+  const [altModalAltText, setAltModalAltText] = useState("");
+  const [altModalIsNewInsert, setAltModalIsNewInsert] = useState(false);
+
+  const handleConfirmAltModal = () => {
+    if (!editor) return;
+    if (altModalIsNewInsert) {
+      editor.chain().focus().setImage({
+        src: altModalImageSrc,
+        alt: altModalAltText.trim(),
+      }).run();
+    } else {
+      editor.chain().focus().updateAttributes('image', {
+        alt: altModalAltText.trim(),
+      }).run();
+    }
+    setAltModalOpen(false);
+    setAltModalImageSrc("");
+    setAltModalAltText("");
+  };
+
+  const handleOpenEditAltForSelectedImage = () => {
+    if (!editor) return;
+    const attrs = editor.getAttributes('image');
+    if (attrs?.src) {
+      setAltModalImageSrc(attrs.src);
+      setAltModalAltText(attrs.alt || "");
+      setAltModalIsNewInsert(false);
+      setAltModalOpen(true);
+    } else {
+      alert("Please click or select an image in the editor first to edit its alt text, or double-click the image.");
+    }
+  };
+
+  const handleEditorDoubleClick = (e) => {
+    if (e.target && e.target.tagName === 'IMG') {
+      const src = e.target.getAttribute('src') || '';
+      const alt = e.target.getAttribute('alt') || '';
+      setAltModalImageSrc(src);
+      setAltModalAltText(alt);
+      setAltModalIsNewInsert(false);
+      setAltModalOpen(true);
+    }
+  };
+
   // File input reference
   const fileInput = useRef(null);
   const galleryFileInput = useRef(null);
@@ -376,8 +501,12 @@ const PageForm = ({ hidefeatureImage }) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        // Disable built-in table nodes so they don't conflict
+        // Disable built-in table and heading nodes so our custom ones take effect
         table: false,
+        heading: false,
+      }),
+      CustomHeading.configure({
+        levels: [1, 2, 3, 4, 5, 6],
       }),
 
 
@@ -462,7 +591,6 @@ const PageForm = ({ hidefeatureImage }) => {
           const result = response.data;
           if (result.success && result.data && result.data[0]) {
             const uploaded = result.data[0];
-            editor?.chain().focus().setImage({ src: uploaded.url }).run();
             setUploadedImages((prev) => [
               {
                 url: uploaded.url,
@@ -472,6 +600,11 @@ const PageForm = ({ hidefeatureImage }) => {
               },
               ...prev,
             ]);
+            const defaultAlt = file.name ? file.name.replace(/\.[^/.]+$/, "") : "";
+            setAltModalImageSrc(uploaded.url);
+            setAltModalAltText(defaultAlt);
+            setAltModalIsNewInsert(true);
+            setAltModalOpen(true);
           }
         } catch (error) {
           const errMsg = "Failed to upload image: " + (error.response?.data?.message || error.message);
@@ -513,7 +646,10 @@ const PageForm = ({ hidefeatureImage }) => {
   // Insert image from gallery into editor
   const insertImageFromGallery = (imageUrl) => {
     if (editor) {
-      editor.chain().focus().setImage({ src: imageUrl }).run();
+      setAltModalImageSrc(imageUrl);
+      setAltModalAltText("");
+      setAltModalIsNewInsert(true);
+      setAltModalOpen(true);
     }
   };
 
@@ -605,6 +741,7 @@ const PageForm = ({ hidefeatureImage }) => {
       if (result.success) {
         setFormData({
           title: result.data.title,
+          page_type: result.data.page_type || "main",
           featuredImage: result.data.featuredImage,
           metaTitle: result.data.metaTitle || "",
           metaDescription: result.data.metaDescription || "",
@@ -731,6 +868,7 @@ const PageForm = ({ hidefeatureImage }) => {
 
     const data = new FormData();
     data.append("title", formData.title);
+    data.append("page_type", formData.page_type || "main");
     data.append("content", editorContent);
     data.append("faq_content", generateFaqHTML());
     if (formData.featuredImage) {
@@ -753,11 +891,13 @@ const PageForm = ({ hidefeatureImage }) => {
       });
 
       if (result?.data?.success) {
+        const redirectPath = (formData.page_type === "landing") ? "/websiteForm/landing" : "/websiteForm/view";
         if (!formData.featuredImage) {
           setSuccessMessage("Form submitted and file uploaded successfully.");
           setErrorMessage("");
           setFormData({
             title: "",
+            page_type: formData.page_type || "main",
             metaTitle: "",
             metaDescription: "",
             metaKeywords: "",
@@ -766,7 +906,7 @@ const PageForm = ({ hidefeatureImage }) => {
             featuredImage: null,
           });
           editor?.commands.setContent('');
-          Router.push("/websiteForm/view");
+          Router.push(redirectPath);
 
           return;
         }
@@ -884,14 +1024,18 @@ const PageForm = ({ hidefeatureImage }) => {
 
     return (
       <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
         display: 'flex',
         flexWrap: 'wrap',
         gap: '8px',
         padding: '12px',
         backgroundColor: '#f8f9fa',
         border: '1px solid #dee2e6',
-        borderBottom: 'none',
+        borderBottom: '2px solid #ced4da',
         borderRadius: '6px 6px 0 0',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
       }}>
         {/* Text Formatting */}
         <button
@@ -1084,10 +1228,18 @@ const PageForm = ({ hidefeatureImage }) => {
 
         {/* Headings */}
         <select
+          value={
+            editor.isActive('heading', { level: 1 }) ? "1" :
+            editor.isActive('heading', { level: 2 }) ? "2" :
+            editor.isActive('heading', { level: 3 }) ? "3" :
+            editor.isActive('heading', { level: 4 }) ? "4" :
+            editor.isActive('heading', { level: 5 }) ? "5" :
+            editor.isActive('heading', { level: 6 }) ? "6" : ""
+          }
           onChange={(e) => {
             const level = parseInt(e.target.value);
             if (level) {
-              editor.chain().focus().toggleHeading({ level }).run();
+              editor.chain().focus().setHeading({ level }).run();
             } else {
               editor.chain().focus().setParagraph().run();
             }
@@ -1313,6 +1465,26 @@ const PageForm = ({ hidefeatureImage }) => {
           title="Insert Image"
         >
           {isUploading ? '⏳' : '🖼️'}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleOpenEditAltForSelectedImage}
+          style={{
+            padding: '6px 10px',
+            border: '1px solid #ccc',
+            backgroundColor: editor.isActive('image') ? '#007BFF' : '#fff',
+            color: editor.isActive('image') ? '#fff' : '#000',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+          title="Set / Edit Alt Text for image (Select or double-click image)"
+        >
+          🏷️ Alt
         </button>
 
         {/* Table Buttons */}
@@ -1587,6 +1759,33 @@ const PageForm = ({ hidefeatureImage }) => {
         {/* Main Form */}
         <div style={{ flex: "2" }}>
           <form onSubmit={handleSubmit} encType="multipart/form-data">
+            {/* Page Type Field */}
+            <div style={{ marginBottom: "20px" }}>
+              <label htmlFor="page_type" style={{ display: "block", fontWeight: "bold", marginBottom: "6px" }}>
+                Page Type <span style={{ color: "#e11d48" }}>*</span>
+              </label>
+              <select
+                id="page_type"
+                name="page_type"
+                value={formData.page_type || "main"}
+                onChange={handleInputChange}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #cbd5e1",
+                  backgroundColor: "#fff",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                  outline: "none"
+                }}
+              >
+                <option value="main">Main Page (One Way Trip)</option>
+                <option value="landing">Landing Page</option>
+              </select>
+            </div>
+
             {/* Title Field */}
             <div style={{ marginBottom: "20px" }}>
               <label htmlFor="title" style={{ display: "block", fontWeight: "bold" }}>
@@ -1809,7 +2008,7 @@ const PageForm = ({ hidefeatureImage }) => {
                 </div>
               )}
               {isBrowser && editor && (
-                <div>
+                <div onDoubleClick={handleEditorDoubleClick}>
                   <EditorToolbar />
                   <EditorContent
                     editor={editor}
@@ -2063,133 +2262,485 @@ const PageForm = ({ hidefeatureImage }) => {
         </div>
 
         <div style={{
-              marginTop: "40px",
-              backgroundColor: "#ffffff",
-              padding: "25px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
-              border: "1px solid #eef0f2"
-            }}>
-              <h3 style={{ marginTop: "0", marginBottom: "20px", color: "#333", fontSize: "20px", borderBottom: "2px solid #007BFF", paddingBottom: "10px", display: "inline-block" }}>
-                Frequently Asked Questions (FAQ)
-              </h3>
-              
-              <div style={{ 
-                backgroundColor: "#f8f9fa", 
-                padding: "20px", 
-                borderRadius: "8px", 
-                marginBottom: "25px",
-                border: "1px dashed #ced4da"
+          marginTop: "40px",
+          backgroundColor: "#ffffff",
+          padding: "24px",
+          borderRadius: "10px",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+          border: "1px solid #e5e7eb"
+        }}>
+          {/* Section Header */}
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "space-between", 
+            marginBottom: "20px", 
+            borderBottom: "1px solid #e5e7eb", 
+            paddingBottom: "12px" 
+          }}>
+            <h3 style={{ margin: 0, color: "#111827", fontSize: "18px", fontWeight: "700" }}>
+              Frequently Asked Questions (FAQ)
+            </h3>
+            {faqList.length > 0 && (
+              <span style={{ 
+                backgroundColor: "#eff6ff", 
+                color: "#2563eb", 
+                fontSize: "12px", 
+                fontWeight: "600", 
+                padding: "2px 10px", 
+                borderRadius: "12px", 
+                border: "1px solid #bfdbfe" 
               }}>
-                <h4 style={{ margin: "0 0 15px 0", color: "#495057", fontSize: "16px" }}>Add New FAQ</h4>
-                <input
-                  type="text"
-                  placeholder="e.g. Does BookFast offer one-way outstation taxi service?"
-                  value={faqQuestion}
-                  onChange={(e) => setFaqQuestion(e.target.value)}
-                  style={{ width: "100%", padding: "12px", marginBottom: "15px", borderRadius: "6px", border: "1px solid #ced4da", fontSize: "15px", outline: "none" }}
-                  onFocus={(e) => e.target.style.borderColor = "#80bdff"}
-                  onBlur={(e) => e.target.style.borderColor = "#ced4da"}
-                />
-                <textarea
-                  placeholder="e.g. Yes. BookFast offers one-way outstation taxi booking..."
-                  value={faqAnswer}
-                  onChange={(e) => setFaqAnswer(e.target.value)}
-                  rows={4}
-                  style={{ width: "100%", padding: "12px", marginBottom: "15px", borderRadius: "6px", border: "1px solid #ced4da", fontSize: "15px", fontFamily: "inherit", outline: "none" }}
-                  onFocus={(e) => e.target.style.borderColor = "#80bdff"}
-                  onBlur={(e) => e.target.style.borderColor = "#ced4da"}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (faqQuestion.trim() && faqAnswer.trim()) {
-                      setFaqList([...faqList, { question: faqQuestion, answer: faqAnswer }]);
-                      setFaqQuestion("");
-                      setFaqAnswer("");
-                    }
-                  }}
-                  style={{ 
-                    padding: "10px 24px", 
-                    backgroundColor: "#007BFF", 
-                    color: "white", 
-                    border: "none", 
-                    borderRadius: "6px", 
-                    cursor: "pointer",
-                    fontWeight: "600",
-                    fontSize: "15px",
-                    transition: "background-color 0.2s"
-                  }}
-                  onMouseOver={(e) => e.target.style.backgroundColor = "#0056b3"}
-                  onMouseOut={(e) => e.target.style.backgroundColor = "#007BFF"}
-                >
-                  + Add FAQ
-                </button>
-              </div>
+                {faqList.length} {faqList.length === 1 ? "FAQ" : "FAQs"}
+              </span>
+            )}
+          </div>
 
-              {faqList.length > 0 && (
-                <div>
-                  <h4 style={{ marginBottom: "15px", color: "#333" }}>Added FAQs ({faqList.length})</h4>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-                    {faqList.map((faq, index) => (
-                      <div key={index} style={{ 
-                        padding: "15px 20px", 
-                        backgroundColor: "#fff", 
-                        border: "1px solid #e0e0e0", 
-                        borderRadius: "8px",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
-                        position: "relative"
-                      }}>
-                        <div style={{ paddingRight: "80px" }}>
-                          <p style={{ margin: "0 0 8px 0", fontWeight: "600", fontSize: "16px", color: "#2c3e50" }}>
-                            <span style={{ color: "#007BFF", marginRight: "8px" }}>Q:</span> 
-                            {faq.question}
-                          </p>
-                          <div style={{ margin: "0", fontSize: "14px", color: "#555", lineHeight: "1.5" }}>
-                            <span style={{ color: "#28a745", marginRight: "8px", fontWeight: "bold" }}>A:</span>
-                            <span dangerouslySetInnerHTML={{ __html: faq.answer }} />
+          {/* Add New FAQ Card */}
+          <div style={{ 
+            backgroundColor: "#ffffff", 
+            padding: "18px 20px", 
+            borderRadius: "12px", 
+            marginBottom: "25px",
+            border: "1px solid #e5e7eb",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
+          }}>
+            <h4 style={{ margin: "0 0 14px 0", color: "#1f2937", fontSize: "14.5px", fontWeight: "600" }}>
+              + Add New FAQ
+            </h4>
+
+            <div style={{ marginBottom: "12px" }}>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "#4b5563", marginBottom: "5px" }}>
+                Question:
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Does BookFast offer one-way taxi service?"
+                value={faqQuestion}
+                onChange={(e) => setFaqQuestion(e.target.value)}
+                style={{ 
+                  width: "100%", 
+                  padding: "9px 12px", 
+                  borderRadius: "6px", 
+                  border: "1px solid #d1d5db", 
+                  fontSize: "13.5px", 
+                  outline: "none",
+                  backgroundColor: "#ffffff",
+                  boxSizing: "border-box"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#2563eb"}
+                onBlur={(e) => e.target.style.borderColor = "#d1d5db"}
+              />
+            </div>
+
+            <div style={{ marginBottom: "14px" }}>
+              <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#16a34a", letterSpacing: "0.5px", marginBottom: "5px" }}>
+                ANSWER <span style={{ fontWeight: "400", color: "#6b7280" }}>(HTML supported)</span>:
+              </label>
+              <textarea
+                placeholder="e.g. Yes, BookFast offers affordable one-way outstation taxi services."
+                value={faqAnswer}
+                onChange={(e) => setFaqAnswer(e.target.value)}
+                rows={3}
+                style={{ 
+                  width: "100%", 
+                  padding: "9px 12px", 
+                  borderRadius: "6px", 
+                  border: "1px solid #d1d5db", 
+                  fontSize: "13.5px", 
+                  fontFamily: "inherit", 
+                  outline: "none",
+                  backgroundColor: "#ffffff",
+                  boxSizing: "border-box",
+                  resize: "vertical"
+                }}
+                onFocus={(e) => e.target.style.borderColor = "#2563eb"}
+                onBlur={(e) => e.target.style.borderColor = "#d1d5db"}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (faqQuestion.trim() && faqAnswer.trim()) {
+                  setFaqList([...faqList, { question: faqQuestion.trim(), answer: faqAnswer.trim() }]);
+                  setFaqQuestion("");
+                  setFaqAnswer("");
+                } else {
+                  alert("Please enter both Question and Answer.");
+                }
+              }}
+              style={{ 
+                padding: "8px 18px", 
+                backgroundColor: "#2563eb", 
+                color: "white", 
+                border: "none", 
+                borderRadius: "6px", 
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "13px",
+                transition: "background-color 0.2s"
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#1d4ed8"}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#2563eb"}
+            >
+              + Add FAQ
+            </button>
+          </div>
+
+          {/* Added FAQs List */}
+          {faqList.length > 0 && (
+            <div>
+              <h4 style={{ margin: "0 0 14px 0", color: "#111827", fontSize: "14.5px", fontWeight: "600" }}>
+                Added FAQs ({faqList.length})
+              </h4>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {faqList.map((faq, index) => {
+                  const itemNumber = String(index + 1).padStart(2, "0");
+
+                  return (
+                    <div
+                      key={index}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                      }}
+                      onDrop={() => {
+                        if (draggedFaqIndex === null || draggedFaqIndex === index) return;
+                        const reordered = [...faqList];
+                        const [removed] = reordered.splice(draggedFaqIndex, 1);
+                        reordered.splice(index, 0, removed);
+                        setFaqList(reordered);
+                        setDraggedFaqIndex(null);
+                      }}
+                      style={{
+                        opacity: draggedFaqIndex === index ? 0.35 : 1,
+                        transition: "opacity 0.15s ease",
+                      }}
+                    >
+                      {editingFaqIndex === index ? (
+                        /* Inline Edit Mode */
+                        <div style={{
+                          padding: "16px 20px",
+                          backgroundColor: "#ffffff",
+                          border: "1.5px solid #2563eb",
+                          borderRadius: "12px",
+                          boxShadow: "0 2px 8px rgba(37,99,235,0.08)",
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                            <span style={{ fontSize: "13px", fontWeight: "600", color: "#2563eb" }}>
+                              {itemNumber} · FAQ Item (Editing)
+                            </span>
+                            <div style={{ display: "flex", gap: "6px" }}>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveEditFaq(index)}
+                                style={{
+                                  padding: "4px 10px",
+                                  backgroundColor: "#16a34a",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "5px",
+                                  cursor: "pointer",
+                                  fontSize: "11px",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                ✓ Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelEditFaq}
+                                style={{
+                                  padding: "4px 10px",
+                                  backgroundColor: "#6b7280",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "5px",
+                                  cursor: "pointer",
+                                  fontSize: "11px",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                ✕ Cancel
+                              </button>
+                            </div>
+                          </div>
+
+                          <div style={{ marginBottom: "10px" }}>
+                            <label style={{ display: "block", fontSize: "11.5px", fontWeight: "600", color: "#4b5563", marginBottom: "4px" }}>
+                              Question:
+                            </label>
+                            <input
+                              type="text"
+                              value={editFaqQuestion}
+                              onChange={(e) => setEditFaqQuestion(e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "8px 12px",
+                                borderRadius: "8px",
+                                border: "1px solid #d1d5db",
+                                fontSize: "13.5px",
+                                backgroundColor: "#fff",
+                                boxSizing: "border-box",
+                                outline: "none"
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#16a34a", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "4px" }}>
+                              ANSWER (HTML supported):
+                            </label>
+                            <textarea
+                              value={editFaqAnswer}
+                              onChange={(e) => setEditFaqAnswer(e.target.value)}
+                              rows={3}
+                              style={{
+                                width: "100%",
+                                padding: "8px 12px",
+                                borderRadius: "8px",
+                                border: "1px solid #d1d5db",
+                                fontSize: "13.5px",
+                                fontFamily: "inherit",
+                                backgroundColor: "#fff",
+                                boxSizing: "border-box",
+                                outline: "none",
+                                resize: "vertical"
+                              }}
+                            />
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newFaqList = [...faqList];
-                            newFaqList.splice(index, 1);
-                            setFaqList(newFaqList);
-                          }}
-                          style={{ 
-                            position: "absolute",
-                            top: "15px",
-                            right: "20px",
-                            padding: "6px 12px", 
-                            backgroundColor: "#ffebee", 
-                            color: "#dc3545", 
-                            border: "1px solid #ffcdd2", 
-                            borderRadius: "4px", 
-                            cursor: "pointer", 
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            transition: "all 0.2s"
-                          }}
-                          onMouseOver={(e) => {
-                            e.target.style.backgroundColor = "#dc3545";
-                            e.target.style.color = "white";
-                          }}
-                          onMouseOut={(e) => {
-                            e.target.style.backgroundColor = "#ffebee";
-                            e.target.style.color = "#dc3545";
-                          }}
+                      ) : (
+                        /* Display Card Matching User Mockup */
+                        <div style={{ 
+                          padding: "16px 20px", 
+                          backgroundColor: "#ffffff", 
+                          border: "1px solid #e5e7eb", 
+                          borderRadius: "12px",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                          transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.borderColor = "#cbd5e1";
+                          e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.borderColor = "#e5e7eb";
+                          e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.02)";
+                        }}
                         >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                          {/* Top Row: "01 · FAQ Item" and Action Icons */}
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                            <span style={{ fontSize: "13.5px", fontWeight: "600", color: "#111827", letterSpacing: "0.2px" }}>
+                              {itemNumber} · FAQ Item
+                            </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              {/* Edit Pencil Icon Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditFaq(index)}
+                                style={{ 
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: "22px",
+                                  height: "22px",
+                                  background: "none",
+                                  border: "none", 
+                                  color: "#9ca3af", 
+                                  cursor: "pointer", 
+                                  borderRadius: "4px",
+                                  padding: 0,
+                                  transition: "color 0.15s, background-color 0.15s"
+                                }}
+                                onMouseOver={(e) => {
+                                  e.currentTarget.style.color = "#2563eb";
+                                  e.currentTarget.style.backgroundColor = "#eff6ff";
+                                }}
+                                onMouseOut={(e) => {
+                                  e.currentTarget.style.color = "#9ca3af";
+                                  e.currentTarget.style.backgroundColor = "transparent";
+                                }}
+                                title="Edit FAQ"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 20h9"></path>
+                                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                </svg>
+                              </button>
+
+                              {/* Delete Trash Icon Button (Red) */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm("Are you sure you want to remove this FAQ?")) {
+                                    const newFaqList = [...faqList];
+                                    newFaqList.splice(index, 1);
+                                    setFaqList(newFaqList);
+                                    if (editingFaqIndex === index) {
+                                      setEditingFaqIndex(null);
+                                    }
+                                  }
+                                }}
+                                style={{ 
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: "22px",
+                                  height: "22px",
+                                  background: "none",
+                                  border: "none", 
+                                  color: "#ef4444", 
+                                  cursor: "pointer", 
+                                  borderRadius: "4px",
+                                  padding: 0,
+                                  transition: "color 0.15s, background-color 0.15s"
+                                }}
+                                onMouseOver={(e) => {
+                                  e.currentTarget.style.color = "#dc2626";
+                                  e.currentTarget.style.backgroundColor = "#fee2e2";
+                                }}
+                                onMouseOut={(e) => {
+                                  e.currentTarget.style.color = "#ef4444";
+                                  e.currentTarget.style.backgroundColor = "transparent";
+                                }}
+                                title="Delete FAQ"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="3 6 5 6 21 6"></polyline>
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                              </button>
+
+                              {/* Drag Handle (Six Dots) */}
+                              <div
+                                draggable
+                                onDragStart={(e) => {
+                                  setDraggedFaqIndex(index);
+                                  e.dataTransfer.effectAllowed = "move";
+                                }}
+                                onDragEnd={() => setDraggedFaqIndex(null)}
+                                style={{ 
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: "22px",
+                                  height: "22px",
+                                  color: "#9ca3af", 
+                                  cursor: "grab", 
+                                  borderRadius: "4px",
+                                  userSelect: "none",
+                                  transition: "color 0.15s"
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.color = "#4b5563"}
+                                onMouseOut={(e) => e.currentTarget.style.color = "#9ca3af"}
+                                title="Drag to reorder"
+                              >
+                                <svg width="13" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                  <circle cx="8" cy="4" r="2.2"></circle>
+                                  <circle cx="16" cy="4" r="2.2"></circle>
+                                  <circle cx="8" cy="12" r="2.2"></circle>
+                                  <circle cx="16" cy="12" r="2.2"></circle>
+                                  <circle cx="8" cy="20" r="2.2"></circle>
+                                  <circle cx="16" cy="20" r="2.2"></circle>
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Second Row: Question */}
+                          <div style={{ fontWeight: "700", fontSize: "15px", color: "#111827", marginBottom: "8px", lineHeight: "1.4" }}>
+                            Q: {faq.question}
+                          </div>
+
+                          {/* Third Row: Green "ANSWER" Label */}
+                          <div style={{ fontSize: "11px", fontWeight: "800", color: "#16a34a", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "4px" }}>
+                            ANSWER
+                          </div>
+
+                          {/* Fourth Row: Answer Content */}
+                          <div 
+                            style={{ fontSize: "13.5px", color: "#374151", lineHeight: "1.55", wordBreak: "break-word" }}
+                            dangerouslySetInnerHTML={{ __html: faq.answer }} 
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+          )}
+        </div>
         </div>
       </div>
+
+      {/* Image Alt Text Dialog */}
+      <Dialog
+        open={altModalOpen}
+        onClose={() => setAltModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        style={{ zIndex: 9999 }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, color: "#1976d2", pb: 1, display: "flex", alignItems: "center", gap: 1 }}>
+          {altModalIsNewInsert ? "🖼️ Add Image Alt Text (SEO)" : "✏️ Edit Image Alt Text"}
+        </DialogTitle>
+        <DialogContent dividers>
+          {altModalImageSrc && (
+            <div style={{ textAlign: "center", marginBottom: "16px", backgroundColor: "#f8f9fa", padding: "12px", borderRadius: "8px", border: "1px solid #e9ecef" }}>
+              <img
+                src={altModalImageSrc}
+                alt="Preview"
+                style={{ maxWidth: "100%", maxHeight: "160px", objectFit: "contain", borderRadius: "4px" }}
+              />
+            </div>
+          )}
+          <TextField
+            autoFocus
+            label="Image Alt Text (SEO Description)"
+            placeholder="e.g. Chandigarh to Delhi cab service"
+            fullWidth
+            variant="outlined"
+            value={altModalAltText}
+            onChange={(e) => setAltModalAltText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleConfirmAltModal();
+              }
+            }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setAltModalOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          {altModalIsNewInsert && (
+            <Button
+              onClick={() => {
+                editor?.chain().focus().setImage({ src: altModalImageSrc, alt: "" }).run();
+                setAltModalOpen(false);
+              }}
+              color="secondary"
+            >
+              Skip Alt
+            </Button>
+          )}
+          <Button
+            onClick={handleConfirmAltModal}
+            variant="contained"
+            color="primary"
+          >
+            {altModalIsNewInsert ? "Insert Image" : "Save Alt Text"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </>
   );
 };

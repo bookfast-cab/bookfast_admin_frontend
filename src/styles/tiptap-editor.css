@@ -10,10 +10,22 @@
   pointer-events: none;
   height: 0;
 }
-.tiptap img {
+.tiptap img,
+.ProseMirror img {
   width: 100%; /* or set specific width like 500px */
   max-width: 100%;
   height: auto;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ProseMirror img:hover {
+  outline: 2px dashed #007BFF;
+  opacity: 0.95;
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 3px solid #007BFF !important;
 }
 
     .editor-table {
