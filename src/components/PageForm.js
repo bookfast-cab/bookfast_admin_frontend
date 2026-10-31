@@ -96,6 +96,7 @@ const PageForm = ({ hidefeatureImage }) => {
   const handleSaveEditFaq = (index) => {
     if (!editFaqQuestion.trim() || !editFaqAnswer.trim()) {
       alert("Both Question and Answer are required.");
+
       return;
     }
     const updated = [...faqList];
@@ -2388,7 +2389,6 @@ const PageForm = ({ hidefeatureImage }) => {
             </button>
           </div>
 
-          {/* Added FAQs List */}
           {faqList.length > 0 && (
             <div>
               <h4 style={{ margin: "0 0 14px 0", color: "#111827", fontSize: "14.5px", fontWeight: "600" }}>
@@ -2400,18 +2400,22 @@ const PageForm = ({ hidefeatureImage }) => {
                   const itemNumber = String(index + 1).padStart(2, "0");
 
                   return (
+
                     <div
                       key={index}
                       onDragOver={(e) => {
                         e.preventDefault();
                       }}
                       onDrop={() => {
+
                         if (draggedFaqIndex === null || draggedFaqIndex === index) return;
+
                         const reordered = [...faqList];
                         const [removed] = reordered.splice(draggedFaqIndex, 1);
                         reordered.splice(index, 0, removed);
                         setFaqList(reordered);
                         setDraggedFaqIndex(null);
+
                       }}
                       style={{
                         opacity: draggedFaqIndex === index ? 0.35 : 1,
@@ -2419,7 +2423,6 @@ const PageForm = ({ hidefeatureImage }) => {
                       }}
                     >
                       {editingFaqIndex === index ? (
-                        /* Inline Edit Mode */
                         <div style={{
                           padding: "16px 20px",
                           backgroundColor: "#ffffff",
@@ -2512,7 +2515,6 @@ const PageForm = ({ hidefeatureImage }) => {
                           </div>
                         </div>
                       ) : (
-                        /* Display Card Matching User Mockup */
                         <div style={{ 
                           padding: "16px 20px", 
                           backgroundColor: "#ffffff", 
@@ -2530,13 +2532,11 @@ const PageForm = ({ hidefeatureImage }) => {
                           e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.02)";
                         }}
                         >
-                          {/* Top Row: "01 · FAQ Item" and Action Icons */}
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                             <span style={{ fontSize: "13.5px", fontWeight: "600", color: "#111827", letterSpacing: "0.2px" }}>
                               {itemNumber} · FAQ Item
                             </span>
                             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              {/* Edit Pencil Icon Button */}
                               <button
                                 type="button"
                                 onClick={() => handleStartEditFaq(index)}
@@ -2570,7 +2570,6 @@ const PageForm = ({ hidefeatureImage }) => {
                                 </svg>
                               </button>
 
-                              {/* Delete Trash Icon Button (Red) */}
                               <button
                                 type="button"
                                 onClick={() => {
