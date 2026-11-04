@@ -116,8 +116,12 @@ export const getAllMenuItems = (notificationCount = 0) => [
   { privilege: ['add-one-way-trip'], title: 'Add One Way Trip', icon: FilePlus, path: '/websiteForm', roles: ['admin', 'staff', 'seo'] },
   { privilege: ['view-trips'], title: 'One Way Trips', icon: FormatListBulleted, path: '/websiteForm/view', roles: ['admin', 'staff', 'seo'] },
   { privilege: ['view-trips'], title: 'Landing Pages', icon: Web, path: '/websiteForm/landing', roles: ['admin', 'staff', 'seo'] },
-  { privilege: ['add-package'], title: 'Add Package', icon: ViewGridPlusOutline, path: '/tourPackages', roles: ['admin', 'staff', 'seo'] },
-  { privilege: ['view-package'], title: 'View Package', icon: FileDocumentEdit, path: '/tourPackages/view', roles: ['admin', 'staff', 'seo'] },
+  { privilege: ['add-package'], title: 'Add Tour Package', icon: ViewGridPlusOutline, path: '/tourPackages', roles: ['admin', 'staff', 'seo'] },
+  { privilege: ['view-package'], title: 'Main Tour Packages', icon: FileDocumentEdit, path: '/tourPackages/view', roles: ['admin', 'staff', 'seo'] },
+
+  { privilege: ['add-package', 'view-package', 'add-urbania-package', 'view-urbania-package'], sectionTitle: 'Urbania Tour Packages', icon: Web, roles: ['admin', 'staff', 'seo'] },
+  { privilege: ['add-package', 'add-urbania-package'], title: 'Add Urbania Package', icon: ViewGridPlusOutline, path: '/urbaniaTourPackages/add', roles: ['admin', 'staff', 'seo'] },
+  { privilege: ['view-package', 'view-urbania-package'], title: 'Urbania Tour Packages', icon: FileDocumentEdit, path: '/urbaniaTourPackages', roles: ['admin', 'staff', 'seo'] },
 
   { privilege: ['staff-members', 'staff-privilege'], sectionTitle: 'Staff Management', icon: ShieldAccount, roles: ['admin','staff'] },
   { privilege: ['staff-members'], title: 'Staff Members', icon: FileDocumentEdit, path: '/staff', roles: ['admin','staff'] },

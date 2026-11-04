@@ -1,8 +1,13 @@
 import React from "react";
 import { Grid, Paper, Typography } from "@mui/material";
 import PageForm from "../../components/tourPackageForm";
+import { useRouter } from "next/router";
 
 const TourPackage = () => {
+  const router = useRouter();
+  const packageType = router.query.package_type || "main";
+  const isUrbania = packageType === "urbania";
+
   return (
     <Grid 
       container 
@@ -12,9 +17,9 @@ const TourPackage = () => {
       <Grid item xs={12} sm={12} md={12} lg={12}>
         <Paper elevation={3} style={{ padding: "20px", borderRadius: "10px" }}>
           <Typography variant="h5" align="center" gutterBottom>
-            Add New Package
+            {isUrbania ? "Add Urbania Tour Package" : "Add Tour Package"}
           </Typography>
-          <PageForm />
+          <PageForm package_type={packageType} />
         </Paper>
       </Grid>
     </Grid>
