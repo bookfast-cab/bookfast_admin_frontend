@@ -1,6 +1,6 @@
 import React from "react";
 import { Grid, Paper, Typography } from "@mui/material";
-import PageForm from "../../components/editTourPackageForm";
+import PageForm from "../../components/tourPackageForm";
 import {useRouter} from "next/router";
 
 const EditTourPackage = () => {

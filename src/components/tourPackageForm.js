@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/router";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -50,16 +51,32 @@ const CustomHeading = Heading.extend({
 });
 
 const TourPackageForm = (params) => {
+  const router = useRouter();
+  const queryPackageType = params?.package_type || router?.query?.package_type || router?.query?.type || "main";
+
   const [formData, setFormData] = useState({
     title: "",
+    package_type: queryPackageType || "main",
     metaTitle: "",
     metaDescription: "",
+    metaKeywords: "",
+    schemaMarkup: "",
+    customHeadTags: "",
     duration: "",
     locationCovered: "",
     packageCost: "",
     featured_image: [],
     itinerary: [],
   });
+
+  useEffect(() => {
+    if (queryPackageType) {
+      setFormData((prev) => ({
+        ...prev,
+        package_type: queryPackageType,
+      }));
+    }
+  }, [queryPackageType]);
 
   const [itineraryDay, setItineraryDay] = useState({
     title: "",
@@ -68,6 +85,116 @@ const TourPackageForm = (params) => {
     description: "",
   });
 
+  // FAQ State
+  const [faqList, setFaqList] = useState([]);
+  const [faqQuestion, setFaqQuestion] = useState("");
+  const [faqAnswer, setFaqAnswer] = useState("");
+  const [editingFaqIndex, setEditingFaqIndex] = useState(null);
+  const [editFaqQuestion, setEditFaqQuestion] = useState("");
+  const [editFaqAnswer, setEditFaqAnswer] = useState("");
+  const [draggedFaqIndex, setDraggedFaqIndex] = useState(null);
+
+  const handleStartEditFaq = (index) => {
+    setEditingFaqIndex(index);
+    setEditFaqQuestion(faqList[index]?.question || "");
+    setEditFaqAnswer(faqList[index]?.answer || "");
+  };
+
+  const handleSaveEditFaq = (index) => {
+    if (!editFaqQuestion.trim() || !editFaqAnswer.trim()) {
+      alert("Both Question and Answer are required.");
+
+      return;
+    }
+    const updated = [...faqList];
+    updated[index] = {
+      question: editFaqQuestion.trim(),
+      answer: editFaqAnswer.trim(),
+    };
+    setFaqList(updated);
+    setEditingFaqIndex(null);
+    setEditFaqQuestion("");
+    setEditFaqAnswer("");
+  };
+
+  const handleCancelEditFaq = () => {
+    setEditingFaqIndex(null);
+    setEditFaqQuestion("");
+    setEditFaqAnswer("");
+  };
+
+  const generateFaqHTML = () => {
+    if (faqList.length === 0) return "";
+
+    let html = `<div class="row">
+            <div class="col-lg-8 offset-lg-2 text-center mb-5">
+                <h2 id="faq-heading" class="features-title">
+                    Frequently Asked <span style="color: #1532d1;">Questions</span>
+                </h2>
+                <p class="features-subtitle">
+                    Find answers to common questions about tour packages, travel itinerary, bookings, and support.
+                </p>
+            </div>
+        </div>
+        <div class="row">\n`;
+
+    let leftHtml = `          <div class="col-md-6">
+            <div class="accordion faq-card-accordion" id="faqLeft">\n`;
+            
+    let rightHtml = `          <div class="col-md-6">
+            <div class="accordion faq-card-accordion" id="faqRight">\n`;
+
+    const midIndex = Math.ceil(faqList.length / 2);
+
+    faqList.forEach((faq, index) => {
+      const faqNum = index + 1;
+      const isFirst = index === 0;
+      const isLeftColumn = index < midIndex;
+      
+      const buttonClass = isFirst ? "accordion-button" : "accordion-button collapsed";
+      const ariaExpanded = isFirst ? "true" : "false";
+      const collapseClass = isFirst ? "accordion-collapse collapse show" : "accordion-collapse collapse";
+      
+      const parentId = isLeftColumn ? "faqLeft" : "faqRight";
+      
+      const itemHtml = `              <div class="accordion-item">
+                <h3 class="accordion-header" id="faqHeading${faqNum}">
+                  <button
+                    class="${buttonClass}"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#faq${faqNum}"
+                    aria-expanded="${ariaExpanded}"
+                    aria-controls="faq${faqNum}">
+                    ${faq.question}
+                  </button>
+                </h3>
+                <div
+                  id="faq${faqNum}"
+                  class="${collapseClass}"
+                  aria-labelledby="faqHeading${faqNum}"
+                  data-bs-parent="#${parentId}">
+                  <div class="accordion-body">
+                    ${faq.answer}
+                  </div>
+                </div>
+              </div>\n`;
+
+      if (isLeftColumn) {
+        leftHtml += itemHtml;
+      } else {
+        rightHtml += itemHtml;
+      }
+    });
+
+    leftHtml += `            </div>\n          </div>\n`;
+    rightHtml += `            </div>\n          </div>\n`;
+
+    html += leftHtml + rightHtml + `        </div>`;
+
+    return html;
+  };
+
   const [editorValue, setEditorValue] = useState("");
   const [isBrowser, setIsBrowser] = useState(false);
   const [imagePreviews, setImagePreviews] = useState([]);
@@ -75,6 +202,8 @@ const TourPackageForm = (params) => {
   const [isUploading, setIsUploading] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [loadedContent, setLoadedContent] = useState(null);
+  const [loadedLocationCovered, setLoadedLocationCovered] = useState(null);
+  const [activeEditorTarget, setActiveEditorTarget] = useState("content");
 
   // Image Alt Modal State
   const [altModalOpen, setAltModalOpen] = useState(false);
@@ -83,14 +212,15 @@ const TourPackageForm = (params) => {
   const [altModalIsNewInsert, setAltModalIsNewInsert] = useState(false);
 
   const handleConfirmAltModal = () => {
-    if (!editor) return;
+    const currentTargetEditor = activeEditorTarget === "location" ? locationEditor : editor;
+    if (!currentTargetEditor) return;
     if (altModalIsNewInsert) {
-      editor.chain().focus().setImage({
+      currentTargetEditor.chain().focus().setImage({
         src: altModalImageSrc,
         alt: altModalAltText.trim(),
       }).run();
     } else {
-      editor.chain().focus().updateAttributes('image', {
+      currentTargetEditor.chain().focus().updateAttributes('image', {
         alt: altModalAltText.trim(),
       }).run();
     }
@@ -99,9 +229,10 @@ const TourPackageForm = (params) => {
     setAltModalAltText("");
   };
 
-  const handleOpenEditAltForSelectedImage = () => {
-    if (!editor) return;
-    const attrs = editor.getAttributes('image');
+  const handleOpenEditAltForSelectedImage = (targetEditor) => {
+    const currentTargetEditor = targetEditor || (activeEditorTarget === "location" ? locationEditor : editor);
+    if (!currentTargetEditor) return;
+    const attrs = currentTargetEditor.getAttributes('image');
     if (attrs?.src) {
       setAltModalImageSrc(attrs.src);
       setAltModalAltText(attrs.alt || "");
@@ -175,53 +306,53 @@ const TourPackageForm = (params) => {
     }
   };
 
-  // TipTap editor configuration
+  // TipTap extensions shared by both Location Covered and Content editors
+  const editorExtensions = [
+    StarterKit.configure({
+      table: false,
+      heading: false,
+    }),
+    CustomHeading.configure({
+      levels: [1, 2, 3, 4, 5, 6],
+    }),
+    Image.configure({
+      HTMLAttributes: {
+        class: 'editor-image',
+      },
+    }),
+    Link.configure({
+      openOnClick: false,
+      HTMLAttributes: {
+        class: 'editor-link',
+      },
+    }),
+    TextAlign.configure({
+      types: ['heading', 'paragraph'],
+    }),
+    Table.configure({
+      resizable: true,
+      HTMLAttributes: {
+        class: 'editor-table',
+      },
+    }),
+    TableRow,
+    TableHeader,
+    TableCell,
+    CodeBlock,
+    Color,
+    TextStyle,
+    Highlight.configure({ multicolor: true }),
+    Underline,
+    Superscript,
+    Subscript,
+    FontSize.configure({
+      types: ['textStyle'],
+    }),
+  ];
+
+  // TipTap editor for Content
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        // Disable built-in table and heading nodes so our custom ones take effect
-        table: false,
-        heading: false,
-      }),
-      CustomHeading.configure({
-        levels: [1, 2, 3, 4, 5, 6],
-      }),
-
-
-      Image.configure({
-        HTMLAttributes: {
-          class: 'editor-image',
-        },
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'editor-link',
-        },
-      }),
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      Table.configure({
-        resizable: true,
-        HTMLAttributes: {
-          class: 'editor-table',
-        },
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      CodeBlock,
-      Color,
-      TextStyle,
-      Highlight.configure({ multicolor: true }),
-      Underline,
-      Superscript,
-      Subscript,
-      FontSize.configure({
-        types: ['textStyle'],
-      }),
-    ],
+    extensions: editorExtensions,
     content: "",
     editorProps: {
       attributes: {
@@ -231,8 +362,25 @@ const TourPackageForm = (params) => {
     immediatelyRender: false,
   });
 
+  // TipTap editor for Location Covered (Identical / Ek Sa Editor)
+  const locationEditor = useEditor({
+    extensions: editorExtensions,
+    content: "",
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[220px] p-4 border border-gray-300 rounded-md',
+      },
+    },
+    immediatelyRender: false,
+  });
+
   // Custom image handler for TipTap (compressed to WebP via backend)
-  const addImage = useCallback(async () => {
+  const addImage = useCallback(async (targetEditor) => {
+    if (targetEditor === locationEditor || activeEditorTarget === "location") {
+      setActiveEditorTarget("location");
+    } else {
+      setActiveEditorTarget("content");
+    }
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
     input.setAttribute('accept', 'image/*');
@@ -298,7 +446,8 @@ const TourPackageForm = (params) => {
 
   // Insert image from gallery into editor
   const insertImageFromGallery = (imageUrl) => {
-    if (editor) {
+    const target = activeEditorTarget === "location" ? locationEditor : editor;
+    if (target) {
       setAltModalImageSrc(imageUrl);
       setAltModalAltText("");
       setAltModalIsNewInsert(true);
@@ -372,6 +521,12 @@ const TourPackageForm = (params) => {
     }
   }, [editor, loadedContent]);
 
+  useEffect(() => {
+    if (locationEditor && loadedLocationCovered !== null) {
+      locationEditor.commands.setContent(loadedLocationCovered);
+    }
+  }, [locationEditor, loadedLocationCovered]);
+
   const fetchImages = async (imageUrls) => {
     const images = await Promise.all(imageUrls.map(url =>
       fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/tour_packages/${url}`).then(res => res.blob())
@@ -405,16 +560,56 @@ const TourPackageForm = (params) => {
         let images = await fetchImages(JSON.parse(result.data.featured_image));
         setFormData({
           title: result.data.title,
+          package_type: result.data.package_type || "main",
           metaTitle: result.data.metaTitle || "",
           metaDescription: result.data.metaDescription || "",
+          metaKeywords: result.data.metaKeywords || "",
+          schemaMarkup: result.data.schemaMarkup || "",
+          customHeadTags: result.data.customHeadTags || "",
           duration: result.data.duration,
-          locationCovered: result.data.location_covered,
+          locationCovered: result.data.location_covered || "",
           packageCost: result.data.package_cost,
           featured_image: [...images],
           itinerary: [...JSON.parse(result.itineraries[0].itinerary_details)],
         });
         
-        setLoadedContent(result.data.location_covered);
+        let contentHtml = result.data.content || "";
+        const faqs = [];
+        if (typeof window !== 'undefined') {
+            let faqHtml = result.data.faq_content;
+            if (!faqHtml && contentHtml && contentHtml.includes('id="faqLeft"')) {
+               const parser = new DOMParser();
+               const doc = parser.parseFromString(contentHtml, 'text/html');
+               const accordionWrapper = doc.querySelector('#faqLeft');
+               if (accordionWrapper) {
+                   const row = accordionWrapper.closest('.row');
+                   if (row) {
+                       faqHtml = row.outerHTML;
+                       row.remove();
+                   } else {
+                       faqHtml = accordionWrapper.outerHTML;
+                       accordionWrapper.remove();
+                   }
+                   contentHtml = doc.body.innerHTML;
+               }
+            }
+
+            if (faqHtml) {
+               const parser = new DOMParser();
+               const doc = parser.parseFromString(faqHtml, 'text/html');
+               const accordionItems = doc.querySelectorAll('.accordion-item');
+               accordionItems.forEach(item => {
+                   const question = item.querySelector('.accordion-button')?.textContent || '';
+                   const answer = item.querySelector('.accordion-body')?.innerHTML || '';
+                   if (question && answer) {
+                       faqs.push({ question: question.trim(), answer: answer.trim() });
+                   }
+               });
+            }
+        }
+        setFaqList(faqs);
+        setLoadedLocationCovered(result.data.location_covered || "");
+        setLoadedContent(contentHtml);
         
         let previewImages = JSON.parse(result.data.featured_image);
         previewImages = previewImages.map((image) => {
@@ -429,10 +624,10 @@ const TourPackageForm = (params) => {
   };
 
   useEffect(() => {
-    if (params.id && editor) {
+    if (params.id && editor && locationEditor) {
       getTourPackage(params.id);
     }
-  }, [params.id, editor]);
+  }, [params.id, editor, locationEditor]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -489,14 +684,22 @@ const TourPackageForm = (params) => {
     }
 
     const editorContent = editor?.getHTML() || '';
+    const locationContent = locationEditor?.getHTML() || '';
     
     const data = new FormData();
     data.append("title", formData.title);
-    data.append("metaTitle", formData.metaTitle);
-    data.append("metaDescription", formData.metaDescription);
+    data.append("package_type", formData.package_type || "main");
+    data.append("type", formData.package_type || "main");
+    data.append("metaTitle", formData.metaTitle || "");
+    data.append("metaDescription", formData.metaDescription || "");
+    data.append("metaKeywords", formData.metaKeywords || "");
+    data.append("schemaMarkup", formData.schemaMarkup || "");
+    data.append("customHeadTags", formData.customHeadTags || "");
     data.append("duration", formData.duration);
     data.append("package_cost", formData.packageCost);
-    data.append("location_covered", editorContent);
+    data.append("location_covered", locationContent);
+    data.append("content", editorContent);
+    data.append("faq_content", generateFaqHTML());
     data.append("itinerary", JSON.stringify(formData.itinerary));
   
     const files = formData.featured_image;
@@ -548,6 +751,8 @@ const TourPackageForm = (params) => {
           console.error("savedFilenames is not an array:", savedFilenames);
         }
 
+        const redirectPath = (formData.package_type === "urbania") ? "/urbaniaTourPackages" : "/tourPackages/view";
+
         try {
           const uploadResponse = await fetch('https://bookfast.in/uploadTour.php', {
             method: 'POST',
@@ -558,11 +763,16 @@ const TourPackageForm = (params) => {
           if (uploadResponse.ok) {
             console.log('Upload successful');
             resetForm();
+            router.push(redirectPath);
           } else {
             console.error('Upload failed');
+            resetForm();
+            router.push(redirectPath);
           }
         } catch (error) {
           console.error('Error uploading files:', error);
+          resetForm();
+          router.push(redirectPath);
         }
       } else {
         alert(result.message);
@@ -575,32 +785,44 @@ const TourPackageForm = (params) => {
   const resetForm = () => {
     setFormData({
       title: "",
+      package_type: formData.package_type || "main",
       metaTitle: "",
       metaDescription: "",
+      metaKeywords: "",
+      schemaMarkup: "",
+      customHeadTags: "",
       duration: "",
       locationCovered: "",
       packageCost: "",
       featured_image: [],
       itinerary: [],
     });
+    setFaqList([]);
+    setFaqQuestion("");
+    setFaqAnswer("");
+    setEditingFaqIndex(null);
     setImagePreviews([]);
     setEditorValue("");
     setItineraryDay({ title: "", tags: "", benefits: "", description: "" });
     if (editor) {
       editor.commands.setContent('');
     }
+    if (locationEditor) {
+      locationEditor.commands.setContent('');
+    }
   };
 
   // Insert table function
-  const insertTable = () => {
-    if (!editor) {
+  const insertTable = (targetEditor = editor) => {
+    const activeEd = targetEditor || editor;
+    if (!activeEd) {
       console.log('Editor not available');
 
       return;
     }
     
     try {
-      const result = editor.chain().focus().insertTable({ 
+      const result = activeEd.chain().focus().insertTable({ 
         rows: 3, 
         cols: 3, 
         withHeaderRow: true 
@@ -631,7 +853,7 @@ const TourPackageForm = (params) => {
             </tbody>
           </table>
         `;
-        editor.chain().focus().insertContent(tableHTML).run();
+        activeEd.chain().focus().insertContent(tableHTML).run();
       }
     } catch (error) {
       console.error('Error inserting table:', error);
@@ -640,7 +862,8 @@ const TourPackageForm = (params) => {
 
   // Toolbar component
    // Toolbar component
-  const EditorToolbar = () => {
+  const EditorToolbar = ({ editor: editorInstance = editor }) => {
+    const editor = editorInstance;
     if (!editor) return null;
 
     // Helper function to set text color
@@ -1087,7 +1310,7 @@ const TourPackageForm = (params) => {
         {/* Image */}
         <button
           type="button"
-          onClick={addImage}
+          onClick={() => addImage(editor)}
           disabled={isUploading}
           style={{
             padding: '6px 12px',
@@ -1105,7 +1328,7 @@ const TourPackageForm = (params) => {
 
         <button
           type="button"
-          onClick={handleOpenEditAltForSelectedImage}
+          onClick={() => handleOpenEditAltForSelectedImage(editor)}
           style={{
             padding: '6px 10px',
             border: '1px solid #ccc',
@@ -1127,7 +1350,7 @@ const TourPackageForm = (params) => {
         <div style={{ display: 'flex', gap: '4px', marginLeft: '10px', borderLeft: '1px solid #ccc', paddingLeft: '10px' }}>
           <button
             type="button"
-            onClick={insertTable}
+            onClick={() => insertTable(editor)}
             style={{
               padding: '6px 12px',
               border: '1px solid #ccc',
@@ -1399,6 +1622,33 @@ const TourPackageForm = (params) => {
             style={{ maxWidth: "100%" }}
             encType="multipart/form-data"
           >
+            {/* Package Type Field */}
+            <div style={{ marginBottom: "20px" }}>
+              <label htmlFor="package_type" style={{ display: "block", fontWeight: "bold", marginBottom: "6px" }}>
+                Package Type <span style={{ color: "#e11d48" }}>*</span>
+              </label>
+              <select
+                id="package_type"
+                name="package_type"
+                value={formData.package_type || "main"}
+                onChange={handleInputChange}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #cbd5e1",
+                  backgroundColor: "#fff",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                  outline: "none"
+                }}
+              >
+                <option value="main">Main Tour Package</option>
+                <option value="urbania">Urbania Tour Package</option>
+              </select>
+            </div>
+
             <div style={{ marginBottom: "20px" }}>
               <label htmlFor="title" style={{ display: "block", fontWeight: "bold" }}>
                 Title
@@ -1415,36 +1665,173 @@ const TourPackageForm = (params) => {
               />
             </div>
 
-            {/* Meta Title Field */}
-            <div style={{ marginBottom: "20px" }}>
-              <label htmlFor="metaTitle" style={{ display: "block", fontWeight: "bold" }}>
-                Meta Title
-              </label>
-              <input
-                type="text"
-                id="metaTitle"
-                name="metaTitle"
-                value={formData.metaTitle}
-                onChange={handleInputChange}
-                placeholder="Enter meta title"
-                style={{ width: "100%", padding: "10px", marginTop: "5px" }}
-              />
-            </div>
+            {/* SEO & Meta Tags Card Section */}
+            <div style={{
+              margin: "25px 0",
+              padding: "20px",
+              backgroundColor: "#f8fafc",
+              borderRadius: "10px",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.03)"
+            }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "18px",
+                paddingBottom: "12px",
+                borderBottom: "1px solid #e2e8f0"
+              }}>
+                <div>
+                  <h3 style={{ margin: "0", fontSize: "17px", fontWeight: "600", color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span>🏷️</span> SEO & Meta Configuration
+                  </h3>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#64748b" }}>
+                    Configure search engine meta tags, structured schema markup, and custom head scripts for this package page.
+                  </p>
+                </div>
+              </div>
 
-            {/* Meta Description Field */}
-            <div style={{ marginBottom: "20px" }}>
-              <label htmlFor="metaDescription" style={{ display: "block", fontWeight: "bold" }}>
-                Meta Description
-              </label>
-              <textarea
-                id="metaDescription"
-                name="metaDescription"
-                value={formData.metaDescription}
-                onChange={handleInputChange}
-                placeholder="Enter meta description"
-                rows={3}
-                style={{ width: "100%", padding: "10px", marginTop: "5px" }}
-              />
+              {/* Meta Title */}
+              <div style={{ marginBottom: "18px" }}>
+                <label htmlFor="metaTitle" style={{ display: "block", fontWeight: "600", fontSize: "14px", color: "#334155", marginBottom: "6px" }}>
+                  Meta Title
+                </label>
+                <input
+                  type="text"
+                  id="metaTitle"
+                  name="metaTitle"
+                  value={formData.metaTitle}
+                  onChange={handleInputChange}
+                  placeholder="Enter SEO meta title"
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "14px",
+                    boxSizing: "border-box"
+                  }}
+                />
+              </div>
+
+              {/* Meta Description */}
+              <div style={{ marginBottom: "18px" }}>
+                <label htmlFor="metaDescription" style={{ display: "block", fontWeight: "600", fontSize: "14px", color: "#334155", marginBottom: "6px" }}>
+                  Meta Description
+                </label>
+                <textarea
+                  id="metaDescription"
+                  name="metaDescription"
+                  value={formData.metaDescription}
+                  onChange={handleInputChange}
+                  placeholder="Enter SEO meta description (recommended 150-160 characters)"
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    fontFamily: "inherit"
+                  }}
+                />
+              </div>
+
+              {/* Meta Keywords */}
+              <div style={{ marginBottom: "18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
+                  <label htmlFor="metaKeywords" style={{ fontWeight: "600", fontSize: "14px", color: "#334155" }}>
+                    Meta Keywords
+                  </label>
+                  <span style={{ fontSize: "12px", color: "#64748b" }}>Comma separated</span>
+                </div>
+                <textarea
+                  id="metaKeywords"
+                  name="metaKeywords"
+                  value={formData.metaKeywords || ""}
+                  onChange={handleInputChange}
+                  placeholder="e.g. tour package, kashmir tour package, outstation tour"
+                  rows={2}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    fontFamily: "inherit"
+                  }}
+                />
+                <small style={{ display: "block", marginTop: "4px", color: "#64748b", fontSize: "12px" }}>
+                  Enter keywords separated by commas for search engines.
+                </small>
+              </div>
+
+              {/* Schema Markup (JSON-LD) */}
+              <div style={{ marginBottom: "18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
+                  <label htmlFor="schemaMarkup" style={{ fontWeight: "600", fontSize: "14px", color: "#334155" }}>
+                    Schema Markup (JSON-LD)
+                  </label>
+                  <span style={{ fontSize: "12px", color: "#0070f3", fontFamily: "monospace" }}>&lt;script type="application/ld+json"&gt;</span>
+                </div>
+                <textarea
+                  id="schemaMarkup"
+                  name="schemaMarkup"
+                  value={formData.schemaMarkup || ""}
+                  onChange={handleInputChange}
+                  placeholder={`<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "TouristTrip",\n  "name": "...",\n  "description": "..."\n}\n</script>`}
+                  rows={6}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "13px",
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    backgroundColor: "#ffffff",
+                    boxSizing: "border-box",
+                    lineHeight: "1.5"
+                  }}
+                />
+                <small style={{ display: "block", marginTop: "4px", color: "#64748b", fontSize: "12px" }}>
+                  Paste structured data script or raw JSON-LD for rich snippets (TouristTrip, Product, Breadcrumbs, FAQs).
+                </small>
+              </div>
+
+              {/* Custom Meta Head Tags */}
+              <div style={{ marginBottom: "8px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
+                  <label htmlFor="customHeadTags" style={{ fontWeight: "600", fontSize: "14px", color: "#334155" }}>
+                    Custom Meta Head Tags
+                  </label>
+                  <span style={{ fontSize: "12px", color: "#64748b", fontFamily: "monospace" }}>&lt;head&gt; tags</span>
+                </div>
+                <textarea
+                  id="customHeadTags"
+                  name="customHeadTags"
+                  value={formData.customHeadTags || ""}
+                  onChange={handleInputChange}
+                  placeholder={`<meta name="robots" content="index, follow" />\n<link rel="canonical" href="https://bookfast.in/tour-packages/chandigarh-to-kashmir" />\n<meta property="og:type" content="website" />`}
+                  rows={5}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "13px",
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    backgroundColor: "#ffffff",
+                    boxSizing: "border-box",
+                    lineHeight: "1.5"
+                  }}
+                />
+                <small style={{ display: "block", marginTop: "4px", color: "#64748b", fontSize: "12px" }}>
+                  Add custom HTML tags to inject into the &lt;head&gt; element (e.g. custom canonical links, Open Graph tags, robots meta tags, Twitter cards).
+                </small>
+              </div>
             </div>
 
             <div style={{ marginBottom: "20px" }}>
@@ -1510,10 +1897,35 @@ const TourPackageForm = (params) => {
               )}
             </div>
 
-            {/* TipTap Editor for Location Covered */}
-            <div style={{ marginBottom: "20px" }}>
-              <label htmlFor="content" style={{ display: "block", fontWeight: "bold", marginBottom: "10px" }}>
-                Location covered
+            {/* Location Covered (TipTap Editor) */}
+            <div 
+              style={{ marginBottom: "30px" }}
+              onFocus={() => setActiveEditorTarget("location")}
+              onClick={() => setActiveEditorTarget("location")}
+            >
+              <label htmlFor="locationCovered" style={{ display: "block", fontWeight: "bold", fontSize: "16px", marginBottom: "10px" }}>
+                Location Covered
+              </label>
+              {isBrowser && locationEditor && (
+                <div onDoubleClick={(e) => handleEditorDoubleClick(e, locationEditor)}>
+                  <EditorToolbar editor={locationEditor} />
+                  <EditorContent 
+                    editor={locationEditor} 
+                    style={{
+                      border: '1px solid #dee2e6',
+                      borderTop: 'none',
+                      borderRadius: '0 0 6px 6px',
+                      minHeight: '220px',
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* TipTap Editor for Content */}
+            <div style={{ marginBottom: "20px" }} onFocus={() => setActiveEditorTarget("content")} onClick={() => setActiveEditorTarget("content")}>
+              <label htmlFor="content" style={{ display: "block", fontWeight: "bold", fontSize: "16px", marginBottom: "10px" }}>
+                Content
               </label>
               {isUploading && (
                 <div style={{ 
@@ -1527,8 +1939,8 @@ const TourPackageForm = (params) => {
                 </div>
               )}
               {isBrowser && editor && (
-                <div onDoubleClick={handleEditorDoubleClick}>
-                  <EditorToolbar />
+                <div onDoubleClick={(e) => handleEditorDoubleClick(e, editor)}>
+                  <EditorToolbar editor={editor} />
                   <EditorContent 
                     editor={editor} 
                     style={{
@@ -1639,16 +2051,16 @@ const TourPackageForm = (params) => {
           </form>
         </div>
 
+      <div style={{ flex: "1", minWidth: 0, width: "100%", maxWidth: "100%" }}>
         {/* Upload Image Section */}
         <div style={{ 
-          width: "360px",
-          flexShrink: 0,
           backgroundColor: "#ffffff", 
           padding: "20px", 
           borderRadius: "8px",
           border: "1px solid #e2e8f0",
           boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
           boxSizing: "border-box",
+          width: "100%",
           display: "flex",
           flexDirection: "column",
           gap: "16px"
@@ -1841,7 +2253,376 @@ const TourPackageForm = (params) => {
             )}
           </div>
         </div>
+
+        {/* FAQ Section */}
+        <div style={{
+          marginTop: "40px",
+          backgroundColor: "#ffffff",
+          padding: "24px",
+          borderRadius: "10px",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+          border: "1px solid #e5e7eb"
+        }}>
+<div style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "space-between", 
+                marginBottom: "20px", 
+                borderBottom: "1px solid #e2e8f0", 
+                paddingBottom: "12px" 
+              }}>
+                <h3 style={{ margin: 0, color: "#111827", fontSize: "18px", fontWeight: "700" }}>
+                  Frequently Asked Questions (FAQ)
+                </h3>
+                {faqList.length > 0 && (
+                  <span style={{ 
+                    backgroundColor: "#eff6ff", 
+                    color: "#2563eb", 
+                    fontSize: "12px", 
+                    fontWeight: "600", 
+                    padding: "2px 10px", 
+                    borderRadius: "12px", 
+                    border: "1px solid #bfdbfe" 
+                  }}>
+                    {faqList.length} {faqList.length === 1 ? "FAQ" : "FAQs"}
+                  </span>
+                )}
+              </div>
+
+              {/* Add New FAQ Card */}
+              <div style={{ 
+                backgroundColor: "#ffffff", 
+                padding: "18px 20px", 
+                borderRadius: "12px", 
+                marginBottom: "25px",
+                border: "1px solid #e5e7eb",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
+              }}>
+                <h4 style={{ margin: "0 0 14px 0", color: "#1f2937", fontSize: "14.5px", fontWeight: "600" }}>
+                  + Add New FAQ
+                </h4>
+
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "#4b5563", marginBottom: "5px" }}>
+                    Question:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. What is included in this tour package?"
+                    value={faqQuestion}
+                    onChange={(e) => setFaqQuestion(e.target.value)}
+                    style={{ 
+                      width: "100%", 
+                      padding: "9px 12px", 
+                      borderRadius: "6px", 
+                      border: "1px solid #d1d5db", 
+                      fontSize: "13.5px", 
+                      outline: "none",
+                      backgroundColor: "#ffffff",
+                      boxSizing: "border-box"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#2563eb"}
+                    onBlur={(e) => e.target.style.borderColor = "#d1d5db"}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#16a34a", letterSpacing: "0.5px", marginBottom: "5px" }}>
+                    ANSWER <span style={{ fontWeight: "400", color: "#6b7280" }}>(HTML supported)</span>:
+                  </label>
+                  <textarea
+                    placeholder="e.g. The package includes hotel stay, sightseeing, cab transfers, and breakfast."
+                    value={faqAnswer}
+                    onChange={(e) => setFaqAnswer(e.target.value)}
+                    rows={3}
+                    style={{ 
+                      width: "100%", 
+                      padding: "9px 12px", 
+                      borderRadius: "6px", 
+                      border: "1px solid #d1d5db", 
+                      fontSize: "13.5px", 
+                      fontFamily: "inherit", 
+                      outline: "none",
+                      backgroundColor: "#ffffff",
+                      boxSizing: "border-box",
+                      resize: "vertical"
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = "#2563eb"}
+                    onBlur={(e) => e.target.style.borderColor = "#d1d5db"}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (faqQuestion.trim() && faqAnswer.trim()) {
+                      setFaqList([...faqList, { question: faqQuestion.trim(), answer: faqAnswer.trim() }]);
+                      setFaqQuestion("");
+                      setFaqAnswer("");
+                    } else {
+                      alert("Please enter both Question and Answer.");
+                    }
+                  }}
+                  style={{ 
+                    padding: "8px 18px", 
+                    backgroundColor: "#2563eb", 
+                    color: "white", 
+                    border: "none", 
+                    borderRadius: "6px", 
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "13px",
+                    transition: "background-color 0.2s"
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#1d4ed8"}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#2563eb"}
+                >
+                  + Add FAQ
+                </button>
+              </div>
+
+              {faqList.length > 0 && (
+                <div>
+                  <h4 style={{ margin: "0 0 14px 0", color: "#111827", fontSize: "14.5px", fontWeight: "600" }}>
+                    Added FAQs ({faqList.length})
+                  </h4>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {faqList.map((faq, index) => {
+                      const itemNumber = String(index + 1).padStart(2, "0");
+
+                      return (
+                        <div
+                          key={index}
+                          draggable
+                          onDragStart={() => setDraggedFaqIndex(index)}
+                          onDragEnd={() => setDraggedFaqIndex(null)}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={() => {
+                            if (draggedFaqIndex === null || draggedFaqIndex === index) return;
+                            const reordered = [...faqList];
+                            const [removed] = reordered.splice(draggedFaqIndex, 1);
+                            reordered.splice(index, 0, removed);
+                            setFaqList(reordered);
+                            setDraggedFaqIndex(null);
+                          }}
+                          style={{
+                            opacity: draggedFaqIndex === index ? 0.35 : 1,
+                            transition: "opacity 0.15s ease",
+                            cursor: "grab"
+                          }}
+                        >
+                          {editingFaqIndex === index ? (
+                            <div style={{
+                              padding: "16px 20px",
+                              backgroundColor: "#ffffff",
+                              border: "1.5px solid #2563eb",
+                              borderRadius: "12px",
+                              boxShadow: "0 2px 8px rgba(37,99,235,0.08)",
+                            }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                                <span style={{ fontSize: "13px", fontWeight: "600", color: "#2563eb" }}>
+                                  {itemNumber} · FAQ Item (Editing)
+                                </span>
+                                <div style={{ display: "flex", gap: "6px" }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveEditFaq(index)}
+                                    style={{
+                                      padding: "4px 10px",
+                                      backgroundColor: "#16a34a",
+                                      color: "white",
+                                      border: "none",
+                                      borderRadius: "5px",
+                                      cursor: "pointer",
+                                      fontSize: "11px",
+                                      fontWeight: "600",
+                                    }}
+                                  >
+                                    ✓ Save
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleCancelEditFaq}
+                                    style={{
+                                      padding: "4px 10px",
+                                      backgroundColor: "#6b7280",
+                                      color: "white",
+                                      border: "none",
+                                      borderRadius: "5px",
+                                      cursor: "pointer",
+                                      fontSize: "11px",
+                                      fontWeight: "600",
+                                    }}
+                                  >
+                                    ✕ Cancel
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div style={{ marginBottom: "10px" }}>
+                                <label style={{ display: "block", fontSize: "11.5px", fontWeight: "600", color: "#4b5563", marginBottom: "4px" }}>
+                                  Question:
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editFaqQuestion}
+                                  onChange={(e) => setEditFaqQuestion(e.target.value)}
+                                  style={{
+                                    width: "100%",
+                                    padding: "8px 12px",
+                                    borderRadius: "8px",
+                                    border: "1px solid #d1d5db",
+                                    fontSize: "13.5px",
+                                    backgroundColor: "#fff",
+                                    boxSizing: "border-box",
+                                    outline: "none"
+                                  }}
+                                />
+                              </div>
+
+                              <div>
+                                <label style={{ display: "block", fontSize: "11px", fontWeight: "800", color: "#16a34a", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "4px" }}>
+                                  ANSWER (HTML supported):
+                                </label>
+                                <textarea
+                                  value={editFaqAnswer}
+                                  onChange={(e) => setEditFaqAnswer(e.target.value)}
+                                  rows={3}
+                                  style={{
+                                    width: "100%",
+                                    padding: "8px 12px",
+                                    borderRadius: "8px",
+                                    border: "1px solid #d1d5db",
+                                    fontSize: "13.5px",
+                                    fontFamily: "inherit",
+                                    backgroundColor: "#fff",
+                                    boxSizing: "border-box",
+                                    outline: "none",
+                                    resize: "vertical"
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ 
+                              padding: "16px 20px", 
+                              backgroundColor: "#ffffff", 
+                              border: "1px solid #e5e7eb", 
+                              borderRadius: "12px",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                              transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.borderColor = "#cbd5e1";
+                              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.borderColor = "#e5e7eb";
+                              e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.02)";
+                            }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                                <span style={{ fontSize: "13.5px", fontWeight: "600", color: "#111827", letterSpacing: "0.2px" }}>
+                                  {itemNumber} · FAQ Item
+                                </span>
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartEditFaq(index)}
+                                    style={{ 
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      width: "22px",
+                                      height: "22px",
+                                      background: "none",
+                                      border: "none", 
+                                      color: "#9ca3af", 
+                                      cursor: "pointer", 
+                                      borderRadius: "4px",
+                                      padding: 0,
+                                      transition: "color 0.15s, background-color 0.15s"
+                                    }}
+                                    onMouseOver={(e) => {
+                                      e.currentTarget.style.color = "#2563eb";
+                                      e.currentTarget.style.backgroundColor = "#eff6ff";
+                                    }}
+                                    onMouseOut={(e) => {
+                                      e.currentTarget.style.color = "#9ca3af";
+                                      e.currentTarget.style.backgroundColor = "transparent";
+                                    }}
+                                    title="Edit FAQ"
+                                  >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M12 20h9"></path>
+                                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                    </svg>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (confirm("Are you sure you want to remove this FAQ?")) {
+                                        const newFaqList = [...faqList];
+                                        newFaqList.splice(index, 1);
+                                        setFaqList(newFaqList);
+                                        if (editingFaqIndex === index) {
+                                          setEditingFaqIndex(null);
+                                        }
+                                      }
+                                    }}
+                                    style={{ 
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      width: "22px",
+                                      height: "22px",
+                                      background: "none",
+                                      border: "none", 
+                                      color: "#ef4444", 
+                                      cursor: "pointer", 
+                                      borderRadius: "4px",
+                                      padding: 0,
+                                      transition: "color 0.15s, background-color 0.15s"
+                                    }}
+                                    onMouseOver={(e) => {
+                                      e.currentTarget.style.color = "#dc2626";
+                                      e.currentTarget.style.backgroundColor = "#fee2e2";
+                                    }}
+                                    onMouseOut={(e) => {
+                                      e.currentTarget.style.color = "#ef4444";
+                                      e.currentTarget.style.backgroundColor = "transparent";
+                                    }}
+                                    title="Delete FAQ"
+                                  >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="3 6 5 6 21 6"></polyline>
+                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div style={{ fontSize: "14px", fontWeight: "600", color: "#1f2937", marginBottom: "6px" }}>
+                                {faq.question}
+                              </div>
+
+                              <div 
+                                style={{ fontSize: "13px", color: "#4b5563", lineHeight: "1.5" }}
+                                dangerouslySetInnerHTML={{ __html: faq.answer }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+        </div>
       </div>
+    </div>
 
       {/* Image Alt Text Dialog */}
       <Dialog

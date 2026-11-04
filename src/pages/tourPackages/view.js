@@ -36,7 +36,7 @@ const MUITable = () => {
   const exportToExcel = () => {
     setLoadingExport(true);
     try {
-      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-tourPackages`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-tourPackages?package_type=main`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -48,7 +48,7 @@ const MUITable = () => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'tourPackages.csv';
+        a.download = 'mainTourPackages.csv';
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -69,7 +69,7 @@ const MUITable = () => {
     const queryParams = new URLSearchParams({
       page: page_num,
       perPage,
-      type
+      package_type: 'main'
     }).toString();
     console.log('Fetching data from:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/tour-packages?${queryParams}`);
 
@@ -83,11 +83,11 @@ const MUITable = () => {
     })
       .then((response) => response.json())
       .then((data) => {
-        setData(data.data);
-        setTotalRecords(data.totalRecords);
-        setTotalPages(data.totalPages);
-        setCurrentPage(data.currentPage);
-        setPerPage(data.perPage);
+        setData(data.data || []);
+        setTotalRecords(data.totalRecords || 0);
+        setTotalPages(data.totalPages || 0);
+        setCurrentPage(data.currentPage || 1);
+        setPerPage(data.perPage || perPage);
       })
       .catch((err) => {
         console.log(err)
@@ -96,11 +96,11 @@ const MUITable = () => {
 
   useEffect(() => { 
     getTourPackages(1);
-}, []);
+  }, []);
 
 
   const searchTrips = async (searchdata) => {
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/package-search?search=${searchdata}&type=${type}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/package-search?search=${encodeURIComponent(searchdata)}&package_type=main`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -109,11 +109,11 @@ const MUITable = () => {
     })
       .then((response) => response.json())
       .then((data) => {
-        setData(data.data);
-        setTotalRecords(data.totalRecords);
-        setTotalPages(data.totalPages);
-        setCurrentPage(data.currentPage);
-        setPerPage(data.perPage);
+        setData(data.data || []);
+        setTotalRecords(data.totalRecords || (data.data ? data.data.length : 0));
+        setTotalPages(data.totalPages || 1);
+        setCurrentPage(data.currentPage || 1);
+        setPerPage(data.perPage || 10);
       })
       .catch((err) => {
         console.log(err)
@@ -133,7 +133,7 @@ const MUITable = () => {
       .then(data => {
         if (data.success) {
           setSuccessMessage('Tour Package deleted successfully!')
-            setData(data.filter((item) => item.id != idToDelete));
+          getTourPackages(currentPage || 1);
         } else {
           setErrorMessage(data.message)
         }
@@ -151,14 +151,18 @@ const MUITable = () => {
   }
 
   const handleSearchMethod=(searchdata)=>{
-    searchTrips(searchdata)
+    if (!searchdata) {
+      getTourPackages(1);
+    } else {
+      searchTrips(searchdata);
+    }
   }
 
   return (
     <Grid container spacing={6}>
       <Grid item xs={6}>
         <Typography variant='h5'>
-          Packages {type=='active' ? '(Active)' : ''}
+          Main Tour Packages
         </Typography>
       </Grid>
 
@@ -187,24 +191,18 @@ const MUITable = () => {
 
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '10px' }}>
-        <Button
-              variant="contained"
-              
-              // onClick={() => downloadCSV(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/export-drivers`, 'drivers.csv')}
-              onClick={() => exportToExcel() }
-            >
+          <Button
+            variant="contained"
+            onClick={() => router.push('/tourPackages?package_type=main')}
+          >
+            Add Tour Package
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => exportToExcel()}
+          >
             {loadingExport ? 'Processing...' : 'Export'}
           </Button>
-          {/* <Button startIcon={(
-            <SvgIcon fontSize="small">
-            <PlusIcon />
-            </SvgIcon>
-        )}
-            variant="contained"
-            onClick={() => router.push('/trips/add')}
-          >
-            Add 
-          </Button> */}
         </div>
       </Grid>
 

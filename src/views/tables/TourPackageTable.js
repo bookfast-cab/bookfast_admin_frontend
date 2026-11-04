@@ -116,6 +116,7 @@ return (
           <TableHead>
             <TableRow>
               <TableCell>Id</TableCell>            
+              <TableCell>Type</TableCell>
               <TableCell>Title</TableCell>
               <TableCell>Meta Title</TableCell>
               <TableCell>Description</TableCell>
@@ -131,6 +132,14 @@ return (
             {items.map((item) => (
               <TableRow key={item.id}>
                 <TableCell>{item.id || 'N/A'}</TableCell>
+                <TableCell>
+                  <Chip 
+                    label={item.package_type === 'urbania' ? 'Urbania' : 'Main'} 
+                    color={item.package_type === 'urbania' ? 'secondary' : 'primary'} 
+                    size="small" 
+                    variant="outlined" 
+                  />
+                </TableCell>
                 <TableCell>{item.title || 'N/A'}</TableCell>
                 <TableCell>{item.metaTitle || 'N/A'}</TableCell>
                 <TableCell>{item.metaDescription || 'N/A'}</TableCell>
