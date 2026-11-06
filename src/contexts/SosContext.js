@@ -15,7 +15,8 @@ const getSosAudio = () => {
   }
   audioInstance.volume = 1.0;
   audioInstance.muted = false;
-  return audioInstance;
+  
+return audioInstance;
 };
 
 export const SosProvider = ({ children }) => {
@@ -49,6 +50,7 @@ export const SosProvider = ({ children }) => {
           })
           .catch(err => {
             console.warn('Autoplay blocked or play error:', err);
+
             // If browser blocked socket/poll-triggered autoplay, mark pending so first user click starts it
             pendingPlayRef.current = true;
             setIsAlarmPlaying(true);

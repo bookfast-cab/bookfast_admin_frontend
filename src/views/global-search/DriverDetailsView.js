@@ -319,7 +319,8 @@ const DriverDetailsView = ({ data = {}, onDriverUpdate }) => {
 
   const getDaysCount = (start, end) => {
     const diff = new Date(end) - new Date(start);
-    return Math.round(diff / (1000 * 60 * 60 * 24));
+    
+return Math.round(diff / (1000 * 60 * 60 * 24));
   };
 
   const getInitials = (name) => {
