@@ -54,6 +54,17 @@ const CustomHeading = Heading.extend({
 });
 
 
+// Slugify helper
+const slugify = (text) => {
+  return (text || "")
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-');
+};
+
 const PageForm = ({ hidefeatureImage }) => {
   const Router = useRouter();
   const { id, page_type: queryPageType } = Router.query;
@@ -61,6 +72,7 @@ const PageForm = ({ hidefeatureImage }) => {
 
   const [formData, setFormData] = useState({
     title: "",
+    page_slug: "",
     page_type: queryPageType || "main",
     featuredImage: null,
     metaTitle: "",
@@ -742,6 +754,7 @@ const PageForm = ({ hidefeatureImage }) => {
       if (result.success) {
         setFormData({
           title: result.data.title,
+          page_slug: result.data.page_slug || slugify(result.data.title || ""),
           page_type: result.data.page_type || "main",
           featuredImage: result.data.featuredImage,
           metaTitle: result.data.metaTitle || "",
@@ -806,10 +819,27 @@ const PageForm = ({ hidefeatureImage }) => {
   // Handle input change for text fields
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+    if (name === "title") {
+      setFormData((prevData) => {
+        const shouldSyncSlug = !prevData.page_slug || prevData.page_slug === slugify(prevData.title);
+
+        return {
+          ...prevData,
+          title: value,
+          page_slug: shouldSyncSlug ? slugify(value) : prevData.page_slug,
+        };
+      });
+    } else if (name === "page_slug") {
+      setFormData((prevData) => ({
+        ...prevData,
+        page_slug: slugify(value),
+      }));
+    } else {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+    }
   };
 
   const handleFileChange = (e) => {
@@ -869,6 +899,8 @@ const PageForm = ({ hidefeatureImage }) => {
 
     const data = new FormData();
     data.append("title", formData.title);
+    data.append("page_slug", formData.page_slug || slugify(formData.title));
+    data.append("slug", formData.page_slug || slugify(formData.title));
     data.append("page_type", formData.page_type || "main");
     data.append("content", editorContent);
     data.append("faq_content", generateFaqHTML());
@@ -898,6 +930,7 @@ const PageForm = ({ hidefeatureImage }) => {
           setErrorMessage("");
           setFormData({
             title: "",
+            page_slug: "",
             page_type: formData.page_type || "main",
             metaTitle: "",
             metaDescription: "",
@@ -929,6 +962,8 @@ const PageForm = ({ hidefeatureImage }) => {
           setErrorMessage("");
           setFormData({
             title: "",
+            page_slug: "",
+            page_type: formData.page_type || "main",
             featuredImage: null,
             metaTitle: "",
             metaDescription: "",
@@ -1801,6 +1836,27 @@ const PageForm = ({ hidefeatureImage }) => {
                 placeholder="Enter the title"
                 required
                 style={{ width: "100%", padding: "10px", marginTop: "5px" }}
+              />
+            </div>
+
+            {/* Slug Field */}
+            <div style={{ marginBottom: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                <label htmlFor="page_slug" style={{ display: "block", fontWeight: "bold" }}>
+                  Slug (URL)
+                </label>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>
+                  Auto-generated from title or custom
+                </span>
+              </div>
+              <input
+                type="text"
+                id="page_slug"
+                name="page_slug"
+                value={formData.page_slug || ""}
+                onChange={handleInputChange}
+                placeholder="e.g. delhi-to-agra-one-way-cab"
+                style={{ width: "100%", padding: "10px", marginTop: "5px", borderRadius: "4px", border: "1px solid #cbd5e1", boxSizing: "border-box" }}
               />
             </div>
 

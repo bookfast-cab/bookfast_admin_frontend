@@ -50,12 +50,24 @@ const CustomHeading = Heading.extend({
   },
 });
 
+// Slugify helper
+const slugify = (text) => {
+  return (text || "")
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-');
+};
+
 const TourPackageForm = (params) => {
   const router = useRouter();
   const queryPackageType = params?.package_type || router?.query?.package_type || router?.query?.type || "main";
 
   const [formData, setFormData] = useState({
     title: "",
+    page_slug: "",
     package_type: queryPackageType || "main",
     metaTitle: "",
     metaDescription: "",
@@ -80,10 +92,13 @@ const TourPackageForm = (params) => {
 
   const [itineraryDay, setItineraryDay] = useState({
     title: "",
+    image: "",
     tags: "",
     benefits: "",
     description: "",
   });
+  const itineraryImageInputRef = useRef(null);
+  const [isUploadingItineraryImage, setIsUploadingItineraryImage] = useState(false);
 
   // FAQ State
   const [faqList, setFaqList] = useState([]);
@@ -558,8 +573,18 @@ const TourPackageForm = (params) => {
   
       if (result.success) {
         let images = await fetchImages(JSON.parse(result.data.featured_image));
+        let loadedItinerary = [];
+        try {
+          if (result.itineraries && result.itineraries.length > 0 && result.itineraries[0].itinerary_details) {
+            loadedItinerary = JSON.parse(result.itineraries[0].itinerary_details);
+          }
+        } catch (err) {
+          console.error("Failed to parse itinerary details", err);
+        }
+
         setFormData({
           title: result.data.title,
+          page_slug: result.data.page_slug || slugify(result.data.title),
           package_type: result.data.package_type || "main",
           metaTitle: result.data.metaTitle || "",
           metaDescription: result.data.metaDescription || "",
@@ -570,7 +595,7 @@ const TourPackageForm = (params) => {
           locationCovered: result.data.location_covered || "",
           packageCost: result.data.package_cost,
           featured_image: [...images],
-          itinerary: [...JSON.parse(result.itineraries[0].itinerary_details)],
+          itinerary: Array.isArray(loadedItinerary) ? loadedItinerary : [],
         });
         
         let contentHtml = result.data.content || "";
@@ -629,9 +654,75 @@ const TourPackageForm = (params) => {
     }
   }, [params.id, editor, locationEditor]);
 
+  const handleItineraryImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`File "${file.name}" exceeds 5MB limit. Please select an image under 5MB.`);
+      if (itineraryImageInputRef.current) itineraryImageInputRef.current.value = "";
+      
+return;
+    }
+
+    setIsUploadingItineraryImage(true);
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('images', file);
+      const device_id = await getFingerprint();
+
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/upload-blog-image`,
+        uploadFormData,
+        {
+          headers: {
+            authorization: localStorage.getItem("access_token"),
+            'x-device-id': device_id,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const result = response.data;
+      if (result.success && result.data && result.data[0]) {
+        const uploadedUrl = result.data[0].url;
+        setItineraryDay((prev) => ({
+          ...prev,
+          image: uploadedUrl,
+        }));
+      } else {
+        alert("Failed to upload itinerary image: " + (result.message || "Unknown error"));
+      }
+    } catch (error) {
+      alert("Failed to upload itinerary image: " + (error.response?.data?.message || error.message));
+    } finally {
+      setIsUploadingItineraryImage(false);
+      if (itineraryImageInputRef.current) {
+        itineraryImageInputRef.current.value = "";
+      }
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    if (name === "title") {
+      setFormData((prev) => {
+        const shouldSyncSlug = !prev.page_slug || prev.page_slug === slugify(prev.title);
+        
+return {
+          ...prev,
+          title: value,
+          page_slug: shouldSyncSlug ? slugify(value) : prev.page_slug,
+        };
+      });
+    } else if (name === "page_slug") {
+      setFormData((prev) => ({
+        ...prev,
+        page_slug: slugify(value),
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
   
   const handleFileChange = (event) => {
@@ -661,11 +752,16 @@ const TourPackageForm = (params) => {
   };
   
   const addItineraryDay = () => {
+    if (!itineraryDay.title && !itineraryDay.description) {
+      alert("Please provide at least a Title or Description for this day.");
+      
+return;
+    }
     setFormData({
       ...formData,
       itinerary: [...formData.itinerary, { ...itineraryDay }],
     });
-    setItineraryDay({ title: "", tags: "", benefits: "", description: "" });
+    setItineraryDay({ title: "", image: "", tags: "", benefits: "", description: "" });
   };
 
   const removeItineraryDay = (index) => {
@@ -685,9 +781,12 @@ const TourPackageForm = (params) => {
 
     const editorContent = editor?.getHTML() || '';
     const locationContent = locationEditor?.getHTML() || '';
+    const finalSlug = slugify(formData.page_slug || formData.title);
     
     const data = new FormData();
     data.append("title", formData.title);
+    data.append("page_slug", finalSlug);
+    data.append("slug", finalSlug);
     data.append("package_type", formData.package_type || "main");
     data.append("type", formData.package_type || "main");
     data.append("metaTitle", formData.metaTitle || "");
@@ -785,6 +884,7 @@ const TourPackageForm = (params) => {
   const resetForm = () => {
     setFormData({
       title: "",
+      page_slug: "",
       package_type: formData.package_type || "main",
       metaTitle: "",
       metaDescription: "",
@@ -803,7 +903,7 @@ const TourPackageForm = (params) => {
     setEditingFaqIndex(null);
     setImagePreviews([]);
     setEditorValue("");
-    setItineraryDay({ title: "", tags: "", benefits: "", description: "" });
+    setItineraryDay({ title: "", image: "", tags: "", benefits: "", description: "" });
     if (editor) {
       editor.commands.setContent('');
     }
@@ -1661,7 +1761,28 @@ const TourPackageForm = (params) => {
                 onChange={handleInputChange}
                 placeholder="Enter the title"
                 required
-                style={{ width: "100%", padding: "10px", marginTop: "5px" }}
+                style={{ width: "100%", padding: "10px", marginTop: "5px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box" }}
+              />
+            </div>
+
+            {/* Slug Field */}
+            <div style={{ marginBottom: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                <label htmlFor="page_slug" style={{ display: "block", fontWeight: "bold" }}>
+                  Slug (URL)
+                </label>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>
+                  Auto-generated from title or custom
+                </span>
+              </div>
+              <input
+                type="text"
+                id="page_slug"
+                name="page_slug"
+                value={formData.page_slug || ""}
+                onChange={handleInputChange}
+                placeholder="e.g. chandigarh-to-kashmir"
+                style={{ width: "100%", padding: "10px", marginTop: "5px", borderRadius: "4px", border: "1px solid #cbd5e1", boxSizing: "border-box" }}
               />
             </div>
 
@@ -1965,8 +2086,77 @@ const TourPackageForm = (params) => {
                   name="title"
                   value={itineraryDay.title}
                   onChange={handleItineraryChange}
-                  style={{ width: "100%", padding: "10px", border: "1px solid #ccc", borderRadius: "4px" }}
+                  placeholder="e.g. Day 1: Arrival & Local Sightseeing"
+                  style={{ width: "100%", padding: "10px", border: "1px solid #ccc", borderRadius: "4px", boxSizing: "border-box" }}
                 />
+              </div>
+
+              {/* Day Image Upload Section */}
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ display: "block", fontWeight: "bold", marginBottom: "6px" }}>Day Image:</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "15px", flexWrap: "wrap" }}>
+                  <input
+                    type="file"
+                    ref={itineraryImageInputRef}
+                    accept="image/*"
+                    onChange={handleItineraryImageUpload}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => itineraryImageInputRef.current?.click()}
+                    disabled={isUploadingItineraryImage}
+                    style={{
+                      padding: "8px 16px",
+                      backgroundColor: isUploadingItineraryImage ? "#94a3b8" : "#2563eb",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "5px",
+                      cursor: isUploadingItineraryImage ? "not-allowed" : "pointer",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}
+                  >
+                    {isUploadingItineraryImage ? "Uploading Image..." : "📷 Upload Day Image"}
+                  </button>
+
+                  {itineraryDay.image && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <img
+                        src={itineraryDay.image}
+                        alt="Day preview"
+                        style={{
+                          width: "80px",
+                          height: "55px",
+                          objectFit: "cover",
+                          borderRadius: "4px",
+                          border: "1px solid #cbd5e1"
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setItineraryDay((prev) => ({ ...prev, image: "" }))}
+                        style={{
+                          padding: "4px 8px",
+                          backgroundColor: "#ef4444",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          fontSize: "11px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        ✕ Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <small style={{ color: "#64748b", display: "block", marginTop: "4px", fontSize: "12px" }}>
+                  Upload an image for this itinerary day (WebP compressed).
+                </small>
               </div>
               <div style={{ marginBottom: "20px" }}>
                 <label htmlFor="tags" style={{ display: "block", fontWeight: "bold" }}>Tags (comma-separated):</label>
@@ -2010,29 +2200,102 @@ const TourPackageForm = (params) => {
             </div>
 
             <h3>Current Itinerary:</h3>
-            <ul>
-              {formData.itinerary.map((day, index) => (
-                <li key={index}>
-                  <strong>Day {index + 1}:</strong> {day.title} <br />
-                  <em>Tags:</em> {day.tags} <br />
-                  <em>Benefits:</em> {day.benefits} <br />
-                  <em>Description:</em> {day.description} <br />
-                  <button
-                    type="button"
-                    onClick={() => removeItineraryDay(index)}
+            {formData.itinerary.length === 0 ? (
+              <p style={{ color: "#64748b", fontSize: "14px" }}>No itinerary days added yet.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+                {formData.itinerary.map((day, index) => (
+                  <div 
+                    key={index}
                     style={{
-                      backgroundColor: "red",
-                      color: "white",
-                      padding: "5px",
-                      border: "none",
-                      cursor: "pointer",
+                      display: "flex",
+                      gap: "15px",
+                      padding: "14px 16px",
+                      backgroundColor: "#fff",
+                      borderRadius: "6px",
+                      border: "1px solid #e2e8f0",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between"
                     }}
                   >
-                    Remove Day
-                  </button>  &nbsp;
-                </li>
-              ))}
-            </ul>
+                    <div style={{ display: "flex", gap: "14px", flex: 1, alignItems: "flex-start" }}>
+                      {day.image && (
+                        <img
+                          src={day.image}
+                          alt={day.title || `Day ${index + 1}`}
+                          style={{
+                            width: "90px",
+                            height: "65px",
+                            objectFit: "cover",
+                            borderRadius: "4px",
+                            border: "1px solid #cbd5e1",
+                            flexShrink: 0
+                          }}
+                        />
+                      )}
+                      <div>
+                        <div style={{ fontWeight: "bold", fontSize: "15px", color: "#0f172a" }}>
+                          Day {index + 1}: {day.title || "Untitled Day"}
+                        </div>
+                        {day.tags && (
+                          <div style={{ fontSize: "12px", color: "#2563eb", marginTop: "3px" }}>
+                            <strong>Tags:</strong> {day.tags}
+                          </div>
+                        )}
+                        {day.benefits && (
+                          <div style={{ fontSize: "12px", color: "#16a34a", marginTop: "3px" }}>
+                            <strong>Benefits:</strong> {day.benefits}
+                          </div>
+                        )}
+                        {day.description && (
+                          <div style={{ fontSize: "13px", color: "#475569", marginTop: "4px", whiteSpace: "pre-line" }}>
+                            {day.description}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setItineraryDay({ ...day });
+                          removeItineraryDay(index);
+                        }}
+                        style={{
+                          backgroundColor: "#f1f5f9",
+                          color: "#2563eb",
+                          padding: "6px 12px",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          fontWeight: "600"
+                        }}
+                        title="Edit Day"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeItineraryDay(index)}
+                        style={{
+                          backgroundColor: "#fee2e2",
+                          color: "#dc2626",
+                          padding: "6px 12px",
+                          border: "1px solid #fecaca",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          fontWeight: "600"
+                        }}
+                      >
+                        Remove Day
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <button
               type="submit"

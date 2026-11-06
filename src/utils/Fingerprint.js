@@ -9,7 +9,8 @@ const getFingerprint = async () => {
             const stored = localStorage.getItem('admin_device_id');
             if (stored) {
                 cachedDeviceId = stored;
-                return stored;
+                
+return stored;
             }
         } catch (_) {}
     }
@@ -27,7 +28,8 @@ const getFingerprint = async () => {
                     localStorage.setItem('admin_device_id', cachedDeviceId);
                 } catch (_) {}
             }
-            return cachedDeviceId;
+            
+return cachedDeviceId;
         }
     } catch(err) {
         console.warn('FingerprintJS load error:', err);
@@ -41,7 +43,8 @@ const getFingerprint = async () => {
             localStorage.setItem('admin_device_id', fallbackId);
         } catch (_) {}
     }
-    return fallbackId;
+    
+return fallbackId;
 };
 
 export default getFingerprint;
