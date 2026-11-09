@@ -733,11 +733,14 @@ return;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (errorMessage) {
+      setErrorMessage("");
+    }
     if (name === "title") {
       setFormData((prev) => {
         const shouldSyncSlug = !prev.page_slug || prev.page_slug === slugify(prev.title);
-        
-return {
+
+        return {
           ...prev,
           title: value,
           page_slug: shouldSyncSlug ? slugify(value) : prev.page_slug,
@@ -748,11 +751,6 @@ return {
         ...prev,
         page_slug: slugify(value),
       }));
-    } else if (name === "packageCost") {
-      const cleaned = value.replace(/[^0-9.]/g, '');
-      const parts = cleaned.split('.');
-      const numericValue = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : cleaned;
-      setFormData((prev) => ({ ...prev, packageCost: numericValue }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -845,13 +843,6 @@ return {
     if (!formData.title || !formData.duration || !formData.packageCost) {      
       alert("Please fill all required fields.");  
       setErrorMessage("Please fill all required fields.");
-
-      return;
-    }
-
-    if (isNaN(formData.packageCost) || Number(formData.packageCost) < 0) {
-      alert("Package Cost must be a valid numeric amount.");
-      setErrorMessage("Package Cost must be a valid numeric amount.");
 
       return;
     }
@@ -1911,8 +1902,21 @@ return {
                 value={formData.page_slug || ""}
                 onChange={handleInputChange}
                 placeholder="e.g. chandigarh-to-kashmir"
-                style={{ width: "100%", padding: "10px", marginTop: "5px", borderRadius: "4px", border: "1px solid #cbd5e1", boxSizing: "border-box" }}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  marginTop: "5px",
+                  borderRadius: "4px",
+                  border: errorMessage && errorMessage.toLowerCase().includes("slug") ? "2px solid #ef4444" : "1px solid #cbd5e1",
+                  backgroundColor: errorMessage && errorMessage.toLowerCase().includes("slug") ? "#fff5f5" : "#fff",
+                  boxSizing: "border-box"
+                }}
               />
+              {errorMessage && errorMessage.toLowerCase().includes("slug") && (
+                <div style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px", fontWeight: "500" }}>
+                  ⚠️ {errorMessage}
+                </div>
+              )}
             </div>
 
             {/* SEO & Meta Tags Card Section */}
@@ -2106,25 +2110,17 @@ return {
             <div style={{ marginBottom: "20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
                 <label htmlFor="packageCost" style={{ display: "block", fontWeight: "bold" }}>
-                  Package Cost (₹ Numeric only) <span style={{ color: "#e11d48" }}>*</span>
+                  Package Cost <span style={{ color: "#e11d48" }}>*</span>
                 </label>
-                <span style={{ fontSize: "12px", color: "#64748b" }}>Numbers only (e.g. 15000 or 15000.50)</span>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>Text / Varchar (e.g. 15000, ₹ 15,000, Starting from 5000)</span>
               </div>
               <input
                 type="text"
-                inputMode="decimal"
                 id="packageCost"
                 name="packageCost"
                 value={formData.packageCost}
                 onChange={handleInputChange}
-                onKeyDown={(e) => {
-                  const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape'];
-                  if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey) return;
-                  if (!/[0-9]/.test(e.key) && !(e.key === '.' && !formData.packageCost.includes('.'))) {
-                    e.preventDefault();
-                  }
-                }}
-                placeholder="Enter numeric package cost (e.g. 15000)"
+                placeholder="e.g. 15000, ₹ 15,000, Starting from 5000"
                 required
                 style={{ width: "100%", padding: "10px", marginTop: "5px", borderRadius: "4px", border: "1px solid #cbd5e1", boxSizing: "border-box" }}
               />
