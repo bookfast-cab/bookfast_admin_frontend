@@ -97,6 +97,8 @@ const TourPackageForm = (params) => {
     benefits: "",
     description: "",
   });
+  const [editingItineraryIndex, setEditingItineraryIndex] = useState(null);
+  const itineraryFormRef = useRef(null);
   const itineraryImageInputRef = useRef(null);
   const [isUploadingItineraryImage, setIsUploadingItineraryImage] = useState(false);
 
@@ -575,8 +577,31 @@ const TourPackageForm = (params) => {
         let images = await fetchImages(JSON.parse(result.data.featured_image));
         let loadedItinerary = [];
         try {
-          if (result.itineraries && result.itineraries.length > 0 && result.itineraries[0].itinerary_details) {
-            loadedItinerary = JSON.parse(result.itineraries[0].itinerary_details);
+          const rawItineraries = result.itineraries || [];
+          if (Array.isArray(rawItineraries)) {
+            rawItineraries.forEach((item) => {
+              let details = item?.itinerary_details !== undefined ? item.itinerary_details : item;
+              if (typeof details === "string") {
+                try {
+                  details = JSON.parse(details);
+                  if (typeof details === "string") {
+                    details = JSON.parse(details);
+                  }
+                } catch (parseErr) {
+                  console.error("Error parsing itinerary_details string", parseErr);
+                }
+              }
+
+              if (Array.isArray(details)) {
+                loadedItinerary.push(...details);
+              } else if (details && typeof details === "object") {
+                if (Array.isArray(details.days)) {
+                  loadedItinerary.push(...details.days);
+                } else if (details.title || details.description) {
+                  loadedItinerary.push(details);
+                }
+              }
+            });
           }
         } catch (err) {
           console.error("Failed to parse itinerary details", err);
@@ -750,24 +775,60 @@ return {
       [name]: value,
     });
   };
-  
-  const addItineraryDay = () => {
+
+  const handleSaveItineraryDay = () => {
     if (!itineraryDay.title && !itineraryDay.description) {
       alert("Please provide at least a Title or Description for this day.");
-      
-return;
+
+      return;
     }
-    setFormData({
-      ...formData,
-      itinerary: [...formData.itinerary, { ...itineraryDay }],
-    });
+
+    if (editingItineraryIndex !== null) {
+      // Update the day in place without deleting or changing order
+      const updatedItinerary = [...formData.itinerary];
+      updatedItinerary[editingItineraryIndex] = { ...itineraryDay };
+      setFormData({
+        ...formData,
+        itinerary: updatedItinerary,
+      });
+      setEditingItineraryIndex(null);
+    } else {
+      // Add new day to the end of itinerary
+      setFormData({
+        ...formData,
+        itinerary: [...formData.itinerary, { ...itineraryDay }],
+      });
+    }
+
     setItineraryDay({ title: "", image: "", tags: "", benefits: "", description: "" });
   };
 
+  const handleCancelEditItineraryDay = () => {
+    setEditingItineraryIndex(null);
+    setItineraryDay({ title: "", image: "", tags: "", benefits: "", description: "" });
+  };
+
+  const handleStartEditItineraryDay = (index) => {
+    setEditingItineraryIndex(index);
+    setItineraryDay({ ...formData.itinerary[index] });
+    if (itineraryFormRef.current) {
+      itineraryFormRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
   const removeItineraryDay = (index) => {
+    if (editingItineraryIndex === index) {
+      setEditingItineraryIndex(null);
+      setItineraryDay({ title: "", image: "", tags: "", benefits: "", description: "" });
+    } else if (editingItineraryIndex !== null && index < editingItineraryIndex) {
+      setEditingItineraryIndex((prev) => prev - 1);
+    }
+
     const updatedItinerary = formData.itinerary.filter((_, i) => i !== index);
     setFormData({ ...formData, itinerary: updatedItinerary });
   };
+
+  const addItineraryDay = handleSaveItineraryDay;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -2076,8 +2137,31 @@ return;
             </div>
 
             {/* Itinerary Section */}
-            <h2 style={{ textAlign: "center", marginBottom: "20px" }}>Add Itinerary</h2>
-            <div style={{ maxWidth: "100%", margin: "auto", padding: "15px", border: "1px solid #ccc", borderRadius: "5px", backgroundColor: "#f9f9f9" }}>
+            <div ref={itineraryFormRef} style={{ maxWidth: "100%", margin: "30px auto", padding: "20px", border: editingItineraryIndex !== null ? "2px solid #2563eb" : "1px solid #cbd5e1", borderRadius: "8px", backgroundColor: editingItineraryIndex !== null ? "#f8faff" : "#f9f9f9" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px", paddingBottom: "10px", borderBottom: "1px solid #e2e8f0" }}>
+                <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: editingItineraryIndex !== null ? "#2563eb" : "#0f172a" }}>
+                  {editingItineraryIndex !== null ? `✏️ Edit Day ${editingItineraryIndex + 1}` : "Add Itinerary Day"}
+                </h2>
+                {editingItineraryIndex !== null && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditItineraryDay}
+                    style={{
+                      padding: "6px 14px",
+                      backgroundColor: "#fff",
+                      color: "#64748b",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      fontWeight: "600"
+                    }}
+                  >
+                    ✕ Cancel Edit
+                  </button>
+                )}
+              </div>
+
               <div style={{ marginBottom: "20px" }}>
                 <label htmlFor="dayTitle" style={{ display: "block", fontWeight: "bold" }}>Day Title:</label>
                 <input
@@ -2190,13 +2274,63 @@ return;
                   style={{ width: "100%", padding: "10px", border: "1px solid #ccc", borderRadius: "4px", height: "100px" }}
                 ></textarea>
               </div>
-              <button
-                type="button"
-                onClick={addItineraryDay}
-                style={{ display: "block", width: "100%", padding: "10px", backgroundColor: "#007BFF", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
-              >
-                Add Day
-              </button>
+              
+              {editingItineraryIndex !== null ? (
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    type="button"
+                    onClick={handleSaveItineraryDay}
+                    style={{
+                      flex: 1,
+                      padding: "11px",
+                      backgroundColor: "#16a34a",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      fontWeight: "700",
+                      fontSize: "14px"
+                    }}
+                  >
+                    💾 Update Day {editingItineraryIndex + 1}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEditItineraryDay}
+                    style={{
+                      padding: "11px 20px",
+                      backgroundColor: "#e2e8f0",
+                      color: "#334155",
+                      border: "none",
+                      borderRadius: "5px",
+                      cursor: "pointer",
+                      fontWeight: "600",
+                      fontSize: "14px"
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSaveItineraryDay}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "11px",
+                    backgroundColor: "#007BFF",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "5px",
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "14px"
+                  }}
+                >
+                  + Add Day
+                </button>
+              )}
             </div>
 
             <h3>Current Itinerary:</h3>
@@ -2204,96 +2338,118 @@ return;
               <p style={{ color: "#64748b", fontSize: "14px" }}>No itinerary days added yet.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
-                {formData.itinerary.map((day, index) => (
-                  <div 
-                    key={index}
-                    style={{
-                      display: "flex",
-                      gap: "15px",
-                      padding: "14px 16px",
-                      backgroundColor: "#fff",
-                      borderRadius: "6px",
-                      border: "1px solid #e2e8f0",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between"
-                    }}
-                  >
-                    <div style={{ display: "flex", gap: "14px", flex: 1, alignItems: "flex-start" }}>
-                      {day.image && (
-                        <img
-                          src={day.image}
-                          alt={day.title || `Day ${index + 1}`}
-                          style={{
-                            width: "90px",
-                            height: "65px",
-                            objectFit: "cover",
-                            borderRadius: "4px",
-                            border: "1px solid #cbd5e1",
-                            flexShrink: 0
-                          }}
-                        />
-                      )}
-                      <div>
-                        <div style={{ fontWeight: "bold", fontSize: "15px", color: "#0f172a" }}>
-                          Day {index + 1}: {day.title || "Untitled Day"}
+                {formData.itinerary.map((day, index) => {
+                  const isBeingEdited = editingItineraryIndex === index;
+
+                  return (
+                    <div 
+                      key={index}
+                      style={{
+                        display: "flex",
+                        gap: "15px",
+                        padding: "14px 16px",
+                        backgroundColor: isBeingEdited ? "#eff6ff" : "#fff",
+                        borderRadius: "6px",
+                        border: isBeingEdited ? "2px solid #2563eb" : "1px solid #e2e8f0",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      <div style={{ display: "flex", gap: "14px", flex: 1, alignItems: "flex-start" }}>
+                        {day.image && (
+                          <img
+                            src={day.image}
+                            alt={day.title || `Day ${index + 1}`}
+                            style={{
+                              width: "90px",
+                              height: "65px",
+                              objectFit: "cover",
+                              borderRadius: "4px",
+                              border: "1px solid #cbd5e1",
+                              flexShrink: 0
+                            }}
+                          />
+                        )}
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <div style={{ fontWeight: "bold", fontSize: "15px", color: "#0f172a" }}>
+                              Day {index + 1}: {day.title || "Untitled Day"}
+                            </div>
+                            {isBeingEdited && (
+                              <span style={{
+                                backgroundColor: "#2563eb",
+                                color: "#fff",
+                                padding: "2px 8px",
+                                borderRadius: "10px",
+                                fontSize: "11px",
+                                fontWeight: "600"
+                              }}>
+                                Editing...
+                              </span>
+                            )}
+                          </div>
+                          {day.tags && (
+                            <div style={{ fontSize: "12px", color: "#2563eb", marginTop: "3px" }}>
+                              <strong>Tags:</strong> {day.tags}
+                            </div>
+                          )}
+                          {day.benefits && (
+                            <div style={{ fontSize: "12px", color: "#16a34a", marginTop: "3px" }}>
+                              <strong>Benefits:</strong> {day.benefits}
+                            </div>
+                          )}
+                          {day.description && (
+                            <div style={{ fontSize: "13px", color: "#475569", marginTop: "4px", whiteSpace: "pre-line" }}>
+                              {day.description}
+                            </div>
+                          )}
                         </div>
-                        {day.tags && (
-                          <div style={{ fontSize: "12px", color: "#2563eb", marginTop: "3px" }}>
-                            <strong>Tags:</strong> {day.tags}
-                          </div>
-                        )}
-                        {day.benefits && (
-                          <div style={{ fontSize: "12px", color: "#16a34a", marginTop: "3px" }}>
-                            <strong>Benefits:</strong> {day.benefits}
-                          </div>
-                        )}
-                        {day.description && (
-                          <div style={{ fontSize: "13px", color: "#475569", marginTop: "4px", whiteSpace: "pre-line" }}>
-                            {day.description}
-                          </div>
-                        )}
+                      </div>
+                      <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isBeingEdited) {
+                              handleCancelEditItineraryDay();
+                            } else {
+                              handleStartEditItineraryDay(index);
+                            }
+                          }}
+                          style={{
+                            backgroundColor: isBeingEdited ? "#2563eb" : "#f1f5f9",
+                            color: isBeingEdited ? "#fff" : "#2563eb",
+                            padding: "6px 12px",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "12px",
+                            fontWeight: "600"
+                          }}
+                          title={isBeingEdited ? "Cancel Editing" : "Edit Day"}
+                        >
+                          {isBeingEdited ? "Cancel" : "✏️ Edit"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeItineraryDay(index)}
+                          style={{
+                            backgroundColor: "#fee2e2",
+                            color: "#dc2626",
+                            padding: "6px 12px",
+                            border: "1px solid #fecaca",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "12px",
+                            fontWeight: "600"
+                          }}
+                        >
+                          Remove Day
+                        </button>
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setItineraryDay({ ...day });
-                          removeItineraryDay(index);
-                        }}
-                        style={{
-                          backgroundColor: "#f1f5f9",
-                          color: "#2563eb",
-                          padding: "6px 12px",
-                          border: "1px solid #cbd5e1",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontSize: "12px",
-                          fontWeight: "600"
-                        }}
-                        title="Edit Day"
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeItineraryDay(index)}
-                        style={{
-                          backgroundColor: "#fee2e2",
-                          color: "#dc2626",
-                          padding: "6px 12px",
-                          border: "1px solid #fecaca",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontSize: "12px",
-                          fontWeight: "600"
-                        }}
-                      >
-                        Remove Day
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
