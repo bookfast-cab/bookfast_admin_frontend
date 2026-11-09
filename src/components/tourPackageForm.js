@@ -1881,8 +1881,21 @@ return;
                 onChange={handleInputChange}
                 placeholder="Enter the title"
                 required
-                style={{ width: "100%", padding: "10px", marginTop: "5px", borderRadius: "4px", border: "1px solid #ccc", boxSizing: "border-box" }}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  marginTop: "5px",
+                  borderRadius: "4px",
+                  border: errorMessage && errorMessage.toLowerCase().includes("title") ? "2px solid #ef4444" : "1px solid #ccc",
+                  backgroundColor: errorMessage && errorMessage.toLowerCase().includes("title") ? "#fff5f5" : "#fff",
+                  boxSizing: "border-box"
+                }}
               />
+              {errorMessage && errorMessage.toLowerCase().includes("title") && (
+                <div style={{ color: "#dc2626", fontSize: "12px", marginTop: "4px", fontWeight: "500" }}>
+                  ⚠️ {errorMessage}
+                </div>
+              )}
             </div>
 
             {/* Slug Field */}
