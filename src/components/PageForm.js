@@ -560,7 +560,8 @@ const PageForm = ({ hidefeatureImage }) => {
     content: editorContent,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[300px] p-4 border border-gray-300 rounded-md',
+        class: 'pageform-prosemirror focus:outline-none',
+        style: 'min-height: 300px; padding: 12px 14px; outline: none; cursor: text;',
       },
     },
     immediatelyRender: false,
@@ -2065,15 +2066,25 @@ const PageForm = ({ hidefeatureImage }) => {
                 </div>
               )}
               {isBrowser && editor && (
-                <div onDoubleClick={handleEditorDoubleClick}>
+                <div 
+                  onDoubleClick={handleEditorDoubleClick}
+                  onClick={() => {
+                    if (editor && !editor.isFocused) {
+                      editor.commands.focus();
+                    }
+                  }}
+                  style={{ cursor: "text" }}
+                >
                   <EditorToolbar />
                   <EditorContent
                     editor={editor}
+                    className="pageform-tiptap-content"
                     style={{
                       border: '1px solid #dee2e6',
                       borderTop: 'none',
                       borderRadius: '0 0 6px 6px',
                       minHeight: '300px',
+                      backgroundColor: '#fff',
                     }}
                   />
                 </div>
@@ -2796,6 +2807,20 @@ const PageForm = ({ hidefeatureImage }) => {
         </DialogActions>
       </Dialog>
 
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .pageform-tiptap-content .ProseMirror {
+          min-height: 300px !important;
+          padding: 12px 14px !important;
+          outline: none !important;
+          cursor: text !important;
+        }
+        .pageform-tiptap-content .ProseMirror p {
+          margin-top: 0;
+          margin-bottom: 0.5rem;
+        }
+      `
+      }} />
     </>
   );
 };

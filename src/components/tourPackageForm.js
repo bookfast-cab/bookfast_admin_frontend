@@ -101,6 +101,7 @@ const TourPackageForm = (params) => {
   const itineraryFormRef = useRef(null);
   const itineraryImageInputRef = useRef(null);
   const [isUploadingItineraryImage, setIsUploadingItineraryImage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // FAQ State
   const [faqList, setFaqList] = useState([]);
@@ -373,7 +374,8 @@ const TourPackageForm = (params) => {
     content: "",
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[300px] p-4 border border-gray-300 rounded-md',
+        class: 'content-prosemirror focus:outline-none',
+        style: 'min-height: 300px; padding: 12px 14px; outline: none; cursor: text;',
       },
     },
     immediatelyRender: false,
@@ -385,7 +387,8 @@ const TourPackageForm = (params) => {
     content: "",
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[220px] p-4 border border-gray-300 rounded-md',
+        class: 'location-prosemirror focus:outline-none',
+        style: 'min-height: 220px; padding: 12px 14px; outline: none; cursor: text;',
       },
     },
     immediatelyRender: false,
@@ -745,6 +748,11 @@ return {
         ...prev,
         page_slug: slugify(value),
       }));
+    } else if (name === "packageCost") {
+      const cleaned = value.replace(/[^0-9.]/g, '');
+      const parts = cleaned.split('.');
+      const numericValue = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : cleaned;
+      setFormData((prev) => ({ ...prev, packageCost: numericValue }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -836,6 +844,14 @@ return {
     // Validate the form
     if (!formData.title || !formData.duration || !formData.packageCost) {      
       alert("Please fill all required fields.");  
+      setErrorMessage("Please fill all required fields.");
+
+      return;
+    }
+
+    if (isNaN(formData.packageCost) || Number(formData.packageCost) < 0) {
+      alert("Package Cost must be a valid numeric amount.");
+      setErrorMessage("Package Cost must be a valid numeric amount.");
 
       return;
     }
@@ -889,13 +905,27 @@ return {
           },
         }
       );
-  
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonErr) {
+        result = null;
       }
-  
-      const result = await response.json();
-  
+
+      if (!response.ok || !result?.success) {
+        const errorMsg = result?.message || result?.error || `Request failed with status ${response.status}`;
+        setErrorMessage(errorMsg);
+        alert(errorMsg);
+        if (typeof window !== 'undefined') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        return;
+      }
+
+      setErrorMessage("");
+
       if (result.success) {
         const savedFilenames = result.data.featured_image;
         let uploadData = new FormData();
@@ -938,6 +968,7 @@ return {
         alert(result.message);
       }
     } catch (error) {
+      setErrorMessage(error.message);
       alert("Error during submission: " + error.message);
     }
   };
@@ -1778,6 +1809,43 @@ return {
       <div style={{ display: "flex", gap: "20px", maxWidth: "1400px", margin: "auto" }}>
         {/* Main Form */}
         <div style={{ flex: "2" }}>
+          {errorMessage && (
+            <div style={{
+              padding: "14px 18px",
+              backgroundColor: "#fef2f2",
+              border: "1px solid #f87171",
+              borderRadius: "8px",
+              color: "#991b1b",
+              fontSize: "14px",
+              fontWeight: "600",
+              marginBottom: "20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              boxShadow: "0 1px 3px rgba(239, 68, 68, 0.15)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "18px" }}>⚠️</span>
+                <span>{errorMessage}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setErrorMessage("")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#991b1b",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  fontSize: "18px",
+                  lineHeight: 1
+                }}
+                title="Dismiss error"
+              >
+                ✕
+              </button>
+            </div>
+          )}
           <form
             onSubmit={handleSubmit}
             style={{ maxWidth: "100%" }}
@@ -2017,34 +2085,48 @@ return {
             </div>
 
             <div style={{ marginBottom: "20px" }}>
-              <label htmlFor="duration" style={{ display: "block", fontWeight: "bold" }}>
-                Duration
-              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                <label htmlFor="duration" style={{ display: "block", fontWeight: "bold" }}>
+                  Duration (Varchar / Text) <span style={{ color: "#e11d48" }}>*</span>
+                </label>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>e.g. 3 Days / 2 Nights, 4N/5D, 5 Days</span>
+              </div>
               <input
                 type="text"
                 id="duration"
                 name="duration"
                 value={formData.duration}
                 onChange={handleInputChange}
-                placeholder="Enter the duration (e.g., 3D/2N)"
+                placeholder="e.g. 3 Days / 2 Nights, 3D/2N, 5 Days"
                 required
-                style={{ width: "100%", padding: "10px", marginTop: "5px" }}
+                style={{ width: "100%", padding: "10px", marginTop: "5px", borderRadius: "4px", border: "1px solid #cbd5e1", boxSizing: "border-box" }}
               />
             </div>
 
             <div style={{ marginBottom: "20px" }}>
-              <label htmlFor="packageCost" style={{ display: "block", fontWeight: "bold" }}>
-                Package Cost
-              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                <label htmlFor="packageCost" style={{ display: "block", fontWeight: "bold" }}>
+                  Package Cost (₹ Numeric only) <span style={{ color: "#e11d48" }}>*</span>
+                </label>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>Numbers only (e.g. 15000 or 15000.50)</span>
+              </div>
               <input
                 type="text"
+                inputMode="decimal"
                 id="packageCost"
                 name="packageCost"
                 value={formData.packageCost}
                 onChange={handleInputChange}
-                placeholder="Enter the package cost"
+                onKeyDown={(e) => {
+                  const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape'];
+                  if (allowedKeys.includes(e.key) || e.ctrlKey || e.metaKey) return;
+                  if (!/[0-9]/.test(e.key) && !(e.key === '.' && !formData.packageCost.includes('.'))) {
+                    e.preventDefault();
+                  }
+                }}
+                placeholder="Enter numeric package cost (e.g. 15000)"
                 required
-                style={{ width: "100%", padding: "10px", marginTop: "5px" }}
+                style={{ width: "100%", padding: "10px", marginTop: "5px", borderRadius: "4px", border: "1px solid #cbd5e1", boxSizing: "border-box" }}
               />
             </div>
 
@@ -2083,21 +2165,35 @@ return {
             <div 
               style={{ marginBottom: "30px" }}
               onFocus={() => setActiveEditorTarget("location")}
-              onClick={() => setActiveEditorTarget("location")}
+              onClick={() => {
+                setActiveEditorTarget("location");
+                if (locationEditor && !locationEditor.isFocused) {
+                  locationEditor.commands.focus();
+                }
+              }}
             >
               <label htmlFor="locationCovered" style={{ display: "block", fontWeight: "bold", fontSize: "16px", marginBottom: "10px" }}>
                 Location Covered
               </label>
               {isBrowser && locationEditor && (
-                <div onDoubleClick={(e) => handleEditorDoubleClick(e, locationEditor)}>
+                <div 
+                  onDoubleClick={(e) => handleEditorDoubleClick(e, locationEditor)}
+                  onClick={() => {
+                    setActiveEditorTarget("location");
+                    locationEditor.commands.focus();
+                  }}
+                  style={{ cursor: "text" }}
+                >
                   <EditorToolbar editor={locationEditor} />
                   <EditorContent 
                     editor={locationEditor} 
+                    className="location-tiptap-content"
                     style={{
                       border: '1px solid #dee2e6',
                       borderTop: 'none',
                       borderRadius: '0 0 6px 6px',
                       minHeight: '220px',
+                      backgroundColor: '#fff',
                     }}
                   />
                 </div>
@@ -2105,7 +2201,16 @@ return {
             </div>
 
             {/* TipTap Editor for Content */}
-            <div style={{ marginBottom: "20px" }} onFocus={() => setActiveEditorTarget("content")} onClick={() => setActiveEditorTarget("content")}>
+            <div 
+              style={{ marginBottom: "20px" }} 
+              onFocus={() => setActiveEditorTarget("content")} 
+              onClick={() => {
+                setActiveEditorTarget("content");
+                if (editor && !editor.isFocused) {
+                  editor.commands.focus();
+                }
+              }}
+            >
               <label htmlFor="content" style={{ display: "block", fontWeight: "bold", fontSize: "16px", marginBottom: "10px" }}>
                 Content
               </label>
@@ -2121,15 +2226,24 @@ return {
                 </div>
               )}
               {isBrowser && editor && (
-                <div onDoubleClick={(e) => handleEditorDoubleClick(e, editor)}>
+                <div 
+                  onDoubleClick={(e) => handleEditorDoubleClick(e, editor)}
+                  onClick={() => {
+                    setActiveEditorTarget("content");
+                    editor.commands.focus();
+                  }}
+                  style={{ cursor: "text" }}
+                >
                   <EditorToolbar editor={editor} />
                   <EditorContent 
                     editor={editor} 
+                    className="content-tiptap-content"
                     style={{
                       border: '1px solid #dee2e6',
                       borderTop: 'none',
                       borderRadius: '0 0 6px 6px',
                       minHeight: '300px',
+                      backgroundColor: '#fff',
                     }}
                   />
                 </div>
@@ -3105,6 +3219,28 @@ return {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .location-tiptap-content .ProseMirror {
+          min-height: 220px !important;
+          padding: 12px 14px !important;
+          outline: none !important;
+          cursor: text !important;
+        }
+        .content-tiptap-content .ProseMirror {
+          min-height: 300px !important;
+          padding: 12px 14px !important;
+          outline: none !important;
+          cursor: text !important;
+        }
+        .location-tiptap-content .ProseMirror p,
+        .content-tiptap-content .ProseMirror p {
+          margin-top: 0;
+          margin-bottom: 0.5rem;
+        }
+      `
+      }} />
     </>
   );
 };
