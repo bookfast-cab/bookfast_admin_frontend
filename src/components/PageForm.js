@@ -1042,6 +1042,24 @@ const PageForm = ({ hidefeatureImage }) => {
 
   // Toolbar component
   const EditorToolbar = () => {
+    const [, setTick] = useState(0);
+
+    useEffect(() => {
+      if (!editor) return;
+
+      const handleUpdate = () => {
+        setTick((t) => t + 1);
+      };
+
+      editor.on('transaction', handleUpdate);
+      editor.on('selectionUpdate', handleUpdate);
+
+      return () => {
+        editor.off('transaction', handleUpdate);
+        editor.off('selectionUpdate', handleUpdate);
+      };
+    }, []);
+
     if (!editor) return null;
 
     // Helper function to set text color
@@ -1060,20 +1078,24 @@ const PageForm = ({ hidefeatureImage }) => {
     };
 
     return (
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '8px',
-        padding: '12px',
-        backgroundColor: '#f8f9fa',
-        border: '1px solid #dee2e6',
-        borderBottom: '2px solid #ced4da',
-        borderRadius: '6px 6px 0 0',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-      }}>
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '8px',
+          padding: '12px',
+          backgroundColor: '#f8f9fa',
+          border: '1px solid #dee2e6',
+          borderBottom: '2px solid #ced4da',
+          borderRadius: '6px 6px 0 0',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+        }}
+      >
         {/* Text Formatting */}
         <button
           type="button"
@@ -1180,6 +1202,8 @@ const PageForm = ({ hidefeatureImage }) => {
         {/* Font Size Selector */}
         <select
           onChange={(e) => setFontSize(e.target.value)}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
           style={{
             padding: '6px 8px',
             border: '1px solid #ccc',
@@ -1263,41 +1287,67 @@ const PageForm = ({ hidefeatureImage }) => {
           </button>
         </div>
 
-        {/* Headings */}
-        <select
-          value={
-            editor.isActive('heading', { level: 1 }) ? "1" :
-            editor.isActive('heading', { level: 2 }) ? "2" :
-            editor.isActive('heading', { level: 3 }) ? "3" :
-            editor.isActive('heading', { level: 4 }) ? "4" :
-            editor.isActive('heading', { level: 5 }) ? "5" :
-            editor.isActive('heading', { level: 6 }) ? "6" : ""
-          }
-          onChange={(e) => {
-            const level = parseInt(e.target.value);
-            if (level) {
-              editor.chain().focus().setHeading({ level }).run();
-            } else {
-              editor.chain().focus().setParagraph().run();
-            }
-          }}
-          style={{
-            padding: '6px 8px',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            backgroundColor: '#fff',
-          }}
-          title="Heading Level"
+        {/* Headings Buttons (Replaced dropdown with direct 1-click buttons) */}
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}
         >
-          <option value="">Normal</option>
-          <option value="1">H1</option>
-          <option value="2">H2</option>
-          <option value="3">H3</option>
-          <option value="4">H4</option>
-          <option value="5">H5</option>
-          <option value="6">H6</option>
-        </select>
+          <button
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              editor.chain().focus().setParagraph().run();
+            }}
+            style={{
+              padding: '6px 10px',
+              border: (editor.isActive('paragraph') && !editor.isActive('heading')) ? '1px solid #1d4ed8' : '1px solid #cbd5e1',
+              backgroundColor: (editor.isActive('paragraph') && !editor.isActive('heading')) ? '#2563eb' : '#fff',
+              color: (editor.isActive('paragraph') && !editor.isActive('heading')) ? '#fff' : '#1e293b',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontSize: '12px',
+              boxShadow: (editor.isActive('paragraph') && !editor.isActive('heading')) ? 'inset 0 1px 2px rgba(0,0,0,0.2)' : 'none',
+              transition: 'all 0.1s ease',
+            }}
+            title="Normal Paragraph (P)"
+          >
+            P
+          </button>
+
+          {[1, 2, 3, 4, 5, 6].map((level) => {
+            const isHeadingActive = editor.isActive('heading', { level });
+
+            return (
+              <button
+                key={level}
+                type="button"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  editor.chain().focus().toggleHeading({ level }).run();
+                }}
+                style={{
+                  padding: '6px 10px',
+                  border: isHeadingActive ? '1px solid #1d4ed8' : '1px solid #cbd5e1',
+                  backgroundColor: isHeadingActive ? '#2563eb' : '#fff',
+                  color: isHeadingActive ? '#fff' : '#1e293b',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '12px',
+                  boxShadow: isHeadingActive ? 'inset 0 1px 2px rgba(0,0,0,0.2)' : 'none',
+                  transition: 'all 0.1s ease',
+                }}
+                title={`Heading ${level} (H${level})`}
+              >
+                {`H${level}`}
+              </button>
+            );
+          })}
+        </div>
 
         {/* Lists */}
         <button
@@ -2066,27 +2116,29 @@ const PageForm = ({ hidefeatureImage }) => {
                 </div>
               )}
               {isBrowser && editor && (
-                <div 
-                  onDoubleClick={handleEditorDoubleClick}
-                  onClick={() => {
-                    if (editor && !editor.isFocused) {
-                      editor.commands.focus();
-                    }
-                  }}
-                  style={{ cursor: "text" }}
-                >
+                <div>
                   <EditorToolbar />
-                  <EditorContent
-                    editor={editor}
-                    className="pageform-tiptap-content"
-                    style={{
-                      border: '1px solid #dee2e6',
-                      borderTop: 'none',
-                      borderRadius: '0 0 6px 6px',
-                      minHeight: '300px',
-                      backgroundColor: '#fff',
+                  <div 
+                    onDoubleClick={handleEditorDoubleClick}
+                    onClick={() => {
+                      if (editor && !editor.isFocused) {
+                        editor.commands.focus();
+                      }
                     }}
-                  />
+                    style={{ cursor: "text" }}
+                  >
+                    <EditorContent
+                      editor={editor}
+                      className="pageform-tiptap-content"
+                      style={{
+                        border: '1px solid #dee2e6',
+                        borderTop: 'none',
+                        borderRadius: '0 0 6px 6px',
+                        minHeight: '300px',
+                        backgroundColor: '#fff',
+                      }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -2809,6 +2861,10 @@ const PageForm = ({ hidefeatureImage }) => {
 
       <style dangerouslySetInnerHTML={{
         __html: `
+        .pageform-tiptap-content .ProseMirror ::selection {
+          background-color: #2563eb !important;
+          color: #ffffff !important;
+        }
         .pageform-tiptap-content .ProseMirror {
           min-height: 300px !important;
           padding: 12px 14px !important;
