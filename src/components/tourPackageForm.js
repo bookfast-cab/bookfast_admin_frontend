@@ -2195,11 +2195,8 @@ return;
             <div style={{ marginBottom: "20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
                 <label htmlFor="featured_image_alt" style={{ display: "block", fontWeight: "bold" }}>
-                  Featured Image Alt Text <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "normal" }}>(Optional / Nullable)</span>
+                  Featured Image Alt Text 
                 </label>
-                <span style={{ fontSize: "12px", color: "#64748b" }}>
-                  For SEO & accessibility
-                </span>
               </div>
               <input
                 type="text"
