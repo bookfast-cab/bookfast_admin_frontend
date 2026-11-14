@@ -63,7 +63,8 @@ const slugify = (text) => {
 
 const TourPackageForm = (params) => {
   const router = useRouter();
-  const queryPackageType = params?.package_type || router?.query?.package_type || router?.query?.type || "main";
+  const isUrbaniaRoute = router?.pathname?.toLowerCase()?.includes("urbania") || router?.asPath?.toLowerCase()?.includes("urbania");
+  const queryPackageType = params?.package_type || (isUrbaniaRoute ? "urbania" : (router?.query?.package_type || router?.query?.type || "main"));
 
   const [formData, setFormData] = useState({
     title: "",
@@ -78,6 +79,7 @@ const TourPackageForm = (params) => {
     locationCovered: "",
     packageCost: "",
     featured_image: [],
+    featured_image_alt: "",
     itinerary: [],
   });
 
@@ -85,7 +87,7 @@ const TourPackageForm = (params) => {
     if (queryPackageType) {
       setFormData((prev) => ({
         ...prev,
-        package_type: queryPackageType,
+        package_type: prev.package_type || queryPackageType,
       }));
     }
   }, [queryPackageType]);
@@ -623,6 +625,7 @@ const TourPackageForm = (params) => {
           locationCovered: result.data.location_covered || "",
           packageCost: result.data.package_cost,
           featured_image: [...images],
+          featured_image_alt: result.data.featured_image_alt || "",
           itinerary: Array.isArray(loadedItinerary) ? loadedItinerary : [],
         });
         
@@ -867,6 +870,7 @@ return;
     data.append("location_covered", locationContent);
     data.append("content", editorContent);
     data.append("faq_content", generateFaqHTML());
+    data.append("featured_image_alt", formData.featured_image_alt || "");
     data.append("itinerary", JSON.stringify(formData.itinerary));
   
     const files = formData.featured_image;
@@ -978,6 +982,7 @@ return;
       locationCovered: "",
       packageCost: "",
       featured_image: [],
+      featured_image_alt: "",
       itinerary: [],
     });
     setFaqList([]);
@@ -1891,32 +1896,8 @@ return;
             style={{ maxWidth: "100%" }}
             encType="multipart/form-data"
           >
-            {/* Package Type Field */}
-            <div style={{ marginBottom: "20px" }}>
-              <label htmlFor="package_type" style={{ display: "block", fontWeight: "bold", marginBottom: "6px" }}>
-                Package Type <span style={{ color: "#e11d48" }}>*</span>
-              </label>
-              <select
-                id="package_type"
-                name="package_type"
-                value={formData.package_type || "main"}
-                onChange={handleInputChange}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "6px",
-                  border: "1px solid #cbd5e1",
-                  backgroundColor: "#fff",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                  outline: "none"
-                }}
-              >
-                <option value="main">Main Tour Package</option>
-                <option value="urbania">Urbania Tour Package</option>
-              </select>
-            </div>
+            {/* Package Type (Hidden - automatically set according to page route / query) */}
+            <input type="hidden" name="package_type" value={formData.package_type || queryPackageType || "main"} />
 
             <div style={{ marginBottom: "20px" }}>
               <label htmlFor="title" style={{ display: "block", fontWeight: "bold" }}>
@@ -2189,9 +2170,14 @@ return;
             </div>
 
             <div style={{ marginBottom: "20px" }}>
-              <label htmlFor="featured_image" style={{ display: "block", fontWeight: "bold" }}>
-                Featured Images
-              </label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                <label htmlFor="featured_image" style={{ display: "block", fontWeight: "bold" }}>
+                  Featured Images {params.id === undefined && <span style={{ color: "#e11d48" }}>*</span>}
+                </label>
+                <span style={{ fontSize: "12px", color: "#f00000ff", fontWeight: "600" }}>
+                  Recommended size: 810 x 420 px (Max: 5MB)
+                </span>
+              </div>
               <input
                 type="file"
                 id="featured_image"
@@ -2201,6 +2187,35 @@ return;
                 onChange={handleFileChange}
                 multiple
                 required={ params.id === undefined ? true : false }
+                style={{ width: "100%", padding: "8px 0" }}
+              />
+            </div>
+
+            {/* Featured Image Alt Text */}
+            <div style={{ marginBottom: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                <label htmlFor="featured_image_alt" style={{ display: "block", fontWeight: "bold" }}>
+                  Featured Image Alt Text <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "normal" }}>(Optional / Nullable)</span>
+                </label>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>
+                  For SEO & accessibility
+                </span>
+              </div>
+              <input
+                type="text"
+                id="featured_image_alt"
+                name="featured_image_alt"
+                value={formData.featured_image_alt || ""}
+                onChange={handleInputChange}
+                placeholder="e.g. Chandigarh to Manali Tour Package"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  marginTop: "5px",
+                  borderRadius: "4px",
+                  border: "1px solid #cbd5e1",
+                  boxSizing: "border-box"
+                }}
               />
             </div>
 
