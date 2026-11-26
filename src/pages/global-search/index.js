@@ -195,7 +195,7 @@ const GlobalSearch = () => {
   // 1. Search Customer / User
   const handleCustomerSearch = async () => {
     if (!customerSearch.trim()) {
-      showToast('Please enter a User ID, Email, or Phone number', 'warning');
+      showToast('Please enter User ID, Phone, Email, or Referral Code', 'warning');
 
       return;
     }
@@ -526,6 +526,8 @@ const GlobalSearch = () => {
                       ? '9000000001'
                       : customerSearchType === 'id'
                       ? 'Enter User ID'
+                      : customerSearchType === 'referral_code'
+                      ? 'Enter Referral Code'
                       : 'Enter Email'
                   }
                   InputProps={{
@@ -578,14 +580,19 @@ const GlobalSearch = () => {
                     label="User ID"
                   />
                   <FormControlLabel
+                    value="mobile"
+                    control={<Radio size="small" sx={{ color: '#94a3b8', '&.Mui-checked': { color: '#00a8e8' } }} />}
+                    label="Phone"
+                  />
+                  <FormControlLabel
                     value="email"
                     control={<Radio size="small" sx={{ color: '#94a3b8', '&.Mui-checked': { color: '#00a8e8' } }} />}
                     label="Email"
                   />
                   <FormControlLabel
-                    value="mobile"
+                    value="referral_code"
                     control={<Radio size="small" sx={{ color: '#94a3b8', '&.Mui-checked': { color: '#00a8e8' } }} />}
-                    label="Phone"
+                    label="Referral Code"
                   />
                 </RadioGroup>
 

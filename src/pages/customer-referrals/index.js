@@ -151,9 +151,18 @@ const CustomerReferralsPage = () => {
         
 return (
           <Box sx={{ display: "flex", flexDirection: "column", py: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: "#1976d2" }}>
-              {ref.name || "Customer #" + ref.id}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: "#1976d2" }}>
+                {ref.name || "Customer #" + ref.id}
+              </Typography>
+              {ref.id ? (
+                <Chip
+                  label={`ID: ${ref.id}`}
+                  size="small"
+                  sx={{ height: 18, fontSize: "0.68rem", fontWeight: 700, bgcolor: "#e3f2fd", color: "#1976d2" }}
+                />
+              ) : null}
+            </Box>
             <Typography variant="caption" color="textSecondary">
               📱 {ref.phoneNumber || "No phone"}
             </Typography>
@@ -171,9 +180,18 @@ return (
         
 return (
           <Box sx={{ display: "flex", flexDirection: "column", py: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {ref.name || "Customer #" + ref.id}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {ref.name || "Customer #" + ref.id}
+              </Typography>
+              {ref.id ? (
+                <Chip
+                  label={`ID: ${ref.id}`}
+                  size="small"
+                  sx={{ height: 18, fontSize: "0.68rem", fontWeight: 700, bgcolor: "#f5f5f5", color: "#555" }}
+                />
+              ) : null}
+            </Box>
             <Typography variant="caption" color="textSecondary">
               📱 {ref.phoneNumber || "No phone"}
             </Typography>
@@ -329,10 +347,10 @@ return <span>{d.toLocaleDateString()} {d.toLocaleTimeString([], { hour: '2-digit
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center" }}>
             <TextField
               size="small"
-              placeholder="Search by code, customer name or phone..."
+              placeholder="Search by mobile no, customer ID, referral code, or name..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              sx={{ minWidth: 320, flexGrow: 1 }}
+              sx={{ minWidth: 360, flexGrow: 1 }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">

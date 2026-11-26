@@ -24,7 +24,13 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -39,6 +45,9 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import { getTrips } from 'src/apis/tripApis';
 import { formatDate } from 'src/utils/utils';
 import ToastMessage from 'src/components/ToastMessage';
@@ -133,6 +142,10 @@ const CustomerDetailsView = ({ data = {}, onCustomerUpdate }) => {
   const [tripFilter, setTripFilter] = useState('all'); // all, completed, cancelled, ongoing
   const [loadingTrips, setLoadingTrips] = useState(false);
 
+  // Data Collections (Referrals)
+  const [referralData, setReferralData] = useState([]);
+  const [loadingReferrals, setLoadingReferrals] = useState(false);
+
   // Toast State
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -223,12 +236,64 @@ const CustomerDetailsView = ({ data = {}, onCustomerUpdate }) => {
     }
   };
 
-  // Initial load of trips
+  // Fetch customer referrals from API
+  const fetchCustomerReferrals = async () => {
+    if (!customerData?.id) return;
+    setLoadingReferrals(true);
+    try {
+      const token = getToken();
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/customer-referrals?customerId=${customerData.id}&perPage=100`,
+        {
+          headers: {
+            Authorization: token,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      const result = await res.json();
+      if (result.success && Array.isArray(result.data)) {
+        setReferralData(result.data);
+      } else {
+        setReferralData([]);
+      }
+    } catch (err) {
+      console.error('Error fetching customer referrals:', err);
+    } finally {
+      setLoadingReferrals(false);
+    }
+  };
+
+  // Initial load of trips & referrals
   useEffect(() => {
     if (customerData?.id) {
       fetchCustomerTrips();
+      fetchCustomerReferrals();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerData?.id]);
+
+  const referralStats = useMemo(() => {
+    let totalEarned = 0;
+    let completedCount = 0;
+    let pendingCount = 0;
+    referralData.forEach((item) => {
+      if (item.status === 'completed' || item.status === 'credited') {
+        totalEarned += Number(item.amount) || 0;
+        completedCount += 1;
+      } else {
+        pendingCount += 1;
+      }
+    });
+
+    return {
+      total: referralData.length,
+      totalEarned,
+      completedCount,
+      pendingCount
+    };
+  }, [referralData]);
 
   // Handle Edit Submit
   const handleSaveCustomer = async () => {
@@ -547,6 +612,11 @@ const CustomerDetailsView = ({ data = {}, onCustomerUpdate }) => {
             iconPosition="start"
             label={`Trips (${tripData.length})`}
           />
+          <Tab
+            icon={<CardGiftcardIcon sx={{ fontSize: 18 }} />}
+            iconPosition="start"
+            label={`Referrals (${referralData.length})`}
+          />
         </Tabs>
 
         {/* ============================================================== */}
@@ -676,6 +746,29 @@ const CustomerDetailsView = ({ data = {}, onCustomerUpdate }) => {
                     onCopy={handleCopy}
                   />
                   <InfoRow label="Referred By" value={customerData.refered_by || '—'} />
+                  <Box sx={{ mt: 1.5, pt: 1.5, borderTop: `1px dashed ${BRAND_COLORS.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" fontWeight={600} color={BRAND_COLORS.textSecondary}>
+                      Referral Network:
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<CardGiftcardIcon sx={{ fontSize: 16 }} />}
+                      onClick={() => setTabValue(2)}
+                      sx={{
+                        textTransform: 'none',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        py: 0.3,
+                        px: 1.5,
+                        borderRadius: 1.5,
+                        borderColor: BRAND_COLORS.primary,
+                        color: BRAND_COLORS.primary
+                      }}
+                    >
+                      View Referrals ({referralData.length})
+                    </Button>
+                  </Box>
                   <InfoRow
                     label="Joining Date"
                     value={
@@ -992,6 +1085,233 @@ const CustomerDetailsView = ({ data = {}, onCustomerUpdate }) => {
                   : 'This customer has not booked any rides yet.'}
               </Typography>
             </Paper>
+          )}
+        </TabPanel>
+
+        {/* ============================================================== */}
+        {/* TAB 2: CUSTOMER REFERRALS                                      */}
+        {/* ============================================================== */}
+        <TabPanel value={tabValue} index={2}>
+          {/* Top Metric Cards */}
+          <Grid container spacing={2.5} sx={{ mb: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card variant="outlined" sx={{ borderRadius: 2, borderColor: BRAND_COLORS.border, p: 2 }}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                  <Avatar sx={{ bgcolor: BRAND_COLORS.primaryLight, color: BRAND_COLORS.primary, width: 42, height: 42 }}>
+                    <PeopleAltIcon sx={{ fontSize: 22 }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="caption" color={BRAND_COLORS.textSecondary} fontWeight={600}>
+                      TOTAL REFERRALS
+                    </Typography>
+                    <Typography variant="h6" fontWeight={800} color={BRAND_COLORS.textPrimary}>
+                      {referralStats.total}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card variant="outlined" sx={{ borderRadius: 2, borderColor: BRAND_COLORS.border, p: 2 }}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                  <Avatar sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', width: 42, height: 42 }}>
+                    <MonetizationOnIcon sx={{ fontSize: 22 }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="caption" color={BRAND_COLORS.textSecondary} fontWeight={600}>
+                      REWARD EARNED
+                    </Typography>
+                    <Typography variant="h6" fontWeight={800} color="#2e7d32">
+                      ₹{referralStats.totalEarned}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card variant="outlined" sx={{ borderRadius: 2, borderColor: BRAND_COLORS.border, p: 2 }}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                  <Avatar sx={{ bgcolor: '#fef3c7', color: '#b45309', width: 42, height: 42 }}>
+                    <CheckCircleOutline sx={{ fontSize: 22 }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="caption" color={BRAND_COLORS.textSecondary} fontWeight={600}>
+                      COMPLETED
+                    </Typography>
+                    <Typography variant="h6" fontWeight={800} color="#b45309">
+                      {referralStats.completedCount}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card variant="outlined" sx={{ borderRadius: 2, borderColor: BRAND_COLORS.border, p: 2 }}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                  <Avatar sx={{ bgcolor: '#fff3e0', color: '#e65100', width: 42, height: 42 }}>
+                    <CardGiftcardIcon sx={{ fontSize: 22 }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="caption" color={BRAND_COLORS.textSecondary} fontWeight={600}>
+                      REFERRAL CODE
+                    </Typography>
+                    <Typography variant="h6" fontWeight={800} color="#e65100">
+                      {customerData.referral_code || '—'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {/* Referrals Content */}
+          {loadingReferrals ? (
+            <Box display="flex" justifyContent="center" alignItems="center" py={8}>
+              <CircularProgress size={36} sx={{ color: BRAND_COLORS.primary }} />
+            </Box>
+          ) : referralData.length === 0 ? (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 5,
+                textAlign: 'center',
+                borderRadius: 2,
+                borderColor: BRAND_COLORS.border,
+                bgcolor: BRAND_COLORS.background
+              }}
+            >
+              <CardGiftcardIcon sx={{ fontSize: 48, color: BRAND_COLORS.textSecondary, mb: 1, opacity: 0.6 }} />
+              <Typography variant="h6" fontWeight={600} color={BRAND_COLORS.textPrimary}>
+                No Referrals Found
+              </Typography>
+              <Typography variant="body2" color={BRAND_COLORS.textSecondary} mt={0.5} mb={2}>
+                No referral records found for this customer (Code: {customerData.referral_code || '—'}).
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
+                onClick={fetchCustomerReferrals}
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                Refresh Referrals
+              </Button>
+            </Paper>
+          ) : (
+            <Stack spacing={2}>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="subtitle2" fontWeight={700} color={BRAND_COLORS.textPrimary}>
+                  Referrals List ({referralData.length})
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<RefreshIcon sx={{ fontSize: 15 }} />}
+                  onClick={fetchCustomerReferrals}
+                  sx={{ textTransform: 'none', fontSize: '12px' }}
+                >
+                  Refresh
+                </Button>
+              </Box>
+
+              <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, borderColor: BRAND_COLORS.border }}>
+                <Table size="small">
+                  <TableHead sx={{ bgcolor: BRAND_COLORS.background }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '12.5px' }}># ID</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '12.5px' }}>Referral Code</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '12.5px' }}>Referred Customer (New User)</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '12.5px' }}>Shared By (Referrer)</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '12.5px' }}>Reward</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '12.5px' }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 700, fontSize: '12.5px' }}>Date & Time</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {referralData.map((item) => {
+                      const isCompleted = item.status === 'completed' || item.status === 'credited';
+
+                      return (
+                        <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                          <TableCell sx={{ fontWeight: 600, fontSize: '13px' }}>#{item.id}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={item.referralCode || '—'}
+                              size="small"
+                              sx={{
+                                fontWeight: 700,
+                                bgcolor: '#fff3e0',
+                                color: '#e65100',
+                                border: '1px solid #ffe0b2'
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Box display="flex" flexDirection="column">
+                              <Box display="flex" alignItems="center" gap={0.8}>
+                                <Typography variant="body2" fontWeight={600} color={BRAND_COLORS.textPrimary}>
+                                  {item.referred?.name || 'Customer #' + item.referred?.id}
+                                </Typography>
+                                {item.referred?.id ? (
+                                  <Chip
+                                    label={`ID: ${item.referred.id}`}
+                                    size="small"
+                                    sx={{ height: 18, fontSize: '0.68rem', fontWeight: 700, bgcolor: '#f1f5f9' }}
+                                  />
+                                ) : null}
+                              </Box>
+                              <Typography variant="caption" color={BRAND_COLORS.textSecondary}>
+                                📱 {item.referred?.phoneNumber || 'No phone'}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Box display="flex" flexDirection="column">
+                              <Box display="flex" alignItems="center" gap={0.8}>
+                                <Typography variant="body2" fontWeight={600} color={BRAND_COLORS.primary}>
+                                  {item.referrer?.name || 'Customer #' + item.referrer?.id}
+                                </Typography>
+                                {item.referrer?.id ? (
+                                  <Chip
+                                    label={`ID: ${item.referrer.id}`}
+                                    size="small"
+                                    sx={{ height: 18, fontSize: '0.68rem', fontWeight: 700, bgcolor: BRAND_COLORS.primaryLight, color: BRAND_COLORS.primary }}
+                                  />
+                                ) : null}
+                              </Box>
+                              <Typography variant="caption" color={BRAND_COLORS.textSecondary}>
+                                📱 {item.referrer?.phoneNumber || 'No phone'}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={700} color="#2e7d32">
+                              ₹{item.amount ?? 0}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={isCompleted ? 'Completed' : 'Pending'}
+                              color={isCompleted ? 'success' : 'warning'}
+                              size="small"
+                              sx={{ fontWeight: 600, height: 22, fontSize: '0.72rem' }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="caption" color={BRAND_COLORS.textSecondary}>
+                              {item.created_at ? new Date(item.created_at).toLocaleString('en-GB') : '—'}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Stack>
           )}
         </TabPanel>
       </Paper>

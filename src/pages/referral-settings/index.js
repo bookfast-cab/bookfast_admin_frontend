@@ -344,7 +344,7 @@ return;
               }}
             />
 
-            <TextField
+            {/* <TextField
               fullWidth
               label="General / Web Share URL"
               name="share_url"
@@ -352,7 +352,7 @@ return;
               onChange={handleChange}
               placeholder="https://bookfast.in"
               helperText="Fallback or website link (placeholder: {url})"
-            />
+            /> */}
 
             <TextField
               fullWidth
@@ -362,13 +362,13 @@ return;
               name="share_message"
               value={formData.share_message}
               onChange={handleChange}
-              helperText="Use placeholders {code}, {android_url}, {ios_url}, or {url}"
+              helperText="Use placeholders {code} or {url}"
             />
 
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
               <Chip label="{code} = Referral Code" size="small" variant="outlined" color="primary" />
-              <Chip label="{android_url} = Android Link" size="small" variant="outlined" color="success" />
-              <Chip label="{ios_url} = iOS Link" size="small" variant="outlined" color="secondary" />
+              {/* <Chip label="{android_url} = Android Link" size="small" variant="outlined" color="success" />
+              <Chip label="{ios_url} = iOS Link" size="small" variant="outlined" color="secondary" /> */}
               <Chip label="{url} = General URL" size="small" variant="outlined" color="default" />
             </Box>
           </CardContent>
