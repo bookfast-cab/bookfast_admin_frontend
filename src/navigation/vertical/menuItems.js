@@ -23,6 +23,7 @@ import SettingsOutline from 'mdi-material-ui/CogOutline'
 import Web from 'mdi-material-ui/Web'
 import ShieldAccount from 'mdi-material-ui/ShieldAccount'
 import ListBox from 'mdi-material-ui/ListBox'
+import GiftOutline from 'mdi-material-ui/GiftOutline'
 
 import { List, PhoneAndroid } from '@mui/icons-material'
 import { Bank, Cog, Wallet } from 'mdi-material-ui'
@@ -33,8 +34,9 @@ export const getAllMenuItems = (notificationCount = 0) => [
   { privilege: ['sos', 'dashboard'], title: 'SOS Alerts', icon: AlertOctagon, path: '/sos', roles: ['admin', 'staff'] },
   { privilege: ['global-search'], title: 'Global Search', icon: MapSearch, path: '/global-search', roles: ['admin', 'staff'] },
 
-  { privilege: ['customers', 'promo-coupon'], sectionTitle: 'Customers Management', icon: AccountGroup, roles: ['admin', 'staff'] },
+  { privilege: ['customers', 'promo-coupon', 'customer-referrals'], sectionTitle: 'Customers Management', icon: AccountGroup, roles: ['admin', 'staff'] },
   { privilege: ['customers'], title: 'Customers', icon: AccountGroup, path: '/customers', roles: ['admin', 'staff'] },
+  { privilege: ['customers', 'customer-referrals'], title: 'Customer Referrals', icon: GiftOutline, path: '/customer-referrals', roles: ['admin', 'staff'] },
   { privilege: ['promo-coupon'], title: 'Promo Coupon', icon: FilePlus, path: '/promo-coupon', roles: ['admin', 'staff'] },
 
   { privilege: ['drivers', 'driver-wallet-history'], sectionTitle: 'Drivers Management', icon: Car, roles: ['admin', 'staff'] },
@@ -91,12 +93,13 @@ export const getAllMenuItems = (notificationCount = 0) => [
   { privilege: ['payment-management'], title: 'Payment Management', icon: CreditCardOutline, path: '/payment-management', roles: ['admin','staff'] },
   { privilege: ['admin-earning'], title: 'Admin Earning', icon: CurrencyUsd, path: '/admin-earning', roles: ['admin','staff'] },
 
-  { privilege: ['cities-setup', 'whatsapp-setup', 'force-app-update', 'helpline-numbers', 'whatsapp-keywords', 'support-numbers'], sectionTitle: 'Settings', icon: SettingsOutline, roles: ['admin', 'staff'] },
+  { privilege: ['cities-setup', 'whatsapp-setup', 'force-app-update', 'helpline-numbers', 'whatsapp-keywords', 'support-numbers', 'referral-settings'], sectionTitle: 'Settings', icon: SettingsOutline, roles: ['admin', 'staff'] },
   { privilege: ['cities-setup'], title: 'Cities Setup', icon: MapMarkerRadius, path: '/cities-management', roles: ['admin', 'staff'] },
   { privilege: ['cities-setup'], title: 'City Master List', icon: MapMarkerRadius, path: '/city-masterlist', roles: ['admin', 'staff'] },
   { privilege: ['whatsapp-setup'], title: 'WhatsApp Setup', icon: MessageText, path: '/whatsapp-con', roles: ['admin', 'staff'] },
   { privilege: ['force-app-update'], title: 'Force App Update', icon: AccountCog, path: '/app-versions', roles: ['admin', 'staff'] },
   { privilege: ['settings'], title: 'Settings', icon: Cog, path: '/settings', roles: ['admin', 'staff'] },
+  { privilege: ['settings', 'referral-settings'], title: 'Referral Settings', icon: GiftOutline, path: '/referral-settings', roles: ['admin', 'staff'] },
   { privilege: ['helpline-numbers'], title: 'Helpline Numbers', icon: PhoneAndroid, path: '/help-line-number', roles: ['admin', 'staff'] },
   { privilege: ['support-numbers'], title: 'Support Numbers', icon: PhoneAndroid, path: '/support-numbers', roles: ['admin', 'staff'] },
   { privilege: ['promotional-banners'], title: 'Promotional Banners', icon: Bell, path: '/promotional-banners', roles: ['admin', 'staff'] },
