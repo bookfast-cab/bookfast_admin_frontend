@@ -34,6 +34,8 @@ import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
 import ShareIcon from "@mui/icons-material/Share";
 import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
 import PreviewIcon from "@mui/icons-material/Visibility";
+import AndroidIcon from "@mui/icons-material/Android";
+import AppleIcon from "@mui/icons-material/Apple";
 
 const ReferralSettings = () => {
   const [formData, setFormData] = useState({
@@ -43,6 +45,8 @@ const ReferralSettings = () => {
     driver_referral_amount: "100",
     share_message: "",
     share_url: "https://bookfast.in",
+    share_url_android: "",
+    share_url_ios: "",
     status: 1
   });
 
@@ -96,6 +100,8 @@ const ReferralSettings = () => {
           driver_referral_amount: String(d.driver_referral_amount ?? 100),
           share_message: d.share_message || "",
           share_url: d.share_url || "https://bookfast.in",
+          share_url_android: d.share_url_android || d.android_app_link || "",
+          share_url_ios: d.share_url_ios || d.ios_app_link || "",
           status: d.status !== undefined ? d.status : 1
         });
 
@@ -178,6 +184,10 @@ return;
             driver_referral_amount: parseFloat(formData.driver_referral_amount || "0"),
             share_message: formData.share_message,
             share_url: formData.share_url,
+            share_url_android: formData.share_url_android,
+            share_url_ios: formData.share_url_ios,
+            android_app_link: formData.share_url_android,
+            ios_app_link: formData.share_url_ios,
             how_it_works: steps,
             status: formData.status
           })
@@ -209,7 +219,9 @@ return;
   // Sample preview of share message
   const previewShareMessage = (formData.share_message || "")
     .replace(/{code}/g, "BKFST99")
-    .replace(/{url}/g, formData.share_url || "https://bookfast.in");
+    .replace(/{url}/g, formData.share_url || "https://bookfast.in")
+    .replace(/{android_url}/g, formData.share_url_android || "https://play.google.com/store/apps/details?id=com.bookfast.customer")
+    .replace(/{ios_url}/g, formData.share_url_ios || "https://apps.apple.com/app/bookfast/id123456789");
 
   return (
     <Grid container spacing={3}>
@@ -294,17 +306,52 @@ return;
           <CardHeader
             avatar={<ShareIcon color="primary" />}
             title={<Typography variant="h6" fontWeight={600}>Share Link & Messaging</Typography>}
-            subheader="Customize the share message and download URL"
+            subheader="Customize Android & iOS app download links and share message"
           />
           <Divider />
           <CardContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 3 }}>
             <TextField
               fullWidth
-              label="Share URL / App Link"
+              label="Android App Link (Play Store)"
+              name="share_url_android"
+              value={formData.share_url_android}
+              onChange={handleChange}
+              placeholder="https://play.google.com/store/apps/details?id=com.bookfast.customer"
+              helperText="Google Play Store link (placeholder: {android_url})"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <AndroidIcon color="success" />
+                  </InputAdornment>
+                )
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="iOS App Link (App Store)"
+              name="share_url_ios"
+              value={formData.share_url_ios}
+              onChange={handleChange}
+              placeholder="https://apps.apple.com/app/bookfast/id123456789"
+              helperText="Apple App Store link (placeholder: {ios_url})"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <AppleIcon color="action" />
+                  </InputAdornment>
+                )
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="General / Web Share URL"
               name="share_url"
               value={formData.share_url}
               onChange={handleChange}
-              helperText="Target link opened when friend clicks on shared message"
+              placeholder="https://bookfast.in"
+              helperText="Fallback or website link (placeholder: {url})"
             />
 
             <TextField
@@ -315,12 +362,14 @@ return;
               name="share_message"
               value={formData.share_message}
               onChange={handleChange}
-              helperText="Use placeholders {code} for user's code and {url} for the app link"
+              helperText="Use placeholders {code}, {android_url}, {ios_url}, or {url}"
             />
 
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
               <Chip label="{code} = Referral Code" size="small" variant="outlined" color="primary" />
-              <Chip label="{url} = Share URL" size="small" variant="outlined" color="primary" />
+              <Chip label="{android_url} = Android Link" size="small" variant="outlined" color="success" />
+              <Chip label="{ios_url} = iOS Link" size="small" variant="outlined" color="secondary" />
+              <Chip label="{url} = General URL" size="small" variant="outlined" color="default" />
             </Box>
           </CardContent>
         </Card>
