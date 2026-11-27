@@ -819,6 +819,9 @@ const PageForm = ({ hidefeatureImage }) => {
 
   // Handle input change for text fields
   const handleInputChange = (e) => {
+    if (errorMessage) {
+      setErrorMessage("");
+    }
     const { name, value } = e.target;
     if (name === "title") {
       setFormData((prevData) => {
@@ -958,31 +961,44 @@ const PageForm = ({ hidefeatureImage }) => {
 
         const uploadResult = await uploadResponse.json();
 
-        if (uploadResult.success && !id) {
+        if (uploadResult.success) {
           setSuccessMessage("Form submitted and file uploaded successfully.");
           setErrorMessage("");
-          setFormData({
-            title: "",
-            page_slug: "",
-            page_type: formData.page_type || "main",
-            featuredImage: null,
-            metaTitle: "",
-            metaDescription: "",
-            metaKeywords: "",
-            schemaMarkup: "",
-            customHeadTags: "",
-          });
-          editor?.commands.setContent('');
-          if (fileInput.current) fileInput.current.value = "";
+          if (!id) {
+            setFormData({
+              title: "",
+              page_slug: "",
+              page_type: formData.page_type || "main",
+              featuredImage: null,
+              metaTitle: "",
+              metaDescription: "",
+              metaKeywords: "",
+              schemaMarkup: "",
+              customHeadTags: "",
+            });
+            editor?.commands.setContent('');
+            if (fileInput.current) fileInput.current.value = "";
+          }
+          Router.push(redirectPath);
         } else {
           setErrorMessage("File upload error: " + uploadResult.message);
         }
       } else {
-        setErrorMessage("Error saving form data: " + result?.data?.message);
+        const errorMsg = result?.data?.message || "Error saving form data.";
+        setErrorMessage(errorMsg);
+        alert(errorMsg);
+        if (typeof window !== "undefined") {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
       }
     } catch (error) {
       console.error("Error details:", error);
-      setErrorMessage("Something went wrong. Please try again.");
+      const errorMsg = error?.response?.data?.message || error?.message || "Something went wrong. Please try again.";
+      setErrorMessage(errorMsg);
+      alert(errorMsg);
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     } finally {
       setLoading(false);
     }
@@ -1846,6 +1862,58 @@ const PageForm = ({ hidefeatureImage }) => {
         {/* Main Form */}
         <div style={{ flex: "2" }}>
           <form onSubmit={handleSubmit} encType="multipart/form-data">
+            {/* Top Alert Messages */}
+            {errorMessage && (
+              <div
+                style={{
+                  padding: "12px 16px",
+                  backgroundColor: "#fee2e2",
+                  color: "#991b1b",
+                  border: "1px solid #f87171",
+                  borderRadius: "8px",
+                  marginBottom: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                <span>⚠️ {errorMessage}</span>
+                <button
+                  type="button"
+                  onClick={() => setErrorMessage("")}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#991b1b",
+                    fontSize: "16px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                    padding: "0 4px",
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            {successMessage && (
+              <div
+                style={{
+                  padding: "12px 16px",
+                  backgroundColor: "#dcfce7",
+                  color: "#166534",
+                  border: "1px solid #86efac",
+                  borderRadius: "8px",
+                  marginBottom: "20px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                ✓ {successMessage}
+              </div>
+            )}
+
             {/* Page Type Field */}
             <div style={{ marginBottom: "20px" }}>
               <label htmlFor="page_type" style={{ display: "block", fontWeight: "bold", marginBottom: "6px" }}>
@@ -2145,11 +2213,35 @@ const PageForm = ({ hidefeatureImage }) => {
 
             {/* Display error or success message */}
             {errorMessage && (
-              <div style={{ color: "red", marginBottom: "20px" }}>{errorMessage}</div>
+              <div
+                style={{
+                  padding: "12px 16px",
+                  backgroundColor: "#fee2e2",
+                  color: "#991b1b",
+                  border: "1px solid #f87171",
+                  borderRadius: "8px",
+                  marginBottom: "20px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                ⚠️ {errorMessage}
+              </div>
             )}
             {successMessage && (
-              <div style={{ color: "green", marginBottom: "20px" }}>
-                {successMessage}
+              <div
+                style={{
+                  padding: "12px 16px",
+                  backgroundColor: "#dcfce7",
+                  color: "#166534",
+                  border: "1px solid #86efac",
+                  borderRadius: "8px",
+                  marginBottom: "20px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                ✓ {successMessage}
               </div>
             )}
 
